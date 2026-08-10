@@ -231,7 +231,8 @@ def plot_brier_monthly(y_true, y_pred_proba, dates, save_path: str) -> None:
     })
     df_brier["year_month"] = df_brier["date"].dt.to_period("M")
     monthly = df_brier.groupby("year_month").apply(
-        lambda g: brier_score_loss(g["y_true"], g["y_prob"]) if len(g) > 5 else np.nan
+        lambda g: brier_score_loss(g["y_true"], g["y_prob"]) if len(g) > 5 else np.nan,
+        include_groups=False,
     ).dropna()
     fig, ax = plt.subplots(figsize=(14, 6))
     x = range(len(monthly))

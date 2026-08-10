@@ -18,8 +18,8 @@
 <div>
   <img src="https://img.shields.io/badge/Status_CI-Passing-brightgreen?style=flat-square" alt="CI status" />
   <img src="https://img.shields.io/badge/Auto_Training-Weekly-blue?style=flat-square" alt="Auto training" />
-  <img src="https://img.shields.io/badge/Accuracy-Test_%7E64%25-orange?style=flat-square" alt="Accuracy" />
-  <img src="https://img.shields.io/badge/ROC_AUC-Test_%7E0.70-blue?style=flat-square" alt="AUC" />
+  <img src="https://img.shields.io/badge/Accuracy-Test_66.7%25-orange?style=flat-square" alt="Accuracy" />
+  <img src="https://img.shields.io/badge/ROC_AUC-Test_0.736-blue?style=flat-square" alt="AUC" />
 </div>
 
 <br/>
@@ -335,17 +335,19 @@ No GPU needed — stacking on LightGBM/XGBoost trains on CPU within the 6h runne
 
 ---
 
-## 📊 Sample Results (real run, ATP 2026-only)
+## 📊 Sample Results (real run, ATP 2000-2026, walk-forward test 2024-2026)
 
-| Metric | Test Set | Validation Set |
+| Metric | Test Set (7,192 matches) | Validation Set (5,716 matches) |
 | :--- | :---: | :---: |
-| ROC-AUC | 0.702 | 0.695 |
-| Accuracy | 63.5% | 65.4% |
-| Brier | 0.221 | 0.223 |
-| Log-loss | 0.632 | 0.638 |
-| ECE (10-bin) | 0.061 | — |
+| ROC-AUC | 0.736 | 0.743 |
+| Accuracy | 66.7% | 67.3% |
+| Brier | 0.2085 | 0.2061 |
+| Log-loss | 0.6035 | 0.5980 |
+| ECE (10-bin) | 0.030 | — |
 
-> Numbers vary by year range and data window. The full-history model (2000-2026, ~127k matches) reaches higher AUC (~0.78 fold-level). Charts and `metrics_summary.csv` are regenerated for every run.
+**Top features** (LightGBM importance): `ranking_diff`, `elo_surface_diff`, `win_on_1st_serve_pct_diff`, `sos_last_10_diff`, `win_on_2nd_serve_pct_diff`, `first_serve_return_pts_won_pct_diff`, `days_rest_diff`, `log_rank_diff`, `ace_pct_diff`, `first_serve_in_pct_diff`.
+
+> **Honest market benchmark:** on the 3,957 test matches with opening odds the market still leads (market logloss 0.5929 vs model 0.6142, market AUC 0.7455 vs 0.7219) and flat-stake ROI on positive-EV bets is −6.2% with slightly negative CLV. The model is well calibrated and informative, but full-history betting edge vs the closing line is not yet demonstrated — live-odds and value-edge work is the active development track.
 
 ---
 
