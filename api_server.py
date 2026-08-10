@@ -934,7 +934,6 @@ def check_odds_api_status() -> dict:
 
 if __name__ == "__main__":
     import threading
-    import time
     import uvicorn
 
     def _warmup() -> None:
