@@ -5,6 +5,9 @@ name: Weekly Refresh
 #
 # Manual run: Actions → Weekly Refresh → Run workflow
 # Local equivalent: python main.py refresh --tour both --optuna-trials 20
+#
+# ATP and WTA run as parallel jobs (matrix), so total wall time ≈ the
+# slowest tour instead of the sum of both (~halves runtime).
 
 on:
   schedule:
@@ -33,8 +36,13 @@ on:
 
 jobs:
   refresh:
+    name: Refresh ${{ matrix.tour }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    strategy:
+      matrix:
+        tour: [atp, wta]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
 
@@ -50,23 +58,26 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run refresh
+        # Schedule (no inputs) or "both" -> run every matrix job.
+        # Explicit single tour -> run only the matching matrix job.
+        if: ${{ github.event.inputs.tour == '' || github.event.inputs.tour == 'both' || github.event.inputs.tour == matrix.tour }}
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
-          TOUR="${{ github.event.inputs.tour || 'both' }}"
           TRIALS="${{ github.event.inputs.optuna_trials || '20' }}"
           SETTLE_ONLY="${{ github.event.inputs.settle_only || 'false' }}"
+          echo "Refreshing tour: ${{ matrix.tour }} (trials=$TRIALS settle_only=$SETTLE_ONLY)"
           if [ "$SETTLE_ONLY" = "true" ]; then
-            python main.py refresh --tour "$TOUR" --settle-only
+            python main.py refresh --tour "${{ matrix.tour }}" --settle-only
           else
-            python main.py refresh --tour "$TOUR" --optuna-trials "$TRIALS"
+            python main.py refresh --tour "${{ matrix.tour }}" --optuna-trials "$TRIALS"
           fi
 
       - name: Upload models & reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: refresh-artifacts
+          name: refresh-artifacts-${{ matrix.tour }}
           path: |
             models/saved/
             reports/

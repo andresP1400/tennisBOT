@@ -203,7 +203,7 @@ flowchart TD
 ### 4. Operational cycle (automated weekly)
 1. **Monday 04:00 UTC** GitHub Actions wakes up (`weekly_refresh.yml`)
 2. Downloads the latest matches via data mirror
-3. Rebuilds features, retrains ATP **and** WTA pure + odds models (Optuna 20 trials)
+3. Rebuilds features, retrains ATP **and** WTA pure + odds models (Optuna 20 trials) — **ATP and WTA run as two parallel jobs**, so total wall time ≈ the slower tour (~halves runtime)
 4. Runs the full evaluation suite (ROC, calibration, SHAP, Brier, ROI/CLV)
 5. Uploads `models/saved/`, `reports/`, `data/processed/` as GitHub artifacts (14-day retention)
 6. Optional: run the same job manually from `Actions → Weekly Refresh → Run workflow`
