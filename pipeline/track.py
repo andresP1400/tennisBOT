@@ -54,6 +54,7 @@ def _settle_path(tour: str = "atp") -> str:
 _HASH_FIELDS = (
     "ts", "tour", "model", "player1", "player2",
     "surface", "best_of", "prob1", "predicted_winner",
+    "odds1", "odds2",
 )
 
 
@@ -99,8 +100,15 @@ def log_prediction(
     prob1: float,
     predicted_winner: str,
     reliability: Optional[str] = None,
+    odds1: Optional[float] = None,
+    odds2: Optional[float] = None,
 ) -> str:
-    """Append one immutable prediction. Returns its id."""
+    """Append one immutable prediction. Returns its id.
+
+    odds1/odds2: decimal market odds for player1/player2 at prediction time
+    (if known). They are hashed into the record so they are tamper-evident,
+    and can later be compared with closing odds to compute realized CLV.
+    """
     rec = {
         "id": uuid.uuid4().hex[:12],
         "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
@@ -113,6 +121,8 @@ def log_prediction(
         "prob1": round(float(prob1), 4),
         "predicted_winner": predicted_winner,
         "reliability": reliability,
+        "odds1": round(float(odds1), 3) if odds1 else None,
+        "odds2": round(float(odds2), 3) if odds2 else None,
     }
     rec["hash"] = _content_hash(rec)
     _append(_pred_path(tour), rec)
@@ -239,7 +249,22 @@ def summary(tour: str = "atp") -> dict:
         "correct": correct,
         "accuracy": round(correct / n, 4) if n else None,
         "brier": brier,
+        "avg_odds_edge": _avg_odds_edge(records),
     }
+
+
+def _avg_odds_edge(records: list[dict]) -> Optional[float]:
+    """Mean expected edge (p_pred * taken_odds - 1) over predictions that
+    carry market odds for the predicted winner. Positive = positive-EV at
+    the logged price; zero = no odds data."""
+    edges = []
+    for r in records:
+        odds = r.get("odds1") if r["predicted_winner"].lower() == r["player1"].lower() else r.get("odds2")
+        if not odds or odds <= 1.0:
+            continue
+        p = r["prob1"] if r["predicted_winner"].lower() == r["player1"].lower() else 1 - r["prob1"]
+        edges.append(p * odds - 1.0)
+    return round(float(sum(edges) / len(edges)), 4) if edges else None
 
 
 def verify_integrity(tour: str = "atp") -> dict:

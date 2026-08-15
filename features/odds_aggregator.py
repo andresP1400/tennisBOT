@@ -327,8 +327,8 @@ class TheOddsApiAdapter:
             if cached is not None:
                 self._available_sports = cached
                 return cached
-            headers = {"X-Api-Key": self._api_key}
-            resp = requests.get(url, headers=headers, timeout=15)
+            headers = {}
+            resp = requests.get(url, params={"apiKey": self._api_key}, headers=headers, timeout=15)
             if resp.status_code != 200:
                 self._available_sports = []
                 cache.set(self.NAME, url, [])
@@ -360,7 +360,7 @@ class TheOddsApiAdapter:
             day_after = (now + timedelta(days=2)).replace(
                 hour=23, minute=59, second=59, microsecond=0
             ).strftime("%Y-%m-%dT%H:%M:%SZ")
-            headers = {"X-Api-Key": self._api_key}
+            headers = {}
             for sport in sport_keys:
                 url = (
                     f"{self.BASE_URL}/sports/{sport}/odds/"
@@ -372,7 +372,7 @@ class TheOddsApiAdapter:
                     if isinstance(cached, list):
                         out.extend(cached)
                     continue
-                resp = requests.get(url, headers=headers, timeout=15)
+                resp = requests.get(url, params={"apiKey": self._api_key}, headers=headers, timeout=15)
                 if resp.status_code != 200:
                     cache.set(self.NAME, url, [])
                     continue

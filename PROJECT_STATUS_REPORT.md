@@ -1,7 +1,81 @@
 # TennisBOT - Project Status Report
 
-**Data:** 19 Giugno 2026
-**Versione:** 2.1 (post-hardening)
+**Data:** 14 Agosto 2026
+**Versione:** 2.2 (odds pipeline completa + Betfair exchange CLV/volume)
+
+---
+
+## Aggiornamento v2.2 — 14 Agosto 2026
+
+### 1. Fix critico TheOddsAPI (modulo live odds era rotto)
+- L'API rifiuta TUTTI gli header di autenticazione (`X-Api-Key`, `apiKey`,
+  `x-api-key`, `APISECRET` → 401 `MISSING_KEY`, verificato live) e accetta
+  solo `?apiKey=` nel query string.
+- Portate a query param tutte le 6 call site: `live_odds.py` (3),
+  `odds_aggregator.py` (2), `api_server.py` (1). Test di regressione
+  riscritto (`test_theoddsapi_uses_api_key_query_param`).
+- Verificato end-to-end: `LiveOddsScraper` trova i tornei reali
+  (`tennis_atp_cincinnati_open`, `tennis_wta_cincinnati_open`).
+
+### 2. Odds storiche tennis-data 2001-2014 (prima scartate)
+- `features/odds.py`: mappature colonne legacy (CB/CBL, GBW/GBL, IWW/IWL,
+  SBW/SBL, EXW/EXL, LBW/LBL, UBW/UBL, SJW/SJL) + BFEW/BFEL (Betfair
+  Exchange 2025+) + `ps_w/ps_l` con alias `pinnacle_w/pinnacle_l`.
+- `_add_synthetic_avg` per-riga: 25.660 righe legacy con media reale.
+- Priorità opening: Pinnacle → Betfair Exchange → Bet365 → Avg.
+  Priorità closing: Avg → Max → Pinnacle.
+- Coverage finale dataset: opening 55%, closing 69%.
+
+### 3. Scraper OddsPortal senza login (`features/oddsportal_scraper.py`)
+- Decifra i payload `backend.oddsportal.com` (PBKDF2 + AES-CBC + gunzip).
+- **Tutti i 13 bookmaker mappati** via endpoint `ajax-providers-bonus-data`
+  (era il gap degli ID sconosciuti): 888sport, bet365.it, BetflagIT,
+  BetssonIT, bwin.it, Eurobet.it, GoldBet, Lottomatica, Netwin,
+  Planetwin365, Sisal, SNAI, WilliamHill.it. `providers.json` salvato
+  ad ogni scrape. Cluster SKS chiarito (BetssonIT/BetflagIT/Lottomatica/
+  Planetwin365/Netwin = stesso feed).
+- E2E: 25/25 eventi OK, 12 bookie/evento, xHash ruotante gestito.
+
+### 4. Betfair — verdetto definitivo sulla rete
+- `basic.betfair.com`: ESTINTO (nemmeno via DNS-over-HTTPS risolve).
+- `www.betfair.com`: geo-redirect 301 a betfair.it (sportsbook only) anche
+  con `--resolve` su IP Cloudflare reale + cookie `siteSelector=uk`;
+  `www.betfair.de/.com.au/.es` → 302 su betfair.com → stesso redirect.
+- `historicdata.betfair.com`: portale vivo (via IP reale) ma API a pagamento.
+- **Soluzione ≥ Betfair, gratis**: TheOddsAPI espone il bookmaker
+  `betfair_ex_eu` (stessa liquidità exchange UK per il tennis) con
+  `h2h` (back) + `h2h_lay` (lay), più Matchbook (2° exchange) e Pinnacle.
+
+### 5. Nuovi moduli exchange CLV / volume
+- `features/betfair_historical.py`: snapshot JSONL giornalieri
+  (`data/raw/betfair_exchange/`) di betfair_ex_eu + matchbook + pinnacle,
+  `closing_odds()` (ultimo back pre-inizio), `compute_clv()`, CLI
+  `--snapshot/--loop/--report`. 64 eventi/torneo per snapshot (1-2
+  richieste, dentro il free tier 500/mese).
+- `features/betfair_volume.py`: `parse_runner_chart` (formato
+  `{"points": [[ts, price, amount], ...], "factor": n}` verificato live),
+  `poll_volume`, `summarize_polls` (volume velocity + steam), e
+  `find_tennis_events()` che risolve eventi correnti + selectionId PPB
+  globali da betfair.it (CLI `--find`).
+
+### 6. Track record e API
+- `pipeline/track.py`: `_HASH_FIELDS` + odds1/odds2; `summary()` con
+  `avg_odds_edge` (p_pred × odds − 1).
+- `api_server.py`: `_autofill_odds()` riempie le odds mancanti in
+  `/api/predict` dal mercato live; odds esposte nel risultato e nel log.
+
+### 7. Riaddestramento con odds (risultati reali)
+- ATP (`atp_model_odds.pkl`): AUC 0.744, acc 67.85%, Brier 0.205, ECE
+  0.032, **CLV medio +1.52% (94.6% beat rate)**, edge >10% → ROI +15.5%.
+- WTA (`wta_model_odds.pkl`): **batte il mercato di chiusura** (logloss
+  0.5825 vs 0.5834), **CLV +1.36% (92.2% beat)**, edge >10% → ROI +26.1%.
+- Verifica live: Zverev-Norrie (Cincinnati Open) → prob 79.2%, odds
+  exchange 1.27/4.3, reliability alta.
+- Test suite: 44/44 PASS. Ruff pulito (solo E402 pattern progetto).
+
+---
+
+## Stato Storico (v2.1 — 19 Giugno 2026)
 
 ---
 
@@ -155,7 +229,7 @@ L'obiettivo e: **il modello dice "Sinner 72%", il mercato dice "Sinner 32%" -> e
 - [x] **Sicurezza**:
   - Path traversal sanificato in `web/.../charts/[name]/route.ts`
   - `@dnd-kit` versioni allineate a 10.x
-  - API key via header `X-Api-Key` (non piu in query string)
+  - API key via query param `?apiKey=` (header `X-Api-Key` respinto dall'API con 401 MISSING_KEY, verificato 2026-08-14; HTTPS-only)
   - CORS con origini espliciti (non `["*"]` con credentials)
   - `.env.example` creato, `.gitignore` esteso per `.env.local`
   - Validazione `req.model` con whitelist regex
@@ -202,10 +276,18 @@ L'obiettivo e: **il modello dice "Sinner 72%", il mercato dice "Sinner 32%" -> e
   Benchmark vs mercato: il modello pure-stats e' di ~0.02 logloss dietro
   il mercato (atteso senza odds come feature). CLV WTA positivo (+1.45%,
   93% beat rate). Edge-band >10% su WTA mostra ROI +7.18% fuori campione.
+  NOTA v2.2 (14/08/2026): riaddestrati con odds come feature (legacy
+  2001-2014 + BFEW/BFEL + synthetic avg) — ATP AUC 0.744 / acc 67.85% /
+  CLV +1.52%; WTA batte il mercato di chiusura (logloss 0.5825 vs 0.5834)
+  / CLV +1.36% / edge >10% ROI +26.1%. Dettagli in sezione v2.2 in testa.
 - [x] **Ruotare la chiave TheOddsAPI** committata in `.env`.
   La chiave `9b49...f83` e' rimossa dal repo (`.env` contiene solo
   placeholder). `.gitignore` copre `.env` e `local.env`. Documentazione
   rotazione in `.env.example` e `docs/SECURITY.md`.
+- [x] **Fix autenticazione TheOddsAPI** (v2.2): l'API rifiuta gli header
+  auth (401 MISSING_KEY verificato) e richiede `?apiKey=` nel query
+  string — tutte le call site portate a query param. Prima di questo
+  fix il modulo live odds falliva sempre in produzione.
 - [ ] **Configurare una chiave LLM** (OpenAI o Anthropic) per
   attivare `player_news` con ricerca reale. Template e istruzioni
   in `.env.example` (sezione LLM_PROVIDER); finche' non viene

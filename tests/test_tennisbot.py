@@ -323,13 +323,16 @@ def test_get_coords_unknown_returns_none() -> None:
 
 
 # ----------------------------------------------------------------------
-# Live odds API key in header
+# Live odds API key in query params
 # ----------------------------------------------------------------------
-def test_theoddsapi_uses_x_api_key_header() -> None:
-    """Regression: API key must NOT be in query string.
+def test_theoddsapi_uses_api_key_query_param() -> None:
+    """Regression: the API key must be sent as ``?apiKey=`` query param.
 
-    Covers all three TheOddsAPI call sites so a future change cannot
-    re-introduce `?apiKey=` in only one path.
+    TheOddsAPI rejects every auth header (verified live 2026-08-14:
+    X-Api-Key / apiKey / x-api-key / APISECRET all return 401
+    MISSING_KEY, only the query param works). Covers all TheOddsAPI
+    call sites so a future change cannot re-introduce the broken
+    header-only path.
     """
     import inspect
 
@@ -341,8 +344,8 @@ def test_theoddsapi_uses_x_api_key_header() -> None:
         "_get_todays_matches_api",
     ):
         src = inspect.getsource(getattr(live_odds.LiveOddsScraper, fn_name))
-        assert "X-Api-Key" in src, f"{fn_name} missing X-Api-Key header"
-        assert "apiKey=" not in src, f"{fn_name} still embeds apiKey in query string"
+        assert '"apiKey"' in src, f"{fn_name} missing apiKey query param"
+        assert "X-Api-Key" not in src, f"{fn_name} still uses rejected X-Api-Key header"
 
 
 def test_calibration_logger_initialized_at_import() -> None:

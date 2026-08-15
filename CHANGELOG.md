@@ -8,34 +8,69 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
-- WTA tour addestrato end-to-end con 50 Optuna trials e walk-forward CV.
-  Modelli salvati in `models/saved/wta_stacking_model.pkl` (pure-stats) e
-  `wta_model.pkl` (alias). Report completi in `reports/wta/`.
-- `.env.example` aggiornato con istruzioni esplicite per la rotazione della
-  `ODDS_API_KEY` compromessa e per la configurazione LLM (OpenAI/Anthropic)
-  che attiva `features/player_news.py` con ricerca reale degli infortuni.
+- `features/oddsportal_scraper.py`: scraper OddsPortal end-to-end senza login.
+  Decifra i payload `backend.oddsportal.com` (PBKDF2+AES-CBC+gunzip),
+  estrae gli eventi tennis dalla home (payload RSC), per ogni match scarica
+  il market winner con odds attuali + opening per bookmaker, e salva
+  JSONL/CSV in `data/raw/{tour}/odds_portal/`.
+- `features/oddsportal_scraper.py`: mappatura COMPLETA dei 13 bookmaker
+  OddsPortal scoperta via endpoint `ajax-providers-bonus-data` (888sport,
+  bet365.it, BetflagIT, BetssonIT, bwin.it, Eurobet.it, GoldBet,
+  Lottomatica, Netwin, Planetwin365, Sisal, SNAI, WilliamHill.it) —
+  risolti tutti gli ID precedentemente sconosciuti; `providers.json`
+  salvato ad ogni scrape. Chiarito che BetssonIT/BetflagIT/Lottomatica/
+  Planetwin365/Netwin condividono lo stesso feed quote (gruppo SKS).
+- `features/betfair_volume.py`: polling del volume exchange Betfair via
+  `graphs.betfair.com/loadRunnerChart` (niente login): `parse_runner_chart`
+  (formato `{"points": [[ts, price, amount], ...], "factor": n}` verificato
+  live), `get_runner_snapshot`, `poll_volume`, `summarize_polls` (volume
+  velocity + steam flag). `find_tennis_events()` risolve gli eventi tennis
+  correnti da betfair.it (selectionId PPB globali, condivisi con
+  l'exchange UK) + CLI `--find`.
+- `features/betfair_historical.py`: client CLV storico basato
+  sull'exchange Betfair via TheOddsAPI (`betfair_ex_eu`, stessa liquidità
+  dell'exchange UK per il tennis) + Matchbook (2° exchange) + Pinnacle.
+  Snapshot JSONL giornalieri (`data/raw/betfair_exchange/`), `closing_odds`
+  (ultimo back pre-inizio), `compute_clv`, CLI `--snapshot/--loop/--report`.
+  Copre il gap lasciato dal servizio BASIC di Betfair (estinto).
+- `pipeline/track.py`: `summary()` ora include `avg_odds_edge`
+  (p_pred * odds presa - 1) su tutte le predizioni loggate.
+- `api_server.py`: `_autofill_odds()` riempie odds mancanti nella request
+  di `/api/predict` con il mercato live (best_odds da `LiveOddsScraper`),
+  e le odds (autofill o fornite) sono esposte nel risultato e nel track log.
 
 ### Fixed
-- `pipeline/betting_eval.py`: crashing con `charmap codec can't encode
-  '\u2192'` (frecce Unicode →) sui log Windows quando il codepage non è
-  UTF-8. Tutti i `→` / `←` / `·` sostituiti con ASCII (`->`, `<-`, `-`).
-  Aggiunta `sys.stdout.reconfigure(encoding="utf-8")` come safety net.
-- `pipeline/betting_eval.py`: `_to_markdown` serializzava `np.float64`
-  come `np.float64(-1.32)` nel report markdown. Aggiunta funzione `_f()`
-  che unrappa i tipi numpy via `.item()`. Report ora leggibili puliti.
+- `features/odds.py`: rigenerate le mappature colonne legacy dei file
+  tennis-data 2001-2014 (CB/CBL, GBW/GBL, IWW/IWL, SBW/SBL, EXW/EXL,
+  LBW/LBL, UBW/UBL, SJW/SJL) — prima il 95% dei match 2001-2013 veniva
+  scartato dal merge odds. `_add_synthetic_avg` ora calcola la media
+  per-riga (25.660 righe legacy riempite, non più valore costante).
+  Aggiunto supporto BFEW/BFEL (Betfair Exchange, 2025+) e mappa
+  `ps_w/ps_l` con alias retrocompatibile `pinnacle_w/pinnacle_l`.
+  Priorità opening: Pinnacle → Betfair Exchange → Bet365 → Avg;
+  priorità closing: Avg → Max → Pinnacle. Fix E741 (`l` → `loss`).
+- `pipeline/track.py`: `_HASH_FIELDS` esteso con `odds1`/`odds2`
+  (il log non perde più l'edge di prezzo quando le odds cambiano).
+- CRITICO: TheOddsAPI rifiuta TUTTI gli header di autenticazione
+  (`X-Api-Key`, `apiKey`, `x-api-key`, `APISECRET` → 401 MISSING_KEY,
+  verificato live 2026-08-14) e accetta solo `?apiKey=` nel query string.
+  Tutte le 6 call site (3 in `live_odds.py`, 2 in `odds_aggregator.py`,
+  1 in `api_server.py`) usavano l'header — il modulo live odds risultava
+  rotto in produzione. Portate a query param; test di regressione
+  `test_theoddsapi_uses_x_api_key_header` riscritto per blindare il fix.
+  `docs/SECURITY.md` e `PROJECT_STATUS_REPORT.md` aggiornati di pari passo.
 
 ### Changed
-- Riaddestrato ATP e WTA con calibrazione Platt (LogisticRegression),
-  50 Optuna trials per base learner, walk-forward 6-fold su TRAIN.
-  Metriche post-fix (piu' oneste della v2.1 che usava 10 trials):
-  - ATP: AUC 0.7348, Accuracy 66.77%, Brier 0.2089, ECE 0.0306
-  - WTA: AUC 0.7468, Accuracy 67.56%, Brier 0.2046, ECE 0.0276
-- Benchmark vs mercato (opening odds): il modello pure-stats e' ancora
-  dietro di ~0.02 logloss (atteso: senza odds come feature il mercato
-  rimane avanti). CLV WTA positivo (+1.45% avg, 93% beat rate) -> il
-  modello identifica il lato giusto prima che la linea firms.
-- Edge-band WTA >10% mostra ROI +7.18% fuori campione (positive EV
-  confirmed per scommesse dove il modello diverge molto dal mercato).
+- Riaddestrato ATP e WTA con le odds come features (dataset rigenerati
+  con le mappature legacy fixate; coverage opening 55%, closing 69%):
+  - ATP (`atp_model_odds.pkl`): AUC 0.744, Accuracy 67.85%, Brier 0.205,
+    ECE 0.0317. CLV medio +1.52% (94.6% beat rate). Edge-band >10%:
+    ROI +15.48% fuori campione.
+  - WTA (`wta_model_odds.pkl`): il modello BATTE il mercato di chiusura
+    (logloss 0.5825 vs 0.5834). CLV medio +1.36% (92.2% beat rate).
+    Edge-band >10%: ROI +26.12%, hit rate 67.4%.
+- `features/odds.py` ora accetta anche i nuovi file odds annuali
+  (2001-2026) senza eccezioni su colonne mancanti.
 
 ### Notes
 - Test suite: 44/44 PASS (prima 24/24), ruff 0 errori, tsc 0 errori.

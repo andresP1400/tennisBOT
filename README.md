@@ -18,8 +18,9 @@
 <div>
   <img src="https://img.shields.io/badge/Status_CI-Passing-brightgreen?style=flat-square" alt="CI status" />
   <img src="https://img.shields.io/badge/Auto_Training-Weekly-blue?style=flat-square" alt="Auto training" />
-  <img src="https://img.shields.io/badge/Accuracy-Test_66.7%25-orange?style=flat-square" alt="Accuracy" />
-  <img src="https://img.shields.io/badge/ROC_AUC-Test_0.736-blue?style=flat-square" alt="AUC" />
+  <img src="https://img.shields.io/badge/Accuracy-Test_67.85%25-orange?style=flat-square" alt="Accuracy" />
+  <img src="https://img.shields.io/badge/ROC_AUC-Test_0.744-blue?style=flat-square" alt="AUC" />
+  <img src="https://img.shields.io/badge/CLV_avg-%2B1.5%25-green?style=flat-square" alt="CLV" />
 </div>
 
 <br/>
@@ -30,7 +31,7 @@
 
 | Dashboard Preview | Live Value Bet + Player News |
 | :--- | :--- |
-| Interactive dashboards for prediction, training, analytics and live markets (Next.js 16 + TypeScript + Tailwind). | Live odds from SofaScore / TheOddsAPI compared against the model, plus LLM-driven (NVIDIA) news research on injuries, form and coach changes. |
+| Interactive dashboards for prediction, training, analytics and live markets (Next.js 16 + TypeScript + Tailwind). | Live odds from SofaScore / TheOddsAPI (incl. Betfair Exchange + Matchbook) compared against the model, plus LLM-driven (NVIDIA) news research on injuries, form and coach changes. |
 
 <details open>
 <summary><strong>🎯 Model diagnostics (auto-generated on every training run)</strong></summary>
@@ -55,11 +56,12 @@
 
 | Area | What it does |
 | :--- | :--- |
-| **Feature Engineering** | Global + surface-specific ELO, rolling statistics (10/20/30), head-to-head, fatigue, ranking, serve/break-point percentages, strength of schedule, weather (altitude). |
+| **Feature Engineering** | Global + surface-specific ELO, rolling statistics (10/20/30), head-to-head, fatigue, ranking, serve/break-point percentages, strength of schedule, weather (altitude), **odds features (opening/closing + line movement)** from tennis-data 2001-2026 (legacy columns included). |
 | **Stacking Ensemble** | Layer 1: LightGBM + XGBoost + Logistic Regression with walk-forward out-of-fold predictions. Layer 2: meta-learner (Logistic Regression) on the OOF predictions. |
 | **Probability Calibration** | Platt calibration on the validation set; ECE reports; Brier score before/after calibration. |
 | **Walk-Forward Validation** | Strict temporal splits (train ≤ 2021, val 2022-2023, test ≥ 2024). Adaptive temporal-quantile fallback for narrow year ranges (e.g. single-year retraining) so training never crashes on empty folds. |
-| **Live Odds Aggregation** | Multi-source: SofaScore (no API key, tier-1 pre-match + live odds), TheOddsAPI (with key), Betfair hook (placeholder). Best-odds merge with margin calculation. |
+| **Live Odds Aggregation** | Multi-source: SofaScore (no API key, tier-1 pre-match + live odds), TheOddsAPI (with key — **Betfair Exchange `betfair_ex_eu` back+lay**, Matchbook, Pinnacle e 30+ bookmaker), OddsPortal scraper (decryption-based, 13 bookmaker mappati). Best-odds merge with margin calculation. |
+| **Betfair Exchange CLV & Volume** | `betfair_historical.py`: snapshot JSONL dell'exchange Betfair (via TheOddsAPI) per calcolare la closing line e il CLV di ogni bet. `betfair_volume.py`: polling `graphs.betfair.com/loadRunnerChart` (senza login) per volume/steam per runner. |
 | **Value-Bet Detection** | Compares model probability vs market-implied probability; flags edges above a configurable threshold. |
 | **Player News Research** | Autonomous research on injuries, form and coach changes via GPT Researcher + NVIDIA NIM (llama-3.1-8b), with regex fallback and LLM fact extraction. No empty fields. |
 | **API Server** | FastAPI backend with health, predict, todays-matches (cached, stale-while-revalidate), value-bets, player-news, train/status, metrics, charts endpoints. |
@@ -88,7 +90,11 @@
    │   LIVE ODDS          │ │   ML INFERENCE     │ │  NEWS RESEARCH     │
    │  SofaScore (no key)  │ │  stacking .pkl     │ │  GPT Researcher    │
    │  TheOddsAPI (key)    │ │  calibrated        │ │  NVIDIA NIM LLM    │
-   │  Betfair (optional)  │ │  imputer+scaler    │ │  DuckDuckGo search │
+   │  Betfair exch (CLV)  │ │  imputer+scaler    │ │  DuckDuckGo search │
+   │  OddsPortal scrape   │ │  odds-aware model  │ │                    │
+   │  Matchbook exchange  │ │  odds1/odds2 in    │ │                    │
+   │                      │ │  track log + edge  │ │                    │
+   │                      │ │  avg_odds_edge     │ │                    │
    └────────────┬─────────┘ └─────────┬──────────┘ └────────┬───────────┘
                 │                     │                     │
 ┌───────────────▼─────────────────────▼─────────────────────▼────────────┐
@@ -130,22 +136,27 @@ tennisBOT-main/
 │   ├── h2h.py                 # Head-to-head features
 │   ├── fatigue.py             # Recent workload/fatigue signals
 │   ├── weather.py             # Altitude & weather context
-│   ├── odds_aggregator.py     # Multi-source odds (SofaScoreAdapter, ...)
-│   ├── live_odds.py           # Cached todays-matches (stale-while-revalidate)
-│   ├── player_news.py         # LLM injury/form/coach research
-│   └── ...                    # builder, cleaning, context, player, odds
+│   ├── odds.py               # Tennis-data odds: legacy columns, Pinnacle/BFEX/B365, synthetic avg, opening/closing merge
+│   ├── odds_aggregator.py    # Multi-source odds (SofaScoreAdapter, TheOddsApiAdapter, ...)
+│   ├── oddsportal_scraper.py # OddsPortal scraper (decryption-based, 13 bookmakers mapped, providers.json)
+│   ├── betfair_historical.py # Exchange CLV: TheOddsAPI betfair_ex_eu + matchbook + pinnacle, JSONL snapshots, closing_odds
+│   ├── betfair_volume.py     # graphs.betfair.com loadRunnerChart polling (volume/steam) + betfair.it event resolver
+│   ├── live_odds.py          # Cached todays-matches (stale-while-revalidate)
+│   ├── player_news.py        # LLM injury/form/coach research
+│   └── ...                   # builder, cleaning, context, player, odds
 │
 ├── pipeline/
 │   ├── training.py            # Stacking training, Optuna, OOF
 │   ├── evaluation.py          # ROC/AUC/Brier/LogLoss + 5 charts
 │   ├── calibration.py         # Platt calibration
 │   ├── split.py               # Fixed temporal + adaptive walk-forward
+│   ├── track.py               # Certified track record: odds1/odds2, avg_odds_edge in summary
 │   └── betting_eval.py        # ROI/CLV betting backtest
 │
 ├── models/saved/              # (gitignored) *.pkl trained artifacts
 ├── reports/                   # (gitignored) metrics, charts per tour
 ├── scripts/                   # helpers (incl. security/check_no_secrets.py)
-├── tests/                     # pytest suite (25+ tests)
+├── tests/                     # pytest suite (44 tests)
 ├── utils/                     # shared constants/helpers
 ├── docs/
 │   └── assets/                # README preview charts
@@ -207,6 +218,16 @@ flowchart TD
 4. Runs the full evaluation suite (ROC, calibration, SHAP, Brier, ROI/CLV)
 5. Uploads `models/saved/`, `reports/`, `data/processed/` as GitHub artifacts (14-day retention)
 6. Optional: run the same job manually from `Actions → Weekly Refresh → Run workflow`
+
+### 5. CLV / volume collection (continuous, free)
+```mermaid
+flowchart LR
+    A[TheOddsAPI betfair_ex_eu] --> B[JSONL snapshot<br/>data/raw/betfair_exchange/]
+    C[graphs.betfair.com<br/>loadRunnerChart] --> D[volume + steam per runner]
+    B --> E[closing line pre-match]
+    D --> F[volume velocity signal]
+    E --> G[CLV = close / taken - 1]
+```
 
 ---
 
@@ -284,7 +305,7 @@ pip install -r requirements-dev.txt
 ruff check . --select E,F,W --ignore E501,E402
 mypy --ignore-missing-imports .
 python scripts/security/check_no_secrets.py   # CI-required secret scan
-pytest tests/ -q                               # 25+ tests
+pytest tests/ -q                               # 44 tests
 python smoke_test.py                           # import sanity
 cd web && npx eslint src && npx tsc --noEmit && npm run build
 ```
@@ -299,7 +320,7 @@ All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
 | :--- | :--- | :--- |
 | GET | `/api/health` | Liveness check |
 | GET | `/api/models` | List trained models |
-| POST | `/api/predict` | `{player1, player2, surface, model}` → calibrated probability + features |
+| POST | `/api/predict` | `{player1, player2, surface, model, odds1?, odds2?}` → calibrated probability + features (missing odds auto-filled from live market) |
 | GET | `/api/todays-matches?tour=atp` | Today's matches with best odds (cached, stale-while-revalidate) |
 | POST | `/api/value-bets` | Model vs market edge detection |
 | POST | `/api/player-news` | `{player1, player2, surface}` → injury/form/coach features |
@@ -337,17 +358,26 @@ No GPU needed — stacking on LightGBM/XGBoost trains on CPU within the 6h runne
 
 ## 📊 Sample Results (real run, ATP 2000-2026, walk-forward test 2024-2026)
 
-| Metric | Test Set (7,192 matches) | Validation Set (5,716 matches) |
+| Metric | ATP Test (7,192 matches) | WTA Test (6,900 matches) |
 | :--- | :---: | :---: |
-| ROC-AUC | 0.736 | 0.743 |
-| Accuracy | 66.7% | 67.3% |
-| Brier | 0.2085 | 0.2061 |
-| Log-loss | 0.6035 | 0.5980 |
-| ECE (10-bin) | 0.030 | — |
+| ROC-AUC | 0.744 | 0.747 |
+| Accuracy | 67.85% | 67.5% |
+| Brier | 0.205 | 0.205 |
+| Log-loss | 0.596 | 0.583 |
+| ECE (10-bin) | 0.032 | 0.028 |
+| **CLV avg (open → close)** | **+1.52% (94.6% beat)** | **+1.36% (92.2% beat)** |
+| **ROI edge-band >10%** | **+15.5%** | **+26.1%** |
 
 **Top features** (LightGBM importance): `ranking_diff`, `elo_surface_diff`, `win_on_1st_serve_pct_diff`, `sos_last_10_diff`, `win_on_2nd_serve_pct_diff`, `first_serve_return_pts_won_pct_diff`, `days_rest_diff`, `log_rank_diff`, `ace_pct_diff`, `first_serve_in_pct_diff`.
 
-> **Honest market benchmark:** on the 3,957 test matches with opening odds the market still leads (market logloss 0.5929 vs model 0.6142, market AUC 0.7455 vs 0.7219) and flat-stake ROI on positive-EV bets is −6.2% with slightly negative CLV. The model is well calibrated and informative, but full-history betting edge vs the closing line is not yet demonstrated — live-odds and value-edge work is the active development track.
+> **Honest market benchmark:** with the fixed odds pipeline (legacy tennis-data
+> columns 2001-2014, Pinnacle/Betfair Exchange/Bet365 opening, Avg/Max closing,
+> coverage 55% open / 69% close) the odds-aware **WTA model beats the closing
+> market** on log-loss (0.5825 vs 0.5834) and both tours show **positive CLV**
+> (+1.5% avg, ~93% beat rate) with strong ROI in the >10% edge segment. ATP
+> opening-line benchmark still slightly ahead (0.5929 vs 0.5977); the exchange
+> CLV snapshot pipeline (`features/betfair_historical.py`) keeps accumulating
+> the pre-match data needed to close that gap.
 
 ---
 

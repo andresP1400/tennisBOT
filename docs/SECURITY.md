@@ -43,7 +43,9 @@ git log --all -p -- .env | head
   - source code
   - logs (the structured JSON logger redacts by name; do not log raw
     request headers / query strings)
-  - query strings (TheOddsAPI is now called with `X-Api-Key` header)
+  - query strings (TheOddsAPI rejects auth headers with 401
+    `MISSING_KEY` — verified 2026-08-14 — so the key is passed as the
+    `?apiKey=` query param; requests are HTTPS-only, never log the URL)
   - commit history
 
 ---

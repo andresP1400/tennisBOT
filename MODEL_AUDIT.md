@@ -396,5 +396,5 @@ cose da fare:
 | Qualità segnale         | 8.5/10 | AUC 0.852 pulito, Brier 0.154, comportamento fisiologico confermato                           |
 | Solidità architetturale | 8.5/10 | Stacking certificato, meta-learner bilanciato, Optuna su entrambi i base learner              |
 | Validazione             | 9.0/10 | 10 test completati, zero leakage, storia ATP appresa autonomamente                            |
-| Edge vs mercato         | ?/10   | Non ancora misurato — è l'unico vero gap rimasto                                              |
+| Edge vs mercato         | 7.5/10 | Misurato (v2.2): CLV positivo ATP +1.52% / WTA +1.36% (~93% beat rate), WTA batte la closing line (logloss 0.5825 vs 0.5834), ROI edge >10% +15.5%/+26.1%. ATP opening-line ancora leggermente avanti (0.5929 vs 0.5977). Snapshot exchange CLV in accumulo per chiudere il gap. |
 | Produzione              | 5/10   | Inference, monitoring drift e logging non ancora implementati                                 |

@@ -500,6 +500,8 @@ def _predict_with_state(bundle, state, req: PredictRequest) -> dict:
             "p2_surface_blend": round(snap2.get("elo_blend", 0), 1) if snap2 else None,
         },
         "data_through": state.get("data_through"),
+        "odds1": req.odds1,
+        "odds2": req.odds2,
         "info": "Inferenza live da stato tracker (dati aggiornati all'ultimo build)",
     }
 
@@ -520,9 +522,37 @@ def _maybe_log_prediction(req: PredictRequest, result: dict) -> None:
             prob1=result["prob1"],
             predicted_winner=result["winner"],
             reliability=result.get("reliability"),
+            odds1=getattr(req, "odds1", None),
+            odds2=getattr(req, "odds2", None),
         )
     except Exception as exc:
         print(f"[track] log skipped: {exc}")
+
+
+def _autofill_odds(req: PredictRequest) -> PredictRequest:
+    """Fill any missing market odds (odds1/odds2) from live odds sources.
+
+    Only slots the user left empty; never overrides explicit odds. Uses the
+    TheOddsAPI-backed scraper (falls back silently if no key / no match).
+    """
+    if req.odds1 is not None and req.odds2 is not None:
+        return req
+    try:
+        from features.live_odds import LiveOddsScraper
+
+        odds = LiveOddsScraper().get_match_odds(req.player1, req.player2, req.surface)
+        best = odds.get("best_odds", {})
+        o1, o2 = best.get("player1"), best.get("player2")
+        o1 = None if o1 is None or (isinstance(o1, float) and math.isnan(o1)) else float(o1)
+        o2 = None if o2 is None or (isinstance(o2, float) and math.isnan(o2)) else float(o2)
+        return req.model_copy(
+            update={
+                "odds1": req.odds1 if req.odds1 is not None else o1,
+                "odds2": req.odds2 if req.odds2 is not None else o2,
+            }
+        )
+    except Exception:
+        return req
 
 
 @app.post("/api/predict")
@@ -535,6 +565,9 @@ def predict_match(req: PredictRequest) -> dict:
 
         bundle = joblib.load(model_path)
         tour = "wta" if "wta" in (req.model or "").lower() else "atp"
+
+        # Auto-fill market odds if the client did not provide them.
+        req = _autofill_odds(req)
 
         # Primary: live tracker state
         state = _load_state(tour)
@@ -588,6 +621,8 @@ def predict_match(req: PredictRequest) -> dict:
                 ),
                 "total_matches": int(h2h_12.get("h2h_total_matches", 0)),
             },
+            "odds1": req.odds1,
+            "odds2": req.odds2,
             "info": (
                 "Fallback parquet (simmetrizzato, no bias _A) — "
                 "rigenera features per inference state live"
@@ -911,8 +946,7 @@ def check_odds_api_status() -> dict:
     try:
         import requests
         url = "https://api.the-odds-api.com/v4/sports/"
-        headers = {"X-Api-Key": api_key}
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(url, params={"apiKey": api_key}, timeout=10)
         if resp.status_code == 200:
             sports = resp.json()
             tennis = [s for s in sports if s.get("key", "").startswith("tennis_")]

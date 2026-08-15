@@ -129,8 +129,7 @@ class LiveOddsScraper:
         try:
             import requests
             url = "https://api.the-odds-api.com/v4/sports/"
-            headers = {"X-Api-Key": api_key}
-            resp = requests.get(url, headers=headers, timeout=15)
+            resp = requests.get(url, params={"apiKey": api_key}, timeout=15)
             if resp.status_code != 200:
                 self._available_sports = []
                 return []
@@ -165,7 +164,7 @@ class LiveOddsScraper:
                     f"&markets=h2h"
                     f"&oddsFormat=decimal"
                 )
-                resp = requests.get(url, headers={"X-Api-Key": api_key}, timeout=15)
+                resp = requests.get(url, params={"apiKey": api_key}, timeout=15)
                 if resp.status_code != 200:
                     continue
                 events = resp.json()
@@ -358,7 +357,7 @@ class LiveOddsScraper:
                     f"&commenceTimeFrom={today_start}"
                     f"&commenceTimeTo={day_after}"
                 )
-                resp = requests.get(url, headers={"X-Api-Key": api_key}, timeout=15)
+                resp = requests.get(url, params={"apiKey": api_key}, timeout=15)
                 if resp.status_code != 200:
                     continue
                 events = resp.json()
