@@ -8,6 +8,23 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- `api_server.py`: `GET /api/predict-card` accetta `log=true` — ogni
+  predizione della card viene registrata nel Track Record certificato con
+  dedup su (player1, player2, surface, prob1, odds1, odds2): rigenerare la
+  stessa card non crea duplicati, mentre variazioni di prezzo/probabilità
+  producono nuove entry. Risposta con campo `n_logged`.
+- `frontend/src/components/auto-daily-card.tsx`: componente condiviso
+  "Automatic Daily Card" (ATP/WTA, tabella completa con value-bet e badge
+  "logged to Track"); usato sia in Live Market sia nella nuova sezione
+  "Automatic mode" di Predict Match.
+- `frontend/src/components/overview-panels.tsx`: Dashboard Overview rivista
+  — rimossi i plot duplicati (erano gli stessi di Model Analytics e
+  Evaluation Reports) e la tabella Match History duplicata; ora mostra le
+  metriche di sintesi, lo stato del sistema (backend, modelli, feed quote
+  con richieste rimaste e tornei live) e le ultime predizioni chiuse del
+  Track Record.
+- Predict Match: nomi giocatori ora in input libero con suggerimenti
+  (datalist) invece del menu fisso di ~30 nomi.
 - `api_server.py`: nuovo endpoint `GET /api/predict-card?tour=atp|wta&min_edge=0.05`
   — genera automaticamente la predizione del modello per OGNI match del giorno
   (tutti i tornei ATP/WTA dal feed TheOddsAPI cached, zero quota extra):

@@ -956,14 +956,68 @@ def _infer_surface(tournament: str) -> str:
     return "Hard"
 
 
+def _log_card_predictions(tour: str, model_name: str, predictions: list[dict]) -> int:
+    """Append card predictions to the Track Record, skipping duplicates.
+
+    A prediction already present with the same player pair, surface,
+    probability and odds is not re-logged, so regenerating the same card is
+    idempotent while price/probability moves still produce new entries.
+    """
+    from pipeline.track import log_prediction, read_log
+
+    existing = {
+        (
+            str(r.get("player1")), str(r.get("player2")),
+            str(r.get("surface")), r.get("prob1"),
+            r.get("odds1"), r.get("odds2"),
+        )
+        for r in read_log(tour)
+    }
+    n_logged = 0
+    for p in predictions:
+        if p.get("error") or p.get("prob1") is None:
+            continue
+        key = (
+            p["player1"], p["player2"], p["surface"],
+            round(float(p["prob1"]), 4), p.get("odds1"), p.get("odds2"),
+        )
+        if key in existing:
+            continue
+        try:
+            log_prediction(
+                tour=tour,
+                model=model_name,
+                player1=p["player1"],
+                player2=p["player2"],
+                surface=p["surface"],
+                best_of=3,
+                prob1=float(p["prob1"]),
+                predicted_winner=p["winner"],
+                reliability=p.get("reliability"),
+                odds1=p.get("odds1"),
+                odds2=p.get("odds2"),
+            )
+            existing.add(key)
+            n_logged += 1
+        except Exception as exc:
+            print(f"[track] card log skipped: {exc}")
+    return n_logged
+
+
 @app.get("/api/predict-card")
-def get_predict_card(tour: str = "atp", min_edge: float = 0.05, limit: int = 100) -> dict:
+def get_predict_card(
+    tour: str = "atp", min_edge: float = 0.05, limit: int = 100, log: bool = False
+) -> dict:
     """Automatically predict EVERY match of the day for a tour (ATP or WTA).
 
     Uses the cached live feed (TheOddsAPI) so no extra API quota is spent,
     then runs live tracker-state inference per match with the market odds
     already available. Returns model probability, edge vs market implied
     probability, reliability and a value-bet flag per match.
+
+    ``log=True`` also appends every prediction to the certified Track Record
+    (deduplicated on player1/player2/surface/prob/odds, so regenerating the
+    same card does not create duplicates).
     """
     if tour not in ("atp", "wta"):
         raise HTTPException(status_code=400, detail="Invalid tour")
@@ -1050,10 +1104,14 @@ def get_predict_card(tour: str = "atp", min_edge: float = 0.05, limit: int = 100
                 "value_bet": value_bet,
             })
         n_value = sum(1 for p in predictions if p.get("value_bet"))
+        n_logged = 0
+        if log:
+            n_logged = _log_card_predictions(tour, model_name, predictions)
         return {
             "tour": tour,
             "count": len(predictions),
             "n_value_bets": n_value,
+            "n_logged": n_logged,
             "model_used": model_name,
             "min_edge": min_edge,
             "predictions": predictions,

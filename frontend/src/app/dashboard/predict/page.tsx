@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { AutoDailyCard } from "@/components/auto-daily-card"
 
 const TOP_PLAYERS = [
   "Jannik Sinner", "Carlos Alcaraz", "Novak Djokovic", "Daniil Medvedev",
@@ -103,18 +105,29 @@ export default function PredictPage() {
             <div className="flex items-center gap-4">
               <div className="grid flex-1 gap-2">
                 <label className="text-sm font-medium">Player 1 Name</label>
-                <select value={player1} onChange={e => setPlayer1(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                  {TOP_PLAYERS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <Input
+                  value={player1}
+                  onChange={(e) => setPlayer1(e.target.value)}
+                  placeholder="Type any player name"
+                  list="players-list"
+                />
               </div>
               <div className="font-bold text-muted-foreground pt-6">VS</div>
               <div className="grid flex-1 gap-2">
                 <label className="text-sm font-medium">Player 2 Name</label>
-                <select value={player2} onChange={e => setPlayer2(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                  {TOP_PLAYERS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <Input
+                  value={player2}
+                  onChange={(e) => setPlayer2(e.target.value)}
+                  placeholder="Type any player name"
+                  list="players-list"
+                />
               </div>
             </div>
+            <datalist id="players-list">
+              {TOP_PLAYERS.map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Surface</label>
@@ -195,6 +208,17 @@ export default function PredictPage() {
             </CardFooter>
           )}
         </Card>
+
+        <div className="pt-2">
+          <h3 className="text-xl font-bold tracking-tight mb-3">Automatic mode</h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Invece di inserire i nomi a mano, genera la card della giornata: il modello
+            predice automaticamente ogni partita in arrivo di qualsiasi torneo ATP/WTA
+            (ELO, forma, fatica, H2H, superficie e quote di mercato), le registra nel
+            Track Record e segnala le value bet.
+          </p>
+          <AutoDailyCard />
+        </div>
       </div>
     </div>
   )
