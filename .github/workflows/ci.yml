@@ -26,13 +26,16 @@ jobs:
       - name: Lint with ruff
         run: ruff check . --select E,F,W --ignore E501,E402
       - name: Type check with mypy
-        run: mypy --config-file mypy.ini .
+        # Run from backend/src so module names stay `features.x` / `pipeline.x`
+        # and the per-module sections in mypy.ini keep matching.
+        run: mypy --config-file ../../mypy.ini .
+        working-directory: backend/src
       - name: Secret scan
         run: python scripts/security/check_no_secrets.py
       - name: Unit tests
-        run: pytest tests/ -q
+        run: pytest backend/tests -q
       - name: Smoke test (imports)
-        run: python smoke_test.py
+        run: python backend/src/smoke_test.py
 
   web-build:
     runs-on: ubuntu-latest
@@ -42,12 +45,12 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: web/package-lock.json
-      - working-directory: web
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
         run: npm ci
-      - working-directory: web
+      - working-directory: frontend
         run: npx eslint src
-      - working-directory: web
+      - working-directory: frontend
         run: npx tsc --noEmit
-      - working-directory: web
+      - working-directory: frontend
         run: npm run build

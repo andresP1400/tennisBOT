@@ -94,6 +94,25 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   `docs/SECURITY.md` e `PROJECT_STATUS_REPORT.md` aggiornati di pari passo.
 
 ### Changed
+- Ristrutturazione repository secondo AGENT.md (nessuna funzionalità rimossa,
+  git mv per preservare la history):
+  - `backend/src/` raccoglie tutto il codice Python (api_server.py, main.py,
+    config.py, features/, pipeline/, data/, utils/, smoke test); import e
+    nomi dei package invariati.
+  - `backend/tests/` la suite pytest (prima in `tests/`).
+  - `frontend/` (prima `web/`) la dashboard Next.js.
+  - `data/`, `models/saved/`, `reports/`, `.env`/`local.env` restano alla
+    root: `config.py` ora ancora `_PROJECT_ROOT` tre livelli sopra, e
+    `api_server.py` distingue `SRC_DIR` (cwd del subprocess train) da
+    `BASE_DIR` (root per .env e dataset).
+  - `docs/architecture.md` aggiunto (layout + regole di ancoraggio dei path);
+    `data/DATA_SOURCES.md` spostato in `docs/`; `update_csv_count.py` in
+    `scripts/`.
+  - CI aggiornato: `pytest backend/tests`, mypy con `working-directory:
+    backend/src`, smoke `python backend/src/smoke_test.py`, job web-build su
+    `frontend/`; Weekly Refresh usa `python backend/src/main.py`.
+  - Entry point utente: `python backend/src/main.py <cmd>`,
+    `python backend/src/api_server.py`, `python start_all.py` invariato.
 - Riaddestrato ATP e WTA con le odds come features (dataset rigenerati
   con le mappature legacy fixate; coverage opening 55%, closing 69%):
   - ATP (`atp_model_odds.pkl`): AUC 0.744, Accuracy 67.85%, Brier 0.205,

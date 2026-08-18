@@ -47,17 +47,23 @@ logger = get_logger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import config
+
 _BASE_URL = "https://api.the-odds-api.com/v4"
 _EXCHANGE_BOOKMAKERS = ["betfair_ex_eu", "matchbook", "pinnacle"]
-_ARCHIVE_DIR = os.path.join("data", "raw", "betfair_exchange")
+# Anchored to the repo-root data dir (config.RAW_DIR), not CWD-relative.
+_ARCHIVE_DIR = os.path.join(str(config.RAW_DIR), "betfair_exchange")
 _MAX_EVENTS_PER_DAY = 2000
 
 
 def _api_key() -> str:
     from dotenv import load_dotenv
-    _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    load_dotenv(os.path.join(_ROOT, ".env"))
-    load_dotenv(os.path.join(_ROOT, "local.env"), override=True)
+    # backend/src/features/ -> two levels up is backend/src; .env files
+    # live at the repository root (one more level up).
+    _SRC_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _PROJECT_ROOT = os.path.dirname(_SRC_ROOT)
+    load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+    load_dotenv(os.path.join(_PROJECT_ROOT, "local.env"), override=True)
     return os.environ.get("ODDS_API_KEY", "").strip()
 
 

@@ -136,7 +136,7 @@ def _fetch(url: str, tries: int = 4, timeout: int = 20, referer: str | None = No
 def fetch_tennis_events(
     home_url: str | None = None,
     statuses: set[int] | None = None,
-) -> tuple[list[dict], str]:
+) -> tuple[list[dict], str | None]:
     """Fetch the tennis home page and return (initialRows events, page xHash).
 
     ``statuses`` filters the returned events (1=scheduled, 3=finished).
@@ -335,6 +335,11 @@ def scrape_tennis(
     events, xhash = fetch_tennis_events(statuses=statuses)
     if not events:
         logger.warning("  [WARN] No events found on tennis home page")
+        return ""
+    if not xhash:
+        # The per-event feed URL embeds the page xHash; without it every
+        # match-event request would 404.
+        logger.warning("  [WARN] No xHash on tennis home page; cannot fetch events")
         return ""
     if tour_filter:
         tl = tour_filter.lower()

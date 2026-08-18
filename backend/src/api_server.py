@@ -26,7 +26,10 @@ from pydantic import BaseModel, Field
 
 from config import MODELS_DIR, REPORTS_DIR
 
-BASE_DIR = Path(__file__).resolve().parent
+# backend/src/api_server.py: sources live in backend/src, project data and
+# .env files stay at the repository root (three levels up).
+SRC_DIR = Path(__file__).resolve().parent
+BASE_DIR = SRC_DIR.parent.parent
 # .env first, then local.env (personal secrets override)
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(BASE_DIR / "local.env", override=True)
@@ -207,7 +210,7 @@ def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            cwd=str(BASE_DIR),
+            cwd=str(SRC_DIR),
         )
 
         for line in iter(process.stdout.readline, ""):
@@ -590,7 +593,7 @@ def predict_match(req: PredictRequest) -> dict:
         # Fallback: full parquet (both _A and _B), surface-aware + symmetrized
         dataset = _load_dataset(tour)
         if dataset is None:
-            return {"error": "Dataset features non trovato. Esegui `python main.py features`."}
+            return {"error": "Dataset features non trovato. Esegui `python backend/src/main.py features`."}
 
         feature_cols = bundle["feature_cols"]
         p1_stats = _get_player_latest_stats(req.player1, dataset)
@@ -985,7 +988,7 @@ def get_predict_card(tour: str = "atp", min_edge: float = 0.05, limit: int = 100
         state = _load_state(tour)
         if state is None:
             return {"tour": tour, "count": 0, "predictions": [],
-                    "message": "Inference state non trovato. Esegui `python main.py features`."}
+                    "message": "Inference state non trovato. Esegui `python backend/src/main.py features`."}
 
         predictions: list = []
         for m in matches[:max(1, int(limit))]:

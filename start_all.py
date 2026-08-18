@@ -10,14 +10,15 @@ def start_servers() -> None:
     print(" Avvio del TennisBot Ecosystem...")
     print("====================================")
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    web_dir = os.path.join(base_dir, "web")
+    src_dir = os.path.join(base_dir, "backend", "src")
+    web_dir = os.path.join(base_dir, "frontend")
     api_port = os.environ.get("TENNISBOT_API_PORT", "9090")
     print(f"=> Avviando API Server (FastAPI) su porta {api_port}...")
     api_env = os.environ.copy()
     api_env["TENNISBOT_API_PORT"] = api_port
     api_process = subprocess.Popen(
         [sys.executable, "api_server.py"],
-        cwd=base_dir,
+        cwd=src_dir,
         stdout=sys.stdout,
         stderr=sys.stderr,
         env=api_env,

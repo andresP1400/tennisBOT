@@ -98,7 +98,7 @@
    └────────────┬─────────┘ └─────────┬──────────┘ └────────┬───────────┘
                 │                     │                     │
 ┌───────────────▼─────────────────────▼─────────────────────▼────────────┐
-│                        TRAINING PIPELINE (main.py)                     │
+│                 TRAINING PIPELINE (backend/src/main.py)                │
 │  download ─► features ─► split(walk-forward) ─► layer1 (LGBM/XGB/LR)  │
 │  ─► layer2 meta ─► calibration ─► evaluation ─► reports + .pkl         │
 └─────────────────────────────────────┬──────────────────────────────────┘
@@ -115,57 +115,66 @@
 
 ```
 tennisBOT-main/
-├── api_server.py              # FastAPI backend (port 9090)
-├── main.py                    # CLI: download | features | train | predict | all
-├── config.py                  # Paths, hyperparameters, split boundaries
-├── exceptions.py              # Domain exceptions
-├── logging_config.py          # Structured JSON logging
-├── smoke_test.py              # Import sanity checks
 ├── start_all.py               # One-shot launcher for API + web
 ├── requirements.txt           # Runtime dependencies
 ├── requirements-dev.txt       # Lint/test dependencies
+├── mypy.ini                   # per-module typing relaxations
 ├── .env.example               # Env template (copy → local.env; never commit keys)
 │
+├── backend/
+│   ├── src/                   # import root — run entry points from here
+│   │   ├── api_server.py      # FastAPI backend (port 9090)
+│   │   ├── main.py            # CLI: download | features | train | predict | all
+│   │   ├── config.py          # Paths (anchored to repo root), hyperparameters, split boundaries
+│   │   ├── exceptions.py      # Domain exceptions
+│   │   ├── logging_config.py  # Structured JSON logging
+│   │   ├── smoke_test.py      # Import sanity checks
+│   │   │
+│   │   ├── data/
+│   │   │   └── download.py    # Jeff-Sackmann-style match data download
+│   │   │
+│   │   ├── features/
+│   │   │   ├── elo.py                 # Global + surface ELO with K-factor, decay
+│   │   │   ├── rolling_stats.py       # 10/20/30-match rolling aggregates
+│   │   │   ├── h2h.py                 # Head-to-head features
+│   │   │   ├── fatigue.py             # Recent workload/fatigue signals
+│   │   │   ├── weather.py             # Altitude & weather context
+│   │   │   ├── odds.py               # Tennis-data odds: legacy columns, Pinnacle/BFEX/B365, synthetic avg, opening/closing merge
+│   │   │   ├── odds_aggregator.py    # Multi-source odds (SofaScoreAdapter, TheOddsApiAdapter, ...)
+│   │   │   ├── oddsportal_scraper.py # OddsPortal scraper (decryption-based, 13 bookmakers mapped, providers.json)
+│   │   │   ├── betfair_historical.py # Exchange CLV: TheOddsAPI betfair_ex_eu + matchbook + pinnacle, JSONL snapshots, closing_odds
+│   │   │   ├── betfair_volume.py     # graphs.betfair.com loadRunnerChart polling (volume/steam) + betfair.it event resolver
+│   │   │   ├── live_odds.py          # Cached todays-matches (stale-while-revalidate)
+│   │   │   ├── player_news.py        # LLM injury/form/coach research
+│   │   │   └── ...                   # builder, cleaning, context, player
+│   │   │
+│   │   ├── pipeline/
+│   │   │   ├── training.py            # Stacking training, Optuna, OOF
+│   │   │   ├── evaluation.py          # ROC/AUC/Brier/LogLoss + 5 charts
+│   │   │   ├── calibration.py         # Platt calibration
+│   │   │   ├── split.py               # Fixed temporal + adaptive walk-forward
+│   │   │   ├── track.py               # Certified track record: odds1/odds2, avg_odds_edge in summary
+│   │   │   ├── inference.py           # Live tracker-state inference
+│   │   │   └── betting_eval.py        # ROI/CLV betting backtest
+│   │   │
+│   │   └── utils/             # shared constants/helpers
+│   │
+│   └── tests/                 # pytest suite (46 tests)
+│
 ├── data/
-│   ├── download.py            # Jeff-Sackmann-style match data download
 │   └── raw/ · processed/      # (gitignored) CSV → parquet
-│
-├── features/
-│   ├── elo.py                 # Global + surface ELO with K-factor, decay
-│   ├── rolling_stats.py       # 10/20/30-match rolling aggregates
-│   ├── h2h.py                 # Head-to-head features
-│   ├── fatigue.py             # Recent workload/fatigue signals
-│   ├── weather.py             # Altitude & weather context
-│   ├── odds.py               # Tennis-data odds: legacy columns, Pinnacle/BFEX/B365, synthetic avg, opening/closing merge
-│   ├── odds_aggregator.py    # Multi-source odds (SofaScoreAdapter, TheOddsApiAdapter, ...)
-│   ├── oddsportal_scraper.py # OddsPortal scraper (decryption-based, 13 bookmakers mapped, providers.json)
-│   ├── betfair_historical.py # Exchange CLV: TheOddsAPI betfair_ex_eu + matchbook + pinnacle, JSONL snapshots, closing_odds
-│   ├── betfair_volume.py     # graphs.betfair.com loadRunnerChart polling (volume/steam) + betfair.it event resolver
-│   ├── live_odds.py          # Cached todays-matches (stale-while-revalidate)
-│   ├── player_news.py        # LLM injury/form/coach research
-│   └── ...                   # builder, cleaning, context, player, odds
-│
-├── pipeline/
-│   ├── training.py            # Stacking training, Optuna, OOF
-│   ├── evaluation.py          # ROC/AUC/Brier/LogLoss + 5 charts
-│   ├── calibration.py         # Platt calibration
-│   ├── split.py               # Fixed temporal + adaptive walk-forward
-│   ├── track.py               # Certified track record: odds1/odds2, avg_odds_edge in summary
-│   └── betting_eval.py        # ROI/CLV betting backtest
-│
 ├── models/saved/              # (gitignored) *.pkl trained artifacts
 ├── reports/                   # (gitignored) metrics, charts per tour
 ├── scripts/                   # helpers (incl. security/check_no_secrets.py)
-├── tests/                     # pytest suite (44 tests)
-├── utils/                     # shared constants/helpers
 ├── docs/
+│   ├── architecture.md        # layout + path anchoring rules (AGENT.md)
 │   └── assets/                # README preview charts
 │
 ├── .github/workflows/
 │   ├── ci.yml                 # Lint, type check, secret scan, tests, build
 │   └── weekly_refresh.yml     # AUTOMATIC MODEL RETRAINING (weekly + manual)
 │
-└── web/                       # Next.js 16 frontend
+└── frontend/                  # Next.js 16 dashboard
     ├── next.config.ts         # /api/* proxy → backend :9090
     └── src/app/dashboard/     # overview, predict, analytics, training, markets, news
 ```
@@ -269,21 +278,21 @@ python -m venv .venv
 # source .venv/bin/activate      # Unix
 pip install -r requirements.txt
 cp .env.example local.env        # edit with your keys (never commit!)
-python main.py download --tour atp
-python main.py features --tour atp
-python main.py train --tour atp --optuna-trials 20
+python backend/src/main.py download --tour atp
+python backend/src/main.py features --tour atp
+python backend/src/main.py train --tour atp --optuna-trials 20
 ```
 
 ### 3. API server
 ```bash
-python api_server.py
+python backend/src/api_server.py
 # → http://localhost:9090   (health at /api/health)
 ```
 > The API listens on **9090** — outside Windows reserved/Hyper-V port ranges that previously blocked binds on 8010.
 
 ### 4. Web dashboard
 ```bash
-cd web
+cd frontend
 npm install
 npm run dev          # dev mode
 # or
@@ -303,11 +312,11 @@ python start_all.py   # boots both API and web
 ```bash
 pip install -r requirements-dev.txt
 ruff check . --select E,F,W --ignore E501,E402
-mypy --ignore-missing-imports .
+cd backend/src && mypy --config-file ../../mypy.ini .
 python scripts/security/check_no_secrets.py   # CI-required secret scan
-pytest tests/ -q                               # 44 tests
-python smoke_test.py                           # import sanity
-cd web && npx eslint src && npx tsc --noEmit && npm run build
+pytest backend/tests -q                        # 46 tests
+python backend/src/smoke_test.py               # import sanity
+cd frontend && npx eslint src && npx tsc --noEmit && npm run build
 ```
 
 All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
@@ -377,7 +386,7 @@ No GPU needed — stacking on LightGBM/XGBoost trains on CPU within the 6h runne
 > market** on log-loss (0.5825 vs 0.5834) and both tours show **positive CLV**
 > (+1.5% avg, ~93% beat rate) with strong ROI in the >10% edge segment. ATP
 > opening-line benchmark still slightly ahead (0.5929 vs 0.5977); the exchange
-> CLV snapshot pipeline (`features/betfair_historical.py`) keeps accumulating
+> CLV snapshot pipeline (`backend/src/features/betfair_historical.py`) keeps accumulating
 > the pre-match data needed to close that gap.
 
 ---

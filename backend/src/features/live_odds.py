@@ -33,11 +33,14 @@ from dotenv import load_dotenv
 
 from logging_config import get_logger
 logger = get_logger(__name__)
+# backend/src/features/ -> two levels up is backend/src (import root);
+# .env files live at the repository root (one more level up).
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
+_PROJECT_ROOT = os.path.dirname(_ROOT)
 # .env first, then local.env (personal secrets override)
-load_dotenv(os.path.join(_ROOT, ".env"))
-load_dotenv(os.path.join(_ROOT, "local.env"), override=True)
+load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+load_dotenv(os.path.join(_PROJECT_ROOT, "local.env"), override=True)
 
 CACHE_TTL_SECONDS = 300  # 5 minutes
 

@@ -4,7 +4,8 @@ All paths, constants, and hyperparameters are defined here.
 """
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent
+# backend/src/config.py -> repo root is three levels up.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Paths (Path objects so they compose with / and support .resolve())
 PROCESSED_DIR: Path = _PROJECT_ROOT / "data" / "processed"

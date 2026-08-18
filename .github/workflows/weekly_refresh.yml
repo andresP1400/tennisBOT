@@ -4,7 +4,7 @@ name: Weekly Refresh
 # retrain pure + odds models for ATP+WTA, settle track predictions.
 #
 # Manual run: Actions → Weekly Refresh → Run workflow
-# Local equivalent: python main.py refresh --tour both --optuna-trials 20
+# Local equivalent: python backend/src/main.py refresh --tour both --optuna-trials 20
 #
 # ATP and WTA run as parallel jobs (matrix), so total wall time ≈ the
 # slowest tour instead of the sum of both (~halves runtime).
@@ -68,9 +68,9 @@ jobs:
           SETTLE_ONLY="${{ github.event.inputs.settle_only || 'false' }}"
           echo "Refreshing tour: ${{ matrix.tour }} (trials=$TRIALS settle_only=$SETTLE_ONLY)"
           if [ "$SETTLE_ONLY" = "true" ]; then
-            python main.py refresh --tour "${{ matrix.tour }}" --settle-only
+            python backend/src/main.py refresh --tour "${{ matrix.tour }}" --settle-only
           else
-            python main.py refresh --tour "${{ matrix.tour }}" --optuna-trials "$TRIALS"
+            python backend/src/main.py refresh --tour "${{ matrix.tour }}" --optuna-trials "$TRIALS"
           fi
 
       - name: Upload models & reports
