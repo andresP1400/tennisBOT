@@ -34,6 +34,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
@@ -94,11 +95,17 @@ class MatchOdds:
     odds_p1: float
     odds_p2: float
     bookmaker: str = ""
+    tour: str = ""
 
 
 def _normalize_player(name: str) -> str:
-    """Lowercase, strip, collapse spaces."""
-    return " ".join(name.lower().strip().split())
+    """Lowercase, strip, collapse spaces, drop diacritics."""
+    if not isinstance(name, str):
+        return ""
+    s = " ".join(name.lower().strip().split())
+    return "".join(
+        c for c in unicodedata.normalize("NFD", s) if not unicodedata.combining(c)
+    )
 
 
 def _player_matches(query: str, candidates: list[str]) -> bool:
@@ -412,6 +419,7 @@ class TheOddsApiAdapter:
                                 odds_p1=best_p1,
                                 odds_p2=best_p2,
                                 bookmaker="theoddsapi_best",
+                                tour="atp" if "tennis_atp_" in sport else "wta",
                             )
                         )
                 cache.set(self.NAME, url, page)
@@ -714,8 +722,15 @@ class OddsAggregator:
 
         out: list[dict] = []
         for (p1n, p2n), items in groups.items():
-            if tour and tour.lower() not in items[0].tournament.lower():
-                continue
+            if tour:
+                item_tours = {it.tour for it in items if it.tour}
+                item_names = " ".join(it.tournament for it in items).lower()
+                match_by_field = (
+                    item_tours == {tour}
+                    or (not item_tours and tour in item_names)
+                )
+                if not match_by_field:
+                    continue
             sources: dict[str, dict[str, float]] = {}
             best_p1 = 0.0
             best_p2 = 0.0

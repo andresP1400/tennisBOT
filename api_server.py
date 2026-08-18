@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -311,11 +312,21 @@ def _load_state(tour: str = "atp"):
     return _inference_states[tour]
 
 
+def _fold_player_name(name: str) -> str:
+    """Lowercase and strip diacritics for accent-insensitive matching."""
+    if not isinstance(name, str):
+        return ""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", name) if not unicodedata.combining(c)
+    ).strip().lower()
+
+
 def _get_player_latest_stats(
     player_name: str, df: pd.DataFrame, surface: str | None = None
 ) -> pd.Series | None:
     """Last chronological row where the player appears as p1 (win OR loss)."""
-    mask = df["p1_name"].str.lower() == player_name.lower()
+    key = _fold_player_name(player_name)
+    mask = df["p1_name"].map(_fold_player_name) == key
     if surface and "surface" in df.columns:
         mask &= df["surface"] == surface
     p_df = df[mask]
@@ -329,8 +340,8 @@ def _get_h2h_stats(
     player1: str, player2: str, df: pd.DataFrame, surface: str | None = None
 ) -> dict:
     mask = (
-        (df["p1_name"].str.lower() == player1.lower())
-        & (df["p2_name"].str.lower() == player2.lower())
+        (df["p1_name"].map(_fold_player_name) == _fold_player_name(player1))
+        & (df["p2_name"].map(_fold_player_name) == _fold_player_name(player2))
     )
     h_df = df[mask]
     result = {"h2h_win_pct": np.nan, "h2h_win_pct_surface": np.nan, "h2h_total_matches": 0}
@@ -918,6 +929,136 @@ def get_chart(name: str, tour: str = "atp") -> Response:
         media_type="image/png",
         headers={"Cache-Control": "public, max-age=60"},
     )
+
+
+_SURFACE_HINTS = [
+    ("wimbledon", "Grass"), ("queen", "Grass"), ("halle", "Grass"),
+    ("eastbourne", "Grass"), ("newport", "Grass"), ("stuttgart", "Grass"),
+    ("roland garros", "Clay"), ("french open", "Clay"), ("monte carlo", "Clay"),
+    ("madrid", "Clay"), ("rome", "Clay"), ("hamburg", "Clay"),
+    ("bastad", "Clay"), ("gstaad", "Clay"), ("umag", "Clay"),
+    ("kitzbuhel", "Clay"), ("cordoba", "Clay"), ("buenos aires", "Clay"),
+    ("rio", "Clay"), ("santiago", "Clay"), ("marrakech", "Clay"),
+    ("geneva", "Clay"), ("lyon", "Clay"), ("munich", "Clay"),
+    ("estoril", "Clay"), ("bucharest", "Clay"), ("boerg", "Clay"),
+]
+
+
+def _infer_surface(tournament: str) -> str:
+    """Best-effort surface from the tournament name (default Hard)."""
+    t = (tournament or "").lower()
+    for keyword, surface in _SURFACE_HINTS:
+        if keyword in t:
+            return surface
+    return "Hard"
+
+
+@app.get("/api/predict-card")
+def get_predict_card(tour: str = "atp", min_edge: float = 0.05, limit: int = 100) -> dict:
+    """Automatically predict EVERY match of the day for a tour (ATP or WTA).
+
+    Uses the cached live feed (TheOddsAPI) so no extra API quota is spent,
+    then runs live tracker-state inference per match with the market odds
+    already available. Returns model probability, edge vs market implied
+    probability, reliability and a value-bet flag per match.
+    """
+    if tour not in ("atp", "wta"):
+        raise HTTPException(status_code=400, detail="Invalid tour")
+    try:
+        from features.live_odds import LiveOddsScraper
+        matches = LiveOddsScraper().get_todays_matches_cached(tour)
+        if not matches:
+            return {
+                "tour": tour, "count": 0, "model_used": None,
+                "predictions": [],
+                "message": "Nessun match live trovato per oggi (feed TheOddsAPI vuoto).",
+            }
+        model_name = f"{tour}_model_odds.pkl"
+        model_path = _resolve_model_path(model_name)
+        if not model_path.exists():
+            model_name = f"{tour}_model.pkl"
+            model_path = _resolve_model_path(model_name)
+        if not model_path.exists():
+            return {"tour": tour, "count": 0, "predictions": [],
+                    "message": f"Nessun modello trovato per {tour}."}
+        bundle = joblib.load(model_path)
+        state = _load_state(tour)
+        if state is None:
+            return {"tour": tour, "count": 0, "predictions": [],
+                    "message": "Inference state non trovato. Esegui `python main.py features`."}
+
+        predictions: list = []
+        for m in matches[:max(1, int(limit))]:
+            p1 = str(m.get("player1", "")).strip()
+            p2 = str(m.get("player2", "")).strip()
+            if not p1 or not p2:
+                continue
+            surface = _infer_surface(m.get("tournament", ""))
+            best = m.get("best_odds", {}) or {}
+            o1 = best.get("player1")
+            o2 = best.get("player2")
+            o1 = float(o1) if o1 and o1 > 1 else None
+            o2 = float(o2) if o2 and o2 > 1 else None
+            req = PredictRequest(
+                player1=p1, player2=p2, surface=surface,
+                model=model_name, best_of=3, odds1=o1, odds2=o2,
+            )
+            try:
+                res = _predict_with_state(bundle, state, req)
+            except Exception as e:
+                res = {"error": str(e)}
+            if "error" in res:
+                predictions.append({
+                    "match": f"{p1} vs {p2}", "tournament": m.get("tournament", ""),
+                    "surface": surface, "commence_time": m.get("commence_time", ""),
+                    "error": res["error"],
+                })
+                continue
+            prob1 = float(res["prob1"])
+            prob2 = float(res["prob2"])
+            edge1 = None
+            edge2 = None
+            value_bet = None
+            if o1 and o2 and o1 > 1 and o2 > 1:
+                raw1, raw2 = 1.0 / o1, 1.0 / o2
+                imp1 = raw1 / (raw1 + raw2)
+                imp2 = raw2 / (raw1 + raw2)
+                edge1 = prob1 - imp1
+                edge2 = prob2 - imp2
+                if edge1 >= min_edge:
+                    value_bet = {"player": p1, "odds": o1, "edge": round(edge1, 4)}
+                elif edge2 >= min_edge:
+                    value_bet = {"player": p2, "odds": o2, "edge": round(edge2, 4)}
+            predictions.append({
+                "match": f"{p1} vs {p2}",
+                "player1": p1,
+                "player2": p2,
+                "tournament": m.get("tournament", ""),
+                "surface": surface,
+                "commence_time": m.get("commence_time", ""),
+                "prob1": prob1,
+                "prob2": prob2,
+                "winner": res.get("winner"),
+                "reliability": res.get("reliability", "bassa"),
+                "odds1": o1,
+                "odds2": o2,
+                "edge1": round(edge1, 4) if edge1 is not None else None,
+                "edge2": round(edge2, 4) if edge2 is not None else None,
+                "value_bet": value_bet,
+            })
+        n_value = sum(1 for p in predictions if p.get("value_bet"))
+        return {
+            "tour": tour,
+            "count": len(predictions),
+            "n_value_bets": n_value,
+            "model_used": model_name,
+            "min_edge": min_edge,
+            "predictions": predictions,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"tour": tour, "count": 0, "predictions": [], "message": str(e)}
 
 
 @app.get("/api/odds-api-status")

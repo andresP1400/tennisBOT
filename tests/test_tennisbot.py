@@ -348,6 +348,86 @@ def test_theoddsapi_uses_api_key_query_param() -> None:
         assert "X-Api-Key" not in src, f"{fn_name} still uses rejected X-Api-Key header"
 
 
+def test_aggregator_tour_filter_uses_explicit_tour_field() -> None:
+    """Regression: _aggregate filtered by tournament NAME containing 'atp'/'wta'.
+
+    TheOddsAPI tournament names are cleaned ('Cincinnati Open' has no 'atp'),
+    so the old substring filter dropped every match. The MatchOdds dataclass
+    now carries an explicit ``tour`` field set from the sport key.
+    """
+    from features.odds_aggregator import MatchOdds, OddsAggregator
+
+    agg = OddsAggregator.__new__(OddsAggregator)
+    matches = [
+        MatchOdds(
+            source="theoddsapi",
+            player1="Casper Ruud",
+            player2="Christopher O'Connell",
+            tournament="Cincinnati Open",
+            commence_time="2026-08-15T15:00:00Z",
+            is_live=False,
+            odds_p1=1.33,
+            odds_p2=4.0,
+            bookmaker="theoddsapi_best",
+            tour="atp",
+        ),
+        MatchOdds(
+            source="theoddsapi",
+            player1="Barbora Krejcikova",
+            player2="Sara Bejlek",
+            tournament="Cincinnati Open",
+            commence_time="2026-08-15T16:00:00Z",
+            is_live=False,
+            odds_p1=1.62,
+            odds_p2=2.6,
+            bookmaker="theoddsapi_best",
+            tour="wta",
+        ),
+    ]
+    atp = agg._aggregate(matches, "atp")
+    wta = agg._aggregate(matches, "wta")
+    assert len(atp) == 1
+    assert atp[0]["player1"] == "Casper Ruud"
+    assert len(wta) == 1
+    assert wta[0]["player1"] == "Barbora Krejcikova"
+
+
+def test_player_name_matching_is_accent_insensitive() -> None:
+    """Regression: dashboard sends accented names (Kecmanović, Machač).
+
+    The player resolver and the odds matcher must treat accented and
+    unaccented forms as equal, otherwise /api/predict returns a cold-start
+    50/50 and /api/value-bets finds no odds for live matches.
+    """
+    import inspect
+
+    import pipeline.inference as inf
+
+    assert inf.fold_name("Miomir Kecmanovi\u0107") == inf.fold_name("Miomir Kecmanovic") == "miomir kecmanovic"
+    assert inf.fold_name("Toma\u0161 Macha\u010d") == inf.fold_name("Tomas Machac")
+
+    state = {
+        "name_to_id": {
+            "miomir kecmanovic": 101,
+            "tomas machac": 202,
+        }
+    }
+    assert inf.resolve_player_id(state, "Miomir Kecmanovi\u0107") == 101
+    assert inf.resolve_player_id(state, "MIOMIR KECMANOVIC") == 101
+    assert inf.resolve_player_id(state, "Toma\u0161 Macha\u010d") == 202
+    assert inf.resolve_player_id(state, "Unknown Player") is None
+
+    from features import live_odds
+
+    src = inspect.getsource(live_odds._normalize_player_name)
+    assert "NFD" in src
+    assert live_odds._normalize_player_name("Kecmanovi\u0107") == "kecmanovic"
+
+    from features import odds_aggregator
+
+    assert odds_aggregator._normalize_player("Carre\u00f1o Busta") == "carreno busta"
+
+
 def test_calibration_logger_initialized_at_import() -> None:
     """Regression: calibrate_probabilities() must not raise NameError.
 

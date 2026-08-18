@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { API_BASE_URL, ApiError, apiFetch } from "@/lib/api"
 
 interface MatchRow {
   id: string
@@ -30,57 +31,87 @@ interface MatchRow {
   winner: string
 }
 
+interface HistoryResponse {
+  matches: MatchRow[]
+  error?: string
+}
+
 export function DataTable() {
   const [matches, setMatches] = React.useState<MatchRow[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState("")
+  const [limit, setLimit] = React.useState(30)
 
   React.useEffect(() => {
     const controller = new AbortController()
     const load = async () => {
+      setLoading(true)
+      setError("")
       try {
-        const res = await fetch("/api/history?limit=30", {
+        const data = await apiFetch<HistoryResponse>(`/api/history?limit=${limit}`, {
           signal: controller.signal,
         })
-        const data = (await res.json()) as {
-          matches?: MatchRow[]
-          error?: string
-        }
         if (data.error) {
           setError(data.error)
-        } else if (data.matches) {
-          setMatches(data.matches)
+          setMatches([])
+        } else {
+          setMatches(data.matches ?? [])
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
-        console.error(err)
-        setError("Impossibile connettersi a FastAPI. Avvia Python!")
+        setError(err instanceof ApiError ? err.message : "Impossibile connettersi a FastAPI. Avvia Python!")
+        setMatches([])
       } finally {
         setLoading(false)
       }
     }
     void load()
     return () => controller.abort()
-  }, [])
+  }, [limit])
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Test Matches (Engine Live)</CardTitle>
-        <CardDescription>
-          True inferences executed by the live Python backend dynamically from the processed Parquet dataset.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle>Match History (Engine Live)</CardTitle>
+          <CardDescription>
+            True inferences executed by the live Python backend dynamically from the processed
+            Parquet dataset: date, tournament, surface, model probability and actual result.
+            Backed by <span className="font-mono text-xs">GET /api/history</span>.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Rows</label>
+          <select
+            value={limit}
+            onChange={(e) => setLimit(parseInt(e.target.value, 10))}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+          >
+            <option value="10">10</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
       </CardHeader>
       <CardContent>
         {error && <div className="text-red-500 font-bold mb-4">{error}</div>}
         {loading && <div className="text-muted-foreground mb-4">Caricamento in corso dal modello Python...</div>}
 
-        {!loading && !error && (
+        {!loading && !error && matches.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No history available. Train a model with{" "}
+            <span className="font-mono">python main.py train</span> first.
+          </p>
+        )}
+
+        {!loading && !error && matches.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Tournament</TableHead>
+                <TableHead>Surface</TableHead>
                 <TableHead>Matchup</TableHead>
                 <TableHead className="text-right">Prediction</TableHead>
                 <TableHead className="text-right">Result</TableHead>
@@ -93,7 +124,7 @@ export function DataTable() {
 
                 return (
                   <TableRow key={match.id}>
-                    <TableCell className="font-medium">{match.date}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{match.date}</TableCell>
                     <TableCell>
                       {match.tournament}
                       <Badge variant="outline" className="ml-2 text-[10px] uppercase opacity-70">
@@ -108,7 +139,9 @@ export function DataTable() {
                     <TableCell className="text-right whitespace-nowrap">
                       <div className="flex flex-col items-end gap-1">
                         <span className="font-semibold text-sm">{p1Fav ? match.player1 : match.player2}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{(Math.max(match.prob1, match.prob2) * 100).toFixed(1)}% Confidence</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                          {(Math.max(match.prob1, match.prob2) * 100).toFixed(1)}%
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
@@ -125,6 +158,10 @@ export function DataTable() {
             </TableBody>
           </Table>
         )}
+        <p className="text-xs text-muted-foreground mt-3">
+          Backend: <span className="font-mono">{API_BASE_URL}</span> · {matches.length} match
+          mostrati · click su &quot;Match History&quot; per la sezione completa.
+        </p>
       </CardContent>
     </Card>
   )

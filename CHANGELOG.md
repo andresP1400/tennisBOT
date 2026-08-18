@@ -8,6 +8,23 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- `api_server.py`: nuovo endpoint `GET /api/predict-card?tour=atp|wta&min_edge=0.05`
+  — genera automaticamente la predizione del modello per OGNI match del giorno
+  (tutti i tornei ATP/WTA dal feed TheOddsAPI cached, zero quota extra):
+  probabilità, vincitore, reliability, odds di mercato, edge vs probabilità
+  implicita e flag value-bet. Superficie inferita dal nome del torneo
+  (`_infer_surface`, keyword Clay/Grass/Hard, default Hard). Usa il modello
+  `<tour>_model_odds.pkl` (fallback `<tour>_model.pkl`).
+- `web/src/app/dashboard/live/page.tsx`: sezione "Automatic Daily Card" —
+  un click genera le predizioni di tutti i match del giorno per ATP/WTA
+  con tabella completa (orario, match, torneo, superficie, prob modello,
+  odds, edge, reliability, badge value-bet).
+- `web/src/app/dashboard/history/page.tsx` + `web/src/components/data-table.tsx`:
+  sezione unica "Match History" completa (fusa con la vecchia "Raw Data"):
+  date, torneo, superficie, matchup, probabilità modello, esito reale,
+  badge Correct/Miss e selettore righe 10-100. Rimossa pagina
+  `/dashboard/data` e componente `raw-table.tsx` (duplicavano `/api/history`
+  con descrizioni fuorvianti); voce "Raw Data" rimossa dalla sidebar.
 - `features/oddsportal_scraper.py`: scraper OddsPortal end-to-end senza login.
   Decifra i payload `backend.oddsportal.com` (PBKDF2+AES-CBC+gunzip),
   estrae gli eventi tennis dalla home (payload RSC), per ogni match scarica
@@ -40,6 +57,22 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   e le odds (autofill o fornite) sono esposte nel risultato e nel track log.
 
 ### Fixed
+- Matching nomi giocatori ora insensibile agli accenti (NFD): il frontend
+  invia nomi accentati da TheOddsAPI ("Kecmanović", "Machač") mentre il
+  modello/dataset usano forme senza accenti — prima `/api/predict` dava
+  cold-start 50/50 e `/api/value-bets` non trovava quote. Fix in
+  `pipeline/inference.py` (`fold_name` + `resolve_player_id`),
+  `features/live_odds.py` (`_normalize_player_name`),
+  `features/odds_aggregator.py` (`_normalize_player`),
+  `api_server.py` (fallback parquet `_get_player_latest_stats`,
+  `_get_h2h_stats`). Test `test_player_name_matching_is_accent_insensitive`.
+- `features/odds_aggregator.py`: CRITICO — il filtro tour in `_aggregate`
+  cercava "atp"/"wta" nel NOME del torneo ("Cincinnati Open" non lo
+  contiene) e scartava TUTTI i match: `/api/todays-matches` e
+  `/api/predict-card` restituivano lista vuota con la quota API sana.
+  Aggiunto campo `tour` esplicito a `MatchOdds` (impostato da
+  `TheOddsApiAdapter` dal sport_key) e filtro su quello con fallback sul
+  nome. Test `test_aggregator_tour_filter_uses_explicit_tour_field`.
 - `features/odds.py`: rigenerate le mappature colonne legacy dei file
   tennis-data 2001-2014 (CB/CBL, GBW/GBL, IWW/IWL, SBW/SBL, EXW/EXL,
   LBW/LBL, UBW/UBL, SJW/SJL) — prima il 95% dei match 2001-2013 veniva

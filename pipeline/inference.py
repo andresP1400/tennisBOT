@@ -16,6 +16,7 @@ wrong date, no H2H).
 
 import os
 import sys
+import unicodedata
 import numpy as np
 import pandas as pd
 import joblib
@@ -35,9 +36,29 @@ def load_inference_state(tour: str = "atp"):
     return joblib.load(state_path)
 
 
+def fold_name(name: str) -> str:
+    """Lowercase and strip diacritics so 'Kecmanovic' and 'Kecmanović' match."""
+    if not isinstance(name, str):
+        return ""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", name)
+        if not unicodedata.combining(c)
+    ).strip().lower()
+
+
 def resolve_player_id(state: dict, player_name: str):
-    """Map a player name to their Sackmann id (case-insensitive)."""
-    return state["name_to_id"].get(player_name.strip().lower())
+    """Map a player name to their Sackmann id (case- and accent-insensitive)."""
+    player_name = fold_name(player_name)
+    if not player_name:
+        return None
+    name_to_id = state.get("name_to_id", {})
+    direct = name_to_id.get(player_name)
+    if direct is not None:
+        return direct
+    for stored, pid in name_to_id.items():
+        if fold_name(stored) == player_name:
+            return pid
+    return None
 
 
 def player_snapshot(state: dict, player_id, surface: str, now: pd.Timestamp) -> dict:

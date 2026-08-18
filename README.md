@@ -62,7 +62,7 @@
 | **Walk-Forward Validation** | Strict temporal splits (train ≤ 2021, val 2022-2023, test ≥ 2024). Adaptive temporal-quantile fallback for narrow year ranges (e.g. single-year retraining) so training never crashes on empty folds. |
 | **Live Odds Aggregation** | Multi-source: SofaScore (no API key, tier-1 pre-match + live odds), TheOddsAPI (with key — **Betfair Exchange `betfair_ex_eu` back+lay**, Matchbook, Pinnacle e 30+ bookmaker), OddsPortal scraper (decryption-based, 13 bookmaker mappati). Best-odds merge with margin calculation. |
 | **Betfair Exchange CLV & Volume** | `betfair_historical.py`: snapshot JSONL dell'exchange Betfair (via TheOddsAPI) per calcolare la closing line e il CLV di ogni bet. `betfair_volume.py`: polling `graphs.betfair.com/loadRunnerChart` (senza login) per volume/steam per runner. |
-| **Value-Bet Detection** | Compares model probability vs market-implied probability; flags edges above a configurable threshold. |
+| **Value-Bet Detection** | Compares model probability vs market-implied probability; flags edges above a configurable threshold. **Automatic Daily Card** (`/api/predict-card`): one click predicts EVERY match of the day for ATP/WTA with odds, edge and value-bet flags. |
 | **Player News Research** | Autonomous research on injuries, form and coach changes via GPT Researcher + NVIDIA NIM (llama-3.1-8b), with regex fallback and LLM fact extraction. No empty fields. |
 | **API Server** | FastAPI backend with health, predict, todays-matches (cached, stale-while-revalidate), value-bets, player-news, train/status, metrics, charts endpoints. |
 | **Web Dashboard** | Next.js 16 dashboard: overview, prediction, analytics (ROC/calibration/SHAP/Brier charts), training control (Optuna trials, tour, year range), live market & value bets, player news research, live Python log streaming. |
@@ -322,6 +322,7 @@ All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
 | GET | `/api/models` | List trained models |
 | POST | `/api/predict` | `{player1, player2, surface, model, odds1?, odds2?}` → calibrated probability + features (missing odds auto-filled from live market) |
 | GET | `/api/todays-matches?tour=atp` | Today's matches with best odds (cached, stale-while-revalidate) |
+| GET | `/api/predict-card?tour=atp&min_edge=0.05` | **Automatic daily card**: model prediction + odds + edge vs market + value-bet flag for EVERY match of the day (ATP/WTA), surface inferred from tournament name |
 | POST | `/api/value-bets` | Model vs market edge detection |
 | POST | `/api/player-news` | `{player1, player2, surface}` → injury/form/coach features |
 | POST | `/api/train/start` | `{tour, trials, startYear, endYear}` → launches training subprocess |

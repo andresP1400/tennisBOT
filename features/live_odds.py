@@ -25,6 +25,7 @@ import re
 import sys
 import threading
 import time
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -45,13 +46,18 @@ _odds_cache_timestamp: dict = {}
 
 
 def _normalize_player_name(name: str) -> str:
-    """Normalize player name for fuzzy matching across sites."""
+    """Normalize player name for fuzzy matching across sites.
+
+    Lowercase, keep only the last token and strip diacritics so that
+    'Kecmanović' matches 'kecmanovic' from other sources.
+    """
     if not isinstance(name, str):
         return ""
     parts = name.strip().split()
     if not parts:
         return ""
-    return parts[-1].lower()
+    last = parts[-1]
+    return unicodedata.normalize("NFD", last).encode("ascii", "ignore").decode("ascii").lower()
 
 
 def _fuzzy_match_player(query: str, candidates: list) -> str:

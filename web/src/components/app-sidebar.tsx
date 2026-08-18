@@ -10,7 +10,6 @@ import {
   IconTrophy,
   IconBallTennis,
   IconAdjustments,
-  IconTable,
   IconClipboardList,
   IconLivePhoto,
   IconUsers,
@@ -72,11 +71,6 @@ const data = {
           title: "Match History",
           url: "/dashboard/history",
           icon: IconTrophy,
-        },
-        {
-          title: "Raw Data",
-          url: "/dashboard/data",
-          icon: IconTable,
         },
         {
           title: "Feature Dataset",
