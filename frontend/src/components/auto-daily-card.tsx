@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +22,12 @@ interface CardPrediction {
   edge1: number | null
   edge2: number | null
   value_bet: { player: string; odds: number; edge: number } | null
+  weather?: {
+    temperature_c?: number | null
+    humidity_pct?: number | null
+    rain_probability?: number | null
+    wind_speed_kmh?: number | null
+  }
   error?: string
 }
 
@@ -49,12 +55,12 @@ export function AutoDailyCard() {
   const [cardLoading, setCardLoading] = useState(false)
   const [cardError, setCardError] = useState<string | null>(null)
 
-  const runCard = async () => {
+  const runCard = useCallback(async (t: "atp" | "wta") => {
     setCardLoading(true)
     setCardError(null)
     try {
       const data = await apiFetch<CardResponse>(
-        `/api/predict-card?tour=${tour}&min_edge=0.05&log=true`,
+        `/api/predict-card?tour=${t}&min_edge=0.05&log=true`,
       )
       if (data.error) {
         setCardError(data.error)
@@ -68,6 +74,14 @@ export function AutoDailyCard() {
     } finally {
       setCardLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    runCard(tour)
+  }, [tour, runCard])
+
+  const handleTourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTour(e.target.value as "atp" | "wta")
   }
 
   return (
@@ -76,31 +90,38 @@ export function AutoDailyCard() {
         <div>
           <CardTitle>Automatic Daily Card</CardTitle>
           <CardDescription>
-            One click: model prediction for EVERY {tour.toUpperCase()} match of the day
-            (all tournaments in the live feed) with odds, edge vs market and value-bet
-            flags. Predictions are logged to the Track Record automatically.
-            Source: <span className="font-mono">/api/predict-card?tour={tour}</span>.
+            Generated automatically on page open: model prediction for EVERY{" "}
+            {tour.toUpperCase()} match of the day (all tournaments in the live feed) with
+            odds, edge vs market, value-bet flags and weather (open-meteo). Predictions are
+            logged to the Track Record automatically. Source:{" "}
+            <span className="font-mono">/api/predict-card?tour={tour}</span>.
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={tour}
-            onChange={(e) => setTour(e.target.value as "atp" | "wta")}
+            onChange={handleTourChange}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="atp">ATP</option>
             <option value="wta">WTA</option>
           </select>
-          <Button onClick={runCard} disabled={cardLoading}>
-            {cardLoading ? "Generating..." : "Generate card"}
+          <Button onClick={() => runCard(tour)} disabled={cardLoading}>
+            {cardLoading ? "Generating..." : "Refresh"}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {cardError && <p className="text-sm text-red-400 mb-3">{cardError}</p>}
-        {!card && !cardError && (
+        {!card && !cardError && !cardLoading && (
           <p className="text-sm text-muted-foreground">
-            Click &quot;Generate card&quot; to predict all matches of the day automatically.
+            Generating the card for all {tour.toUpperCase()} matches of the day...
+          </p>
+        )}
+        {cardLoading && !card && (
+          <p className="text-sm text-muted-foreground">
+            Generating {tour.toUpperCase()} card... (model inference + odds + weather, a
+            few seconds)
           </p>
         )}
         {card?.message && !card.predictions?.length && (
@@ -136,6 +157,7 @@ export function AutoDailyCard() {
                     <th className="py-2 pr-3 text-right">Odds</th>
                     <th className="py-2 pr-3 text-right">Edge</th>
                     <th className="py-2 pr-3">Reliability</th>
+                    <th className="py-2 pr-3">Weather</th>
                     <th className="py-2">Value bet</th>
                   </tr>
                 </thead>
@@ -201,6 +223,31 @@ export function AutoDailyCard() {
                           <Badge variant="outline" className={reliabilityClass(p.reliability)}>
                             {p.reliability}
                           </Badge>
+                        </td>
+                        <td className="py-2 pr-3 whitespace-nowrap text-xs">
+                          {p.weather ? (
+                            <>
+                              {p.weather.temperature_c != null && (
+                                <span>{Math.round(p.weather.temperature_c)}°C</span>
+                              )}
+                              {p.weather.rain_probability != null &&
+                                p.weather.rain_probability > 0.05 && (
+                                  <span className="text-sky-500">
+                                    {" "}
+                                    · rain {Math.round(p.weather.rain_probability * 100)}%
+                                  </span>
+                                )}
+                              {p.weather.wind_speed_kmh != null &&
+                                p.weather.wind_speed_kmh > 20 && (
+                                  <span className="text-amber-500">
+                                    {" "}
+                                    · wind {Math.round(p.weather.wind_speed_kmh)} km/h
+                                  </span>
+                                )}
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="py-2">
                           {p.value_bet ? (

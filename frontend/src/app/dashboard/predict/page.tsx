@@ -88,7 +88,23 @@ export default function PredictPage() {
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
         <h2 className="text-3xl font-bold tracking-tight">Predict Match</h2>
-        <Card className="max-w-3xl">
+
+        <div>
+          <h3 className="text-xl font-bold tracking-tight mb-1">Automatic daily card</h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Nessuna ricerca manuale: la card viene generata automaticamente all&apos;apertura
+            della pagina e predice ogni partita in arrivo di qualsiasi torneo ATP/WTA,
+            considerando ELO, forma, fatica, H2H, superficie, quote di mercato e meteo.
+            Le predizioni vengono registrate nel Track Record e le value bet vengono segnalate.
+          </p>
+          <AutoDailyCard />
+        </div>
+
+        <details className="mt-2">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+            Manual prediction (custom matchup)
+          </summary>
+          <Card className="mt-4 max-w-3xl">
           <CardHeader>
             <CardTitle>Submit match parameters</CardTitle>
             <CardDescription>Enter the players and surface to get a prediction loading weights from a custom Pickled model.</CardDescription>
@@ -201,24 +217,14 @@ export default function PredictPage() {
             </CardFooter>
           )}
 
-          {result && result.error && (
-            <CardFooter className="flex flex-col items-start bg-red-950/20 p-6 mt-4 border-t text-red-400">
-              <h3 className="font-bold flex items-center gap-2">Prediction Engine Error</h3>
-              <pre className="mt-2 text-xs overflow-x-auto w-full">{result.error}</pre>
-            </CardFooter>
-          )}
-        </Card>
-
-        <div className="pt-2">
-          <h3 className="text-xl font-bold tracking-tight mb-3">Automatic mode</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Invece di inserire i nomi a mano, genera la card della giornata: il modello
-            predice automaticamente ogni partita in arrivo di qualsiasi torneo ATP/WTA
-            (ELO, forma, fatica, H2H, superficie e quote di mercato), le registra nel
-            Track Record e segnala le value bet.
-          </p>
-          <AutoDailyCard />
-        </div>
+            {result && result.error && (
+              <CardFooter className="flex flex-col items-start bg-red-950/20 p-6 mt-4 border-t text-red-400">
+                <h3 className="font-bold flex items-center gap-2">Prediction Engine Error</h3>
+                <pre className="mt-2 text-xs overflow-x-auto w-full">{result.error}</pre>
+              </CardFooter>
+            )}
+          </Card>
+        </details>
       </div>
     </div>
   )

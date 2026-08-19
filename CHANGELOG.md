@@ -8,6 +8,20 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- `api_server.py`: `GET /api/predict-card` arricchisce ogni predizione con il
+  meteo della località del torneo (open-meteo, gratuito, nessuna chiave):
+  temperatura, umidità, probabilità pioggia e velocità del vento, calcolati
+  in parallelo (ThreadPoolExecutor) e silenziosi in caso di errore. Le news
+  giocatore (infortuni/forma/coach) restano volutamente fuori dalla card:
+  il pipeline GPT Researcher costa chiamate LLM ed è lento per 20+ match;
+  resta disponibile nel pannello Player News Research di Live Market.
+- `frontend/src/components/auto-daily-card.tsx`: la card ora si genera
+  automaticamente all'apertura della pagina (useEffect on mount) e al cambio
+  ATP/WTA; nuovo pulsante "Refresh". Aggiunta la colonna Weather (temperatura,
+  badge pioggia se >5%, badge vento se >20 km/h).
+- Predict Match: la sezione "Automatic daily card" è ora la prima cosa della
+  pagina (nessuna ricerca manuale richiesta); il form manuale custom è
+  collassato sotto un <details> "Manual prediction".
 - `api_server.py`: `GET /api/predict-card` accetta `log=true` — ogni
   predizione della card viene registrata nel Track Record certificato con
   dedup su (player1, player2, surface, prob1, odds1, odds2): rigenerare la

@@ -1004,6 +1004,47 @@ def _log_card_predictions(tour: str, model_name: str, predictions: list[dict]) -
     return n_logged
 
 
+def _enrich_card_predictions(predictions: list[dict]) -> None:
+    """Attach weather to every card prediction in place.
+
+    Cheap (open-meteo, free, no key) and silent on failure so the daily card
+    stays usable when weather coords are unknown. Network-bound work runs in
+    a small thread pool so a 20-match card finishes in ~1s.
+
+    Player-news context (injuries, form, coach change) is NOT included here:
+    the GPT Researcher pipeline is multi-second per match and incurs LLM
+    cost. Per-match news is still available via the manual Player News
+    Research panel on the Live Market page.
+    """
+    if not predictions:
+        return
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _weather_for(p: dict) -> dict | None:
+        try:
+            from features.weather import get_live_weather
+            w = get_live_weather(
+                p.get("tournament", ""),
+                (p.get("commence_time") or "")[:10] or None,
+            )
+            if not w:
+                return None
+            return {
+                "temperature_c": w.get("temperature_c"),
+                "humidity_pct": w.get("humidity_pct"),
+                "rain_probability": w.get("rain_probability"),
+                "wind_speed_kmh": w.get("wind_speed_kmh"),
+            }
+        except Exception:
+            return None
+
+    valid = [p for p in predictions if not p.get("error")]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for p, w in zip(valid, pool.map(_weather_for, valid)):
+            if w:
+                p["weather"] = w
+
+
 @app.get("/api/predict-card")
 def get_predict_card(
     tour: str = "atp", min_edge: float = 0.05, limit: int = 100, log: bool = False
@@ -1103,6 +1144,7 @@ def get_predict_card(
                 "edge2": round(edge2, 4) if edge2 is not None else None,
                 "value_bet": value_bet,
             })
+        _enrich_card_predictions(predictions)
         n_value = sum(1 for p in predictions if p.get("value_bet"))
         n_logged = 0
         if log:
