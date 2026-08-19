@@ -1,0 +1,9 @@
+# backend/tests/integration
+
+Integration tests that exercise the full API or multiple modules together.
+
+Currently empty: the existing 51 tests are unit-level. Add new tests here
+when you need to spin up the FastAPI app (TestClient) or run a multi-module
+pipeline end to end.
+
+`gitkeep` keeps the folder in version control even when empty.

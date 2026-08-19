@@ -216,11 +216,11 @@ export default function TrackPage() {
                             <span className="text-muted-foreground">open</span>
                           ) : r.correct ? (
                             <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                              ✓ {r.actual_winner}
+                              W {r.actual_winner}
                             </span>
                           ) : (
                             <span className="text-red-600 dark:text-red-400 font-medium">
-                              ✗ {r.actual_winner}
+                              L {r.actual_winner}
                             </span>
                           )}
                         </td>

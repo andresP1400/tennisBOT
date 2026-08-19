@@ -150,7 +150,7 @@ export function OverviewPanels() {
                         : "border-red-500/40 text-red-500"
                     }
                   >
-                    {r.correct ? "✓" : "✗"} {r.actual_winner}
+                    {r.correct ? "W" : "L"} {r.actual_winner}
                   </Badge>
                 </div>
               ))}
