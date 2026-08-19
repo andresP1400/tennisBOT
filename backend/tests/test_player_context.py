@@ -1,9 +1,6 @@
 """Tests for features.player_context (rank, form, ret, age from local CSVs)."""
 from __future__ import annotations
 
-import csv
-import os
-
 import pytest
 
 from features import player_context
