@@ -8,6 +8,26 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- `backend/src/features/player_context.py`: contesto giocatore 100% locale
+  (zero scraping, zero costi) da CSV Sackmann: ranking e punti (ultima
+  data ranking), età da DOB, forma recente (ultimi 5 W/L), flag RET nei
+  match recenti e superficie dell'ultimo match. Matching nome
+  case/accent-insensitive (fold_name) con preferenza per l'ID duplicato
+  più attivo (Sackmann ha ID doppi, es. Jakub Mensik 11 vs 212 match).
+  Cache lazy per tour; ritorna {} per giocatori sconosciuti.
+- `api_server.py`: `GET /api/predict-card` arricchisce ogni predizione con
+  `context` (rank, form, RET, età di entrambi i giocatori) in parallelo
+  con il meteo; best-effort e silenzioso.
+- `frontend/src/components/match-news-button.tsx`: bottone "News" per riga
+  della card — ricerca on-demand (GPT Researcher/LLM) di infortuni, forma
+  e cambio coach per il singolo match con badge diff (+1/-1) e dettagli.
+- `frontend/src/components/auto-daily-card.tsx`: nuova colonna "Context"
+  (rank 1/2, form W/L, badge RET se presente negli ultimi match) accanto
+  al matchup; la card resta auto-generata all'apertura (meteo + contesto
+  locale + news su richiesta).
+- `backend/tests/test_player_context.py`: 5 test per il modulo context
+  (rank/form/RET/età, giocatore sconosciuto, accenti, ID duplicati,
+  file mancanti).
 - `api_server.py`: `GET /api/predict-card` arricchisce ogni predizione con il
   meteo della località del torneo (open-meteo, gratuito, nessuna chiave):
   temperatura, umidità, probabilità pioggia e velocità del vento, calcolati

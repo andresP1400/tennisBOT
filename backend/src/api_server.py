@@ -1004,21 +1004,23 @@ def _log_card_predictions(tour: str, model_name: str, predictions: list[dict]) -
     return n_logged
 
 
-def _enrich_card_predictions(predictions: list[dict]) -> None:
-    """Attach weather to every card prediction in place.
+def _enrich_card_predictions(predictions: list[dict], tour: str = "atp") -> None:
+    """Attach weather + player context to every card prediction in place.
 
-    Cheap (open-meteo, free, no key) and silent on failure so the daily card
-    stays usable when weather coords are unknown. Network-bound work runs in
-    a small thread pool so a 20-match card finishes in ~1s.
+    Weather comes from open-meteo (free, no key) and player context (rank,
+    age, recent form, retirement marks) from the local Sackmann CSVs, so the
+    whole enrichment is zero-cost and silent on failure. Network-bound work
+    runs in a small thread pool so a 20-match card finishes in ~1s.
 
-    Player-news context (injuries, form, coach change) is NOT included here:
-    the GPT Researcher pipeline is multi-second per match and incurs LLM
-    cost. Per-match news is still available via the manual Player News
-    Research panel on the Live Market page.
+    Player-news context (injuries, coach change from news articles) is NOT
+    included here: the GPT Researcher pipeline is multi-second per match and
+    incurs LLM cost. Per-match news is still available via the manual Player
+    News Research panel on the Live Market page.
     """
     if not predictions:
         return
     from concurrent.futures import ThreadPoolExecutor
+    from features.player_context import player_context
 
     def _weather_for(p: dict) -> dict | None:
         try:
@@ -1038,11 +1040,36 @@ def _enrich_card_predictions(predictions: list[dict]) -> None:
         except Exception:
             return None
 
+    def _ctx_for(p: dict) -> dict | None:
+        if not p.get("player1") or not p.get("player2"):
+            return None
+        try:
+            c1 = player_context(tour, p["player1"])
+            c2 = player_context(tour, p["player2"])
+            if not c1 and not c2:
+                return None
+            return {
+                "p1_rank": c1.get("rank"),
+                "p2_rank": c2.get("rank"),
+                "p1_form": c1.get("form"),
+                "p2_form": c2.get("form"),
+                "p1_ret": c1.get("ret"),
+                "p2_ret": c2.get("ret"),
+                "p1_age": c1.get("age"),
+                "p2_age": c2.get("age"),
+                "p1_last_match_date": c1.get("last_match_date"),
+                "p2_last_match_date": c2.get("last_match_date"),
+            }
+        except Exception:
+            return None
+
     valid = [p for p in predictions if not p.get("error")]
     with ThreadPoolExecutor(max_workers=8) as pool:
-        for p, w in zip(valid, pool.map(_weather_for, valid)):
+        for p, w, c in zip(valid, pool.map(_weather_for, valid), pool.map(_ctx_for, valid)):
             if w:
                 p["weather"] = w
+            if c:
+                p["context"] = c
 
 
 @app.get("/api/predict-card")
@@ -1144,7 +1171,7 @@ def get_predict_card(
                 "edge2": round(edge2, 4) if edge2 is not None else None,
                 "value_bet": value_bet,
             })
-        _enrich_card_predictions(predictions)
+        _enrich_card_predictions(predictions, tour)
         n_value = sum(1 for p in predictions if p.get("value_bet"))
         n_logged = 0
         if log:

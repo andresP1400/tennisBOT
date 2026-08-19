@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ApiError, apiFetch } from "@/lib/api"
+import { MatchNewsButton } from "@/components/match-news-button"
 
 interface CardPrediction {
   match: string
@@ -27,6 +28,18 @@ interface CardPrediction {
     humidity_pct?: number | null
     rain_probability?: number | null
     wind_speed_kmh?: number | null
+  }
+  context?: {
+    p1_rank?: number | null
+    p2_rank?: number | null
+    p1_form?: string | null
+    p2_form?: string | null
+    p1_ret?: boolean | null
+    p2_ret?: boolean | null
+    p1_age?: number | null
+    p2_age?: number | null
+    p1_last_match_date?: string | null
+    p2_last_match_date?: string | null
   }
   error?: string
 }
@@ -92,8 +105,10 @@ export function AutoDailyCard() {
           <CardDescription>
             Generated automatically on page open: model prediction for EVERY{" "}
             {tour.toUpperCase()} match of the day (all tournaments in the live feed) with
-            odds, edge vs market, value-bet flags and weather (open-meteo). Predictions are
-            logged to the Track Record automatically. Source:{" "}
+            odds, edge vs market, value-bet flags, player context (rank, recent form,
+            retirement marks — from local data) and weather (open-meteo). The "News"
+            button researches injuries/form/coach for that match on demand. Predictions
+            are logged to the Track Record automatically. Source:{" "}
             <span className="font-mono">/api/predict-card?tour={tour}</span>.
           </CardDescription>
         </div>
@@ -152,6 +167,7 @@ export function AutoDailyCard() {
                   <tr className="border-b text-left text-xs text-muted-foreground uppercase">
                     <th className="py-2 pr-3">Time</th>
                     <th className="py-2 pr-3">Matchup</th>
+                    <th className="py-2 pr-3">Context</th>
                     <th className="py-2 pr-3">Tournament</th>
                     <th className="py-2 pr-3 text-right">Model</th>
                     <th className="py-2 pr-3 text-right">Odds</th>
@@ -170,11 +186,45 @@ export function AutoDailyCard() {
                           {p.commence_time ? p.commence_time.slice(11, 16) : "—"}
                         </td>
                         <td className="py-2 pr-3 whitespace-nowrap">
-                          <span className={fav ? "font-semibold" : ""}>{p.player1}</span>
-                          <span className="mx-2 text-muted-foreground text-xs">vs</span>
-                          <span className={!fav ? "font-semibold" : ""}>{p.player2}</span>
-                          {p.error && (
-                            <span className="ml-2 text-xs text-red-400">({p.error})</span>
+                          <div>
+                            <span className={fav ? "font-semibold" : ""}>{p.player1}</span>
+                            <span className="mx-2 text-muted-foreground text-xs">vs</span>
+                            <span className={!fav ? "font-semibold" : ""}>{p.player2}</span>
+                            {p.error && (
+                              <span className="ml-2 text-xs text-red-400">({p.error})</span>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            <MatchNewsButton
+                              player1={p.player1}
+                              player2={p.player2}
+                              surface={p.surface}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-2 pr-3 text-xs">
+                          {p.context ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">rank</span>
+                                <span>
+                                  {p.context.p1_rank ?? "—"} / {p.context.p2_rank ?? "—"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">form</span>
+                                <span className="font-mono">
+                                  {p.context.p1_form ?? "—"} vs {p.context.p2_form ?? "—"}
+                                </span>
+                              </div>
+                              {(p.context.p1_ret || p.context.p2_ret) && (
+                                <Badge className="text-red-400 border-red-400/40 bg-red-500/10 w-fit">
+                                  RET in recent matches
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                         <td className="py-2 pr-3 text-xs text-muted-foreground">
