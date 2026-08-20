@@ -21,70 +21,21 @@ Files (committed under reports/, so the history is public & verifiable):
 
 import os
 import sys
-import json
 import uuid
-import hashlib
 import datetime
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
-
-# --------------------------------------------------------------------------- #
-# Paths
-# --------------------------------------------------------------------------- #
-def _dir(tour: str) -> str:
-    d = os.path.join(config.REPORTS_DIR, tour)
-    os.makedirs(d, exist_ok=True)
-    return d
-
-
-def _pred_path(tour: str = "atp") -> str:
-    return os.path.join(_dir(tour), "predictions_log.jsonl")
-
-
-def _settle_path(tour: str = "atp") -> str:
-    return os.path.join(_dir(tour), "settlements_log.jsonl")
-
-
-# --------------------------------------------------------------------------- #
-# Hashing (tamper-evidence)
-# --------------------------------------------------------------------------- #
-_HASH_FIELDS = (
-    "ts", "tour", "model", "player1", "player2",
-    "surface", "best_of", "prob1", "predicted_winner",
-    "odds1", "odds2",
+from pipeline.track_io import (
+    append as _append,
+    content_hash as _content_hash,
+    pred_path as _pred_path,
+    read_jsonl as _read_jsonl,
+    settle_path as _settle_path,
+    settlement_index as _settlement_index,
 )
-
-
-def _content_hash(rec: dict) -> str:
-    payload = {k: rec.get(k) for k in _HASH_FIELDS}
-    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
-
-
-# --------------------------------------------------------------------------- #
-# Low-level JSONL helpers (append-only)
-# --------------------------------------------------------------------------- #
-def _append(path: str, rec: dict) -> None:
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-
-
-def _read_jsonl(path: str) -> list[dict]:
-    if not os.path.exists(path):
-        return []
-    out = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    out.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
-    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -127,16 +78,6 @@ def log_prediction(
     rec["hash"] = _content_hash(rec)
     _append(_pred_path(tour), rec)
     return rec["id"]
-
-
-def _settlement_index(tour: str) -> dict:
-    """pred_id -> latest settlement event."""
-    idx = {}
-    for s in _read_jsonl(_settle_path(tour)):
-        pid = s.get("pred_id")
-        if pid:
-            idx[pid] = s
-    return idx
 
 
 def read_log(tour: str = "atp") -> list[dict]:
