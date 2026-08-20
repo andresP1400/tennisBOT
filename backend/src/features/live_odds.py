@@ -16,22 +16,41 @@ unreliable in production):
 
 Enable them only with `force_refresh=True` and `enable_scraping=True`
 for development / debugging.
+
+Module layout (kept under the 300-line budget):
+  - features/live_odds_util.py   -> name normalization + shared caches
+  - features/live_odds_scraping.py -> disabled fallback scrapers
+  - features/value_bets.py       -> compute_value_bets
+  - this file                    -> LiveOddsScraper orchestrator
 """
 from __future__ import annotations
 
 import math
 import os
-import re
 import sys
 import threading
 import time
-import unicodedata
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from dotenv import load_dotenv
 
 from logging_config import get_logger
+from features.live_odds_util import (  # noqa: F401  (public re-exports)
+    CACHE_TTL_SECONDS,
+    _odds_cache,
+    _odds_cache_timestamp,
+    _normalize_player_name,
+    _fuzzy_match_player,
+    _now_iso,
+)
+from features.live_odds_scraping import (
+    scrape_oddsportal,
+    scrape_pinnacle,
+    scrape_tennis_explorer,
+)
+from features.value_bets import compute_value_bets  # noqa: F401  (public re-export)
+
 logger = get_logger(__name__)
 # backend/src/features/ -> two levels up is backend/src (import root);
 # .env files live at the repository root (one more level up).
@@ -42,49 +61,7 @@ _PROJECT_ROOT = os.path.dirname(_ROOT)
 load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
 load_dotenv(os.path.join(_PROJECT_ROOT, "local.env"), override=True)
 
-CACHE_TTL_SECONDS = 300  # 5 minutes
-
-_odds_cache: dict = {}
-_odds_cache_timestamp: dict = {}
-
-
-def _normalize_player_name(name: str) -> str:
-    """Normalize player name for fuzzy matching across sites.
-
-    Lowercase, keep only the last token and strip diacritics so that
-    'Kecmanović' matches 'kecmanovic' from other sources.
-    """
-    if not isinstance(name, str):
-        return ""
-    parts = name.strip().split()
-    if not parts:
-        return ""
-    last = parts[-1]
-    return unicodedata.normalize("NFD", last).encode("ascii", "ignore").decode("ascii").lower()
-
-
-def _fuzzy_match_player(query: str, candidates: list) -> str:
-    """Find the best fuzzy match for a player name.
-
-    Compares last names and handles common variations.
-    Returns the best matching candidate or empty string.
-    """
-    query_last = _normalize_player_name(query)
-    if not query_last:
-        return ""
-    for c in candidates:
-        if _normalize_player_name(c) == query_last:
-            return c
-    for c in candidates:
-        c_lower = c.lower()
-        if query_last in c_lower or c_lower.split()[-1] in query_last:
-            return c
-    return ""
-
-
-def _now_iso() -> str:
-    """Current UTC time as ISO 8601 (datetime.utcnow() is deprecated)."""
-    return datetime.now(timezone.utc).isoformat()
+__all__ = ["LiveOddsScraper", "compute_value_bets", "_normalize_player_name"]
 
 
 class LiveOddsScraper:
@@ -229,47 +206,15 @@ class LiveOddsScraper:
         fetcher = self._get_fetcher()
         if fetcher is None:
             return {}
-        p1_key = _normalize_player_name(player1)
-        p2_key = _normalize_player_name(player2)
-        all_odds: dict = {}
-        urls = [
-            "https://www.oddsportal.com/tennis/atp/",
-            "https://www.oddsportal.com/tennis/wta/",
-        ]
-        for url in urls:
-            try:
-                page = fetcher.fetch(url) if self.use_stealth else fetcher.get(url)
-                text = page.text if hasattr(page, "text") else str(page)
-                lines = text.split("\n") if isinstance(text, str) else []
-                for line in lines:
-                    line_lower = line.lower()
-                    if p1_key in line_lower and p2_key in line_lower:
-                        odds_pattern = re.compile(r"(\d+\.\d{2,3})")
-                        found = odds_pattern.findall(line)
-                        if len(found) >= 2:
-                            try:
-                                o1 = float(found[0])
-                                o2 = float(found[1])
-                                if 1.01 < o1 < 50 and 1.01 < o2 < 50:
-                                    all_odds["oddsportal"] = {
-                                        "player1": o1,
-                                        "player2": o2,
-                                    }
-                            except (ValueError, IndexError):
-                                pass
-                        break
-                time.sleep(2)
-            except Exception as e:
-                logger.warning(f" [WARN] OddsPortal scraping failed: {e}")
-        return all_odds
+        return scrape_oddsportal(fetcher, self.use_stealth, player1, player2)
 
     def _scrape_pinnacle(self, player1: str, player2: str) -> dict:
         """DISABLED: Pinnacle geo-blocks Italy. Use TheOddsAPI instead."""
-        return {}
+        return scrape_pinnacle(player1, player2)
 
     def _scrape_tennis_explorer(self, player1: str, player2: str) -> dict:
         """DISABLED: Tennis Explorer scraper no longer matches the live DOM."""
-        return {}
+        return scrape_tennis_explorer(player1, player2)
 
     # -----------------------------------------------------------------
     # todays-match-list (aggregator for finding matches)
@@ -534,93 +479,3 @@ class LiveOddsScraper:
         _odds_cache[cache_key] = result
         _odds_cache_timestamp[cache_key] = time.time()
         return result
-
-
-def compute_value_bets(
-    model_prob1: float,
-    player1: str,
-    player2: str,
-    surface: str | None = None,
-    min_edge: float = 0.05,
-) -> dict:
-    """Compute value bets by comparing model probability to market odds.
-
-    A value bet exists when model_prob > market_implied_prob + min_edge.
-    """
-    scraper = LiveOddsScraper()
-    odds = scraper.get_match_odds(player1, player2, surface)
-    best_p1 = odds.get("best_odds", {}).get("player1", float("nan"))
-    best_p2 = odds.get("best_odds", {}).get("player2", float("nan"))
-    no_odds = (
-        best_p1 is None
-        or best_p2 is None
-        or (isinstance(best_p1, float) and math.isnan(best_p1))
-        or (isinstance(best_p2, float) and math.isnan(best_p2))
-        or (isinstance(best_p1, (int, float)) and best_p1 <= 1)
-        or (isinstance(best_p2, (int, float)) and best_p2 <= 1)
-    )
-    if no_odds:
-        key_missing = not bool(os.environ.get("ODDS_API_KEY", "").strip()) or (
-            os.environ.get("ODDS_API_KEY", "").strip() == "your_api_key_here"
-        )
-        return {
-            "player1": player1,
-            "player2": player2,
-            "model_prob1": model_prob1,
-            "model_prob2": 1.0 - model_prob1,
-            "market_prob1": None,
-            "market_prob2": None,
-            "edge1": None,
-            "edge2": None,
-            "best_odds": {"player1": None, "player2": None},
-            "value_bets": [],
-            "min_edge": min_edge,
-            "needs_odds_key": key_missing,
-            "message": (
-                "ODDS_API_KEY non configurata. Aggiungila al file .env e riavvia l'API "
-                "per confrontare modello vs mercato."
-                if key_missing
-                else "Nessuna quota di mercato disponibile per questo matchup "
-                "(nessun evento live trovato o bookmaker non raggiungibili)."
-            ),
-        }
-    raw_imp1 = 1.0 / best_p1
-    raw_imp2 = 1.0 / best_p2
-    total = raw_imp1 + raw_imp2
-    market_prob1 = raw_imp1 / total
-    market_prob2 = raw_imp2 / total
-    edge1 = model_prob1 - market_prob1
-    edge2 = (1.0 - model_prob1) - market_prob2
-    value_bets = []
-    if edge1 >= min_edge:
-        value_bets.append({
-            "side": player1,
-            "model_prob": model_prob1,
-            "market_prob": market_prob1,
-            "edge": edge1,
-            "best_odds": best_p1,
-            "bookmaker_count": len(odds.get("sources", {})),
-        })
-    if edge2 >= min_edge:
-        value_bets.append({
-            "side": player2,
-            "model_prob": 1.0 - model_prob1,
-            "market_prob": market_prob2,
-            "edge": edge2,
-            "best_odds": best_p2,
-            "bookmaker_count": len(odds.get("sources", {})),
-        })
-    return {
-        "player1": player1,
-        "player2": player2,
-        "model_prob1": model_prob1,
-        "model_prob2": 1.0 - model_prob1,
-        "market_prob1": market_prob1,
-        "market_prob2": market_prob2,
-        "edge1": edge1,
-        "edge2": edge2,
-        "best_odds": odds.get("best_odds", {}),
-        "value_bets": value_bets,
-        "min_edge": min_edge,
-        "sources": odds.get("sources", {}),
-    }
