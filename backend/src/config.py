@@ -7,6 +7,11 @@ from pathlib import Path
 # backend/src/config.py -> repo root is three levels up.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
+# Public path constants for callers that need the source or repo root
+# (matches SRC_DIR/BASE_DIR computed inline in api_server, smoke_test, ...).
+SRC_DIR: Path = _PROJECT_ROOT / "backend" / "src"
+BASE_DIR: Path = _PROJECT_ROOT
+
 # Paths (Path objects so they compose with / and support .resolve())
 PROCESSED_DIR: Path = _PROJECT_ROOT / "data" / "processed"
 MODELS_DIR: Path = _PROJECT_ROOT / "models" / "saved"
