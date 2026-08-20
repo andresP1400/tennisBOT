@@ -22,7 +22,7 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 _HTTP_HEADERS = {
     "User-Agent": (

@@ -22,7 +22,7 @@ import pandas as pd
 import joblib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 # Bases whose snapshot keys differ from the diff-column prefix
 _BASE_KEY_MAP = {"ranking": "rank", "ranking_points": "rank_points"}

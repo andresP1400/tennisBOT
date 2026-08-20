@@ -12,7 +12,7 @@ import json
 import hashlib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 
 def dir_for(tour: str) -> str:

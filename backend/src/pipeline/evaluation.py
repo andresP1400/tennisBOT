@@ -35,7 +35,7 @@ from pipeline.eval_charts import (
 
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 
 def print_metrics_summary(y_true, y_pred_proba, label: str = "TEST") -> dict:

@@ -20,8 +20,8 @@ from tqdm import tqdm
 from logging_config import get_logger
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
-from utils.constants import (
+import config  # noqa: E402
+from utils.constants import (  # noqa: E402
     WINNER_TO_P1, LOSER_TO_P2,
     LOSER_TO_P1_MAP, WINNER_TO_P2_MAP,
     KNOWN_INDOOR_TOURNAMENTS,

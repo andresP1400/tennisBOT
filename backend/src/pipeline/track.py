@@ -26,7 +26,7 @@ import datetime
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 from pipeline.track_io import (
     append as _append,
