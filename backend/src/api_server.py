@@ -17,6 +17,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import BASE_DIR, SRC_DIR
 
+# Route modules (split out of the former 1260-line api_server.py).
+from api.routes.analytics import router as analytics_router
+from api.routes.card import router as card_router
+from api.routes.data import router as data_router
+from api.routes.models import router as models_router
+from api.routes.players import router as players_router
+from api.routes.predict import router as predict_router
+from api.routes.system import router as system_router
+from api.routes.track import router as track_router
+from api.routes.training import router as training_router
+
 # .env first, then local.env (personal secrets override)
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(BASE_DIR / "local.env", override=True)
@@ -49,17 +60,7 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-# --- Route modules (split out of the former 1260-line api_server.py) ---
-from api.routes.system import router as system_router
-from api.routes.models import router as models_router
-from api.routes.training import router as training_router
-from api.routes.predict import router as predict_router
-from api.routes.players import router as players_router
-from api.routes.track import router as track_router
-from api.routes.data import router as data_router
-from api.routes.analytics import router as analytics_router
-from api.routes.card import router as card_router
-
+# --- Mount route modules on the app instance ---
 for _router in (
     system_router,
     models_router,
