@@ -1,18 +1,8 @@
-"""OddsPortal (centroquote.it) odds scraper via the encrypted match-event feed.
+"""OddsPortal (centroquote.it) odds scraper — orchestration + persistence.
 
-Reverse-engineered from the OddsPortal/centroquote Next.js front-end:
-
-* The tennis home page embeds up to ~100 events (scheduled AND finished) in
-  the RSC payload under ``initialRows``, with the page-level ``xHash``.
-* Each event's odds come from the encrypted backend feed::
-
-      https://backend.oddsportal.com/match-event/1-2-{encodeEventId}-{bt}-{sc}-{xhash}.dat?geo=it&lang=it
-
-* The payload decrypts as: outer base64 -> split(':', 1) -> AES-CBC(PKCS7)
-  with PBKDF2-HMAC-SHA256(1000 iters, fixed salt) -> gzip -> JSON.
-* ``d.oddsdata.back`` is keyed by market ``E-{bt}-{sc}-{handicapTypeId}-{handicapValue}-{mixedParamId}``.
-  For tennis match winner: bt=3, sc=2 (Full Time), market ``E-3-2-0-0-0``
-  with per-bookmaker ``odds`` (current) and ``openingOdd`` (open price).
+Crypto lives in features/oddsportal_crypto.py and HTTP/event parsing in
+features/oddsportal_parse.py; this module owns the scrape loop, CSV/JSONL
+output and the bookmaker id -> name resolution.
 
 This gives free opening + current odds for ~12 bookmakers on every listed
 tennis event, including already-finished matches — enough to build a CLV
@@ -20,47 +10,26 @@ dataset and live value detection without paid APIs.
 """
 from __future__ import annotations
 
-import base64
 import datetime as _dt
-import gzip
 import json
 import os
-import re
 import sys
 import time
-import urllib.request
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from logging_config import get_logger
+from features.oddsportal_crypto import decrypt_payload
+from features.oddsportal_parse import (
+    _fetch,
+    _HOME_URL,
+    extract_market_odds,
+    fetch_match_event,
+    fetch_tennis_events,
+)
+
 logger = get_logger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
-
-# --------------------------------------------------------------------------- #
-# OddsPortal crypto (fixed site-wide keys, embedded in the front-end bundle)
-# --------------------------------------------------------------------------- #
-_PASS_B64 = "Sio4c1EhcCQ3YURfZlIyeVdAZ0huKjNiVnAjc0FkTGRfaw=="
-_SALT_B64 = "NWI5YThmMmMzZTZkMWE0YjdjOGU5ZDBmMWEyYjNjNGQ="
-
-_HOME_URL = "https://www.centroquote.it/it/tennis/"
-_BACKEND = "https://backend.oddsportal.com"
-_PROXY = "https://www.centroquote.it/proxy"
-
-_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-)
-
-# Betting type / scope ids for tennis (from ajax-event-page-metadata)
-BETTING_TYPE_MATCH_WINNER = 3  # Home/Away
-SCOPE_FULL_TIME = 2
-VERSION_ID = 1
-SPORT_ID_TENNIS = 2
+import config  # noqa: E402
 
 # Known bookmaker ids (decoded from the providers bonus-data endpoint).
 # The full map is served dynamically by /ajax-providers-bonus-data/0/ and
@@ -83,205 +52,6 @@ BOOKMAKER_IDS: dict[int, str] = {
 UNKNOWN_BOOKIE_IDS: set[int] = set()
 
 
-# --------------------------------------------------------------------------- #
-# Decryption
-# --------------------------------------------------------------------------- #
-def decrypt_payload(raw: bytes | str) -> dict:
-    """Decrypt an OddsPortal .dat payload into its JSON dict."""
-    if isinstance(raw, str):
-        raw = raw.encode("latin-1")
-    inner = base64.b64decode(raw).decode("latin-1")
-    cipher_b64, iv_hex = inner.split(":", 1)
-    ct = base64.b64decode(cipher_b64)
-    iv = bytes.fromhex(iv_hex)
-    passwd = base64.b64decode(_PASS_B64)
-    salt = base64.b64decode(_SALT_B64)
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(), length=32, salt=salt,
-        iterations=1000, backend=default_backend(),
-    )
-    key = kdf.derive(passwd)
-    dec = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend()).decryptor()
-    pt = dec.update(ct) + dec.finalize()
-    pad = pt[-1]
-    if pad and pt[-pad:] == bytes([pad]) * pad:
-        pt = pt[:-pad]
-    if pt[:2] == b"\x1f\x8b":
-        pt = gzip.decompress(pt)
-    return json.loads(pt.decode("utf-8"))
-
-
-# --------------------------------------------------------------------------- #
-# HTTP helpers
-# --------------------------------------------------------------------------- #
-def _fetch(url: str, tries: int = 4, timeout: int = 20, referer: str | None = None) -> bytes:
-    last = None
-    for attempt in range(tries):
-        try:
-            headers = {"User-Agent": _USER_AGENT, "Accept": "*/*"}
-            if referer:
-                headers["Referer"] = referer
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.read()
-        except Exception as exc:  # noqa: BLE001
-            last = exc
-            time.sleep(2.0 * (attempt + 1))
-    raise RuntimeError(f"fetch failed after {tries} tries: {url}: {last}")
-
-
-# --------------------------------------------------------------------------- #
-# Home page parsing (event list + page xHash)
-# --------------------------------------------------------------------------- #
-def fetch_tennis_events(
-    home_url: str | None = None,
-    statuses: set[int] | None = None,
-) -> tuple[list[dict], str | None]:
-    """Fetch the tennis home page and return (initialRows events, page xHash).
-
-    ``statuses`` filters the returned events (1=scheduled, 3=finished).
-    """
-    url = home_url or _HOME_URL
-    raw = _fetch(url, referer=url).decode("utf-8", errors="ignore")
-    events, xhash = parse_tennis_home(raw)
-    if statuses is not None:
-        events = [e for e in events if e.get("status-id") in statuses]
-    return events, xhash
-
-
-def parse_tennis_home(html: str) -> tuple[list[dict], str | None]:
-    """Parse the RSC payload of the tennis home page.
-
-    The ``initialRows`` array lives inside a ``self.__next_f.push([1,"..."])``
-    call with double-escaped JSON.
-    """
-    idx = html.find("initialRows")
-    if idx < 0:
-        return [], None
-    start = html.rfind("self.__next_f.push", 0, idx)
-    if start < 0:
-        return [], None
-    end_marker = '"])'
-    end = html.find(end_marker, idx)
-    if end < 0:
-        return [], None
-    push_text = html[start:end + len(end_marker) + 1].strip()
-    if not push_text.startswith("self.__next_f.push("):
-        return [], None
-    inner = push_text[len("self.__next_f.push("):]
-    inner = inner[: inner.rfind(")")]
-    try:
-        arr = json.loads(inner)
-    except json.JSONDecodeError:
-        return [], None
-    payload = arr[1] if isinstance(arr, list) and len(arr) > 1 else ""
-    rows = _extract_json_array(payload, '"initialRows":')
-    if rows is None:
-        return [], None
-    xhash = None
-    xm = re.search(r'"xHash":"([^"]+)"', payload)
-    if xm:
-        xhash = xm.group(1)
-    return rows, xhash
-
-
-def _extract_json_array(text: str, key: str) -> list[dict] | None:
-    """Return the JSON array that follows ``key`` in ``text`` (bracket aware)."""
-    i = text.find(key)
-    if i < 0:
-        return None
-    sub = text[i + len(key):]
-    depth = 0
-    in_str = False
-    esc = False
-    end = None
-    for k, ch in enumerate(sub):
-        if in_str:
-            if esc:
-                esc = False
-            elif ch == "\\":
-                esc = True
-            elif ch == '"':
-                in_str = False
-            continue
-        if ch == '"':
-            in_str = True
-        elif ch == "[":
-            depth += 1
-        elif ch == "]":
-            depth -= 1
-            if depth == 0:
-                end = k
-                break
-    if end is None:
-        return None
-    try:
-        return json.loads(sub[: end + 1])
-    except json.JSONDecodeError:
-        return None
-
-
-# --------------------------------------------------------------------------- #
-# Match-event feed
-# --------------------------------------------------------------------------- #
-def fetch_match_event(
-    encode_event_id: str,
-    xhash: str,
-    betting_type: int = BETTING_TYPE_MATCH_WINNER,
-    scope: int = SCOPE_FULL_TIME,
-    use_backend: bool = True,
-) -> dict:
-    """Fetch + decrypt one match-event payload (live odds for one match)."""
-    prefix = _BACKEND if use_backend else _PROXY
-    url = (
-        f"{prefix}/match-event/{VERSION_ID}-{SPORT_ID_TENNIS}-{encode_event_id}"
-        f"-{betting_type}-{scope}-{xhash}.dat?geo=it&lang=it"
-    )
-    resp = _fetch(url, referer=_HOME_URL)
-    return decrypt_payload(resp)
-
-
-def extract_market_odds(payload: dict, betting_type: int = BETTING_TYPE_MATCH_WINNER,
-                        scope: int = SCOPE_FULL_TIME) -> dict:
-    """Extract the match-winner market into {bookie_id: {home, away, opening_home, opening_away}}.
-
-    Returns an empty dict when the market has no bookmakers with odds.
-    """
-    back = (payload.get("d", {}).get("oddsdata", {}) or {}).get("back", {})
-    if not isinstance(back, dict):
-        return {}
-    market = back.get(f"E-{betting_type}-{scope}-0-0-0")
-    if not market or not isinstance(market, dict):
-        return {}
-    odds = market.get("odds", {}) or {}
-    opening = market.get("openingOdd", {}) or {}
-    out: dict[int, dict] = {}
-    for bid, vals in odds.items():
-        if not isinstance(vals, list) or len(vals) < 2:
-            continue
-        try:
-            bid_i = int(bid)
-            h, a = float(vals[0]), float(vals[1])
-        except (TypeError, ValueError):
-            continue
-        if h <= 1.0 or a <= 1.0:
-            continue
-        open_vals = opening.get(bid, [])
-        try:
-            oh = float(open_vals[0]) if isinstance(open_vals, list) and open_vals else float("nan")
-            oa = float(open_vals[1]) if isinstance(open_vals, list) and len(open_vals) > 1 else float("nan")
-        except (TypeError, ValueError, IndexError):
-            oh = oa = float("nan")
-        out[bid_i] = {
-            "home": h, "away": a,
-            "opening_home": oh, "opening_away": oa,
-        }
-    return out
-
-
-# --------------------------------------------------------------------------- #
-# Orchestration + persistence
-# --------------------------------------------------------------------------- #
 def event_row(event: dict, odds_by_bookie: dict, names: dict[int, str] | None = None) -> dict:
     """Flatten one event + its bookmaker odds into a CSV-friendly row.
 
@@ -421,7 +191,7 @@ def fetch_providers_names(use_backend: bool = True, force_refresh: bool = False)
     if _PROVIDERS_CACHE is not None and not force_refresh:
         return _PROVIDERS_CACHE
     try:
-        prefix = _BACKEND if use_backend else _PROXY
+        prefix = "https://backend.oddsportal.com" if use_backend else "https://www.centroquote.it/proxy"
         resp = _fetch(f"{prefix}/ajax-providers-bonus-data/0/?geo=it&lang=it", referer=_HOME_URL)
         payload = decrypt_payload(resp)
         names = (payload.get("d") or {}).get("providersNames") or {}
