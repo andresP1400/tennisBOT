@@ -9,6 +9,7 @@ Computes:
   - home_country_flag     : 1 if player is from tournament country
   - qualifier_flag_diff   : difference in qualifier status
 """
+
 from __future__ import annotations
 
 import os
@@ -18,43 +19,73 @@ import numpy as np
 import pandas as pd
 
 from logging_config import get_logger
+
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 TOURNAMENT_COUNTRIES: dict[str, str] = {
-    "Australian Open": "AUS", "Melbourne": "AUS", "Brisbane": "AUS",
-    "Adelaide": "AUS", "Sydney": "AUS",
-    "Roland Garros": "FRA", "Paris": "FRA", "Marseille": "FRA",
-    "Lyon": "FRA", "Montpellier": "FRA",
-    "Wimbledon": "GBR", "Queen": "GBR", "Eastbourne": "GBR",
-    "US Open": "USA", "Indian Wells": "USA", "Miami": "USA",
-    "Cincinnati": "USA", "Washington": "USA", "Atlanta": "USA",
-    "Winston": "USA", "Dallas": "USA", "Houston": "USA",
-    "Madrid": "ESP", "Barcelona": "ESP", "Mallorca": "ESP",
-    "Rome": "ITA", "Milan": "ITA",
+    "Australian Open": "AUS",
+    "Melbourne": "AUS",
+    "Brisbane": "AUS",
+    "Adelaide": "AUS",
+    "Sydney": "AUS",
+    "Roland Garros": "FRA",
+    "Paris": "FRA",
+    "Marseille": "FRA",
+    "Lyon": "FRA",
+    "Montpellier": "FRA",
+    "Wimbledon": "GBR",
+    "Queen": "GBR",
+    "Eastbourne": "GBR",
+    "US Open": "USA",
+    "Indian Wells": "USA",
+    "Miami": "USA",
+    "Cincinnati": "USA",
+    "Washington": "USA",
+    "Atlanta": "USA",
+    "Winston": "USA",
+    "Dallas": "USA",
+    "Houston": "USA",
+    "Madrid": "ESP",
+    "Barcelona": "ESP",
+    "Mallorca": "ESP",
+    "Rome": "ITA",
+    "Milan": "ITA",
     "Monte Carlo": "MON",
-    "Hamburg": "GER", "Halle": "GER", "Munich": "GER", "Stuttgart": "GER",
+    "Hamburg": "GER",
+    "Halle": "GER",
+    "Munich": "GER",
+    "Stuttgart": "GER",
     "Rotterdam": "NED",
     "Basel": "SUI",
     "Vienna": "AUT",
     "Stockholm": "SWE",
-    "St. Petersburg": "RUS", "Moscow": "RUS",
-    "Beijing": "CHN", "Shanghai": "CHN", "Chengdu": "CHN", "Zhuhai": "CHN",
+    "St. Petersburg": "RUS",
+    "Moscow": "RUS",
+    "Beijing": "CHN",
+    "Shanghai": "CHN",
+    "Chengdu": "CHN",
+    "Zhuhai": "CHN",
     "Tokyo": "JPN",
     "Dubai": "UAE",
     "Doha": "QAT",
     "Buenos Aires": "ARG",
-    "Rio de Janeiro": "BRA", "Sao Paulo": "BRA",
+    "Rio de Janeiro": "BRA",
+    "Sao Paulo": "BRA",
     "Acapulco": "MEX",
     "Bogota": "COL",
     "Santiago": "CHI",
     "Sofia": "BUL",
     "Antwerp": "BEL",
-    "Toronto": "CAN", "Montreal": "CAN",
+    "Toronto": "CAN",
+    "Montreal": "CAN",
     "Auckland": "NZL",
     "Metz": "FRA",
-    "Nur-Sultan": "KAZ", "Astana": "KAZ",
-    "Pune": "IND", "Chennai": "IND", "New Delhi": "IND",
+    "Nur-Sultan": "KAZ",
+    "Astana": "KAZ",
+    "Pune": "IND",
+    "Chennai": "IND",
+    "New Delhi": "IND",
 }
 
 
@@ -90,16 +121,27 @@ def compute_player_features(df: pd.DataFrame) -> pd.DataFrame:
     df["p1_home"] = (df["p1_ioc"] == df["_tourney_country"]).astype(int)
     df["p2_home"] = (df["p2_ioc"] == df["_tourney_country"]).astype(int)
     df["home_country_flag"] = df["p1_home"] - df["p2_home"]
-    df["p1_is_qualifier"] = df["p1_entry"].fillna("").str.contains("Q", case=False).astype(int)
-    df["p2_is_qualifier"] = df["p2_entry"].fillna("").str.contains("Q", case=False).astype(int)
+    df["p1_is_qualifier"] = (
+        df["p1_entry"].fillna("").str.contains("Q", case=False).astype(int)
+    )
+    df["p2_is_qualifier"] = (
+        df["p2_entry"].fillna("").str.contains("Q", case=False).astype(int)
+    )
     df["qualifier_flag_diff"] = df["p1_is_qualifier"] - df["p2_is_qualifier"]
     df = df.drop(
         columns=[
-            "p1_hand_enc", "p2_hand_enc", "_tourney_country",
-            "p1_home", "p2_home", "p1_is_qualifier", "p2_is_qualifier",
+            "p1_hand_enc",
+            "p2_hand_enc",
+            "_tourney_country",
+            "p1_home",
+            "p2_home",
+            "p1_is_qualifier",
+            "p2_is_qualifier",
         ],
         errors="ignore",
     )
     n_lefty_matchups = (df["hand_matchup"] == 1).sum()
-    logger.info(f"  Player features added. Lefty-vs-righty matchups: {n_lefty_matchups:,}")
+    logger.info(
+        f"  Player features added. Lefty-vs-righty matchups: {n_lefty_matchups:,}"
+    )
     return df

@@ -7,15 +7,15 @@ All routes live in api/routes/*.py and are mounted here; this module only
 owns the app instance, CORS, the env bootstrap and the dev entry point.
 Module-level state (training status, caches) lives in api/state.py.
 """
-from __future__ import annotations
 
-import os
+from __future__ import annotations
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import BASE_DIR, SRC_DIR
+from config import BASE_DIR, SRC_DIR, settings
+from logging_config import get_logger
 
 # Route modules (split out of the former 1260-line api_server.py).
 from api.routes.analytics import router as analytics_router
@@ -28,13 +28,16 @@ from api.routes.system import router as system_router
 from api.routes.track import router as track_router
 from api.routes.training import router as training_router
 
-# .env first, then local.env (personal secrets override)
+log = get_logger(__name__)
+
+# .env first, then local.env (personal secrets override — legacy consumers
+# and subprocesses still read os.environ; Settings reads the files itself).
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(BASE_DIR / "local.env", override=True)
 
 # API port (9090: outside Windows reserved/Hyper-V port ranges that block
 # binds on 8000-8050 etc. with WSAEACCES)
-API_PORT = int(os.environ.get("TENNISBOT_API_PORT", "9090"))
+API_PORT = settings.tennisbot_api_port
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -100,15 +103,16 @@ if __name__ == "__main__":
         never hits the 30s Next.js proxy timeout on first load."""
         try:
             from features.live_odds import LiveOddsScraper
+
             scraper = LiveOddsScraper()
             for tour in ("atp", "wta"):
                 try:
                     scraper.get_todays_matches_cached(tour)
                 except Exception as e:
-                    print(f"Warmup {tour} failed: {e}")
+                    log.warning("Warmup %s failed: %s", tour, e)
         except Exception as e:
-            print(f"Warmup failed: {e}")
+            log.warning("Warmup failed: %s", e)
 
-    print(f"TennisBot API listening on http://127.0.0.1:{API_PORT}")
+    log.info("TennisBot API listening on http://127.0.0.1:%s", API_PORT)
     threading.Thread(target=_warmup, name="warmup-matches", daemon=True).start()
     uvicorn.run("api_server:app", host="127.0.0.1", port=API_PORT, reload=False)

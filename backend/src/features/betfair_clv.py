@@ -28,6 +28,7 @@ Design notes:
   * Only matches whose ``commence_time`` is in the future are stored,
     so the archive doubles as a free pre-match odds history.
 """
+
 from __future__ import annotations
 
 import json
@@ -35,6 +36,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 from logging_config import get_logger
 
@@ -51,14 +53,7 @@ _MAX_EVENTS_PER_DAY = 2000
 
 
 def api_key() -> str:
-    from dotenv import load_dotenv
-    # backend/src/features/ -> two levels up is backend/src; .env files
-    # live at the repository root (one more level up).
-    _SRC_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    _PROJECT_ROOT = os.path.dirname(_SRC_ROOT)
-    load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
-    load_dotenv(os.path.join(_PROJECT_ROOT, "local.env"), override=True)
-    return os.environ.get("ODDS_API_KEY", "").strip()
+    return config.settings.odds_api_key.strip()
 
 
 def _today_str() -> str:
@@ -72,6 +67,7 @@ def list_tennis_sport_keys() -> list[str]:
         logger.warning("ODDS_API_KEY not set")
         return []
     import requests
+
     try:
         resp = requests.get(
             f"{_BASE_URL}/sports/",
@@ -81,17 +77,15 @@ def list_tennis_sport_keys() -> list[str]:
         if resp.status_code != 200:
             logger.warning("sports list failed: %s", resp.status_code)
             return []
-        return [
-            s["key"]
-            for s in resp.json()
-            if s.get("key", "").startswith("tennis_")
-        ]
+        return [s["key"] for s in resp.json() if s.get("key", "").startswith("tennis_")]
     except Exception as e:
         logger.warning("sports list error: %s", e)
         return []
 
 
-def fetch_exchange_snapshot(sport_keys: list[str] | None = None) -> list[dict]:
+def fetch_exchange_snapshot(
+    sport_keys: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Fetch exchange odds for all active tennis tournaments.
 
     Returns one dict per event::
@@ -106,8 +100,9 @@ def fetch_exchange_snapshot(sport_keys: list[str] | None = None) -> list[dict]:
     if not key:
         return []
     sports = sport_keys if sport_keys is not None else list_tennis_sport_keys()
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     import requests
+
     for sport in sports:
         try:
             resp = requests.get(
@@ -128,12 +123,15 @@ def fetch_exchange_snapshot(sport_keys: list[str] | None = None) -> list[dict]:
             for ev in resp.json():
                 if not isinstance(ev, dict):
                     continue
-                bms: dict = {}
+                bms: dict[str, dict[str, Any]] = {}
                 for bm in ev.get("bookmakers", []):
                     bk = bm.get("key", "")
-                    entry: dict = {}
+                    entry: dict[str, Any] = {}
                     for m in bm.get("markets", []):
-                        outcomes = {o.get("name", ""): o.get("price") for o in m.get("outcomes", [])}
+                        outcomes = {
+                            o.get("name", ""): o.get("price")
+                            for o in m.get("outcomes", [])
+                        }
                         names = list(outcomes)
                         if len(names) < 2:
                             continue
@@ -148,22 +146,26 @@ def fetch_exchange_snapshot(sport_keys: list[str] | None = None) -> list[dict]:
                         bms[bk] = entry
                 if not bms:
                     continue
-                out.append({
-                    "sport": sport,
-                    "match_id": ev.get("id", ""),
-                    "home": ev.get("home_team", ""),
-                    "away": ev.get("away_team", ""),
-                    "commence_time": ev.get("commence_time", ""),
-                    "taken_at": taken,
-                    "bookmakers": bms,
-                })
+                out.append(
+                    {
+                        "sport": sport,
+                        "match_id": ev.get("id", ""),
+                        "home": ev.get("home_team", ""),
+                        "away": ev.get("away_team", ""),
+                        "commence_time": ev.get("commence_time", ""),
+                        "taken_at": taken,
+                        "bookmakers": bms,
+                    }
+                )
             time.sleep(0.4)
         except Exception as e:
             logger.warning("%s fetch error: %s", sport, e)
     return out
 
 
-def append_snapshot(events: list[dict], archive_dir: str | None = None) -> str:
+def append_snapshot(
+    events: list[dict[str, Any]], archive_dir: str | None = None
+) -> str:
     """Append events to the daily JSONL archive. Returns the file path."""
     d = archive_dir or _ARCHIVE_DIR
     os.makedirs(d, exist_ok=True)
@@ -177,13 +179,16 @@ def append_snapshot(events: list[dict], archive_dir: str | None = None) -> str:
     return path
 
 
-def load_snapshots(days: int = 14, archive_dir: str | None = None) -> list[dict]:
+def load_snapshots(
+    days: int = 14, archive_dir: str | None = None
+) -> list[dict[str, Any]]:
     """Load snapshots from the last N days (JSONL)."""
     d = archive_dir or _ARCHIVE_DIR
     if not os.path.isdir(d):
         return []
     import datetime as dt
-    out: list[dict] = []
+
+    out: list[dict[str, Any]] = []
     cutoff = datetime.now(timezone.utc) - dt.timedelta(days=days)
     for fn in sorted(os.listdir(d)):
         if not fn.startswith("snapshots_"):
@@ -205,20 +210,20 @@ def load_snapshots(days: int = 14, archive_dir: str | None = None) -> list[dict]
     return out
 
 
-def _match_key(ev: dict) -> str:
+def _match_key(ev: dict[str, Any]) -> str:
     return f"{ev.get('home', '')}|{ev.get('away', '')}|{ev.get('commence_time', '')}"
 
 
-def closing_odds(events: list[dict]) -> dict:
+def closing_odds(events: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
     """Last exchange back price per match before its start time.
 
     Returns {match_key: {"home": price, "away": price}} using the
     betfair_ex_eu back prices (fallback matchbook, then pinnacle).
     """
-    by_match: dict[str, list[dict]] = {}
+    by_match: dict[str, list[dict[str, Any]]] = {}
     for ev in events:
         by_match.setdefault(_match_key(ev), []).append(ev)
-    closing: dict = {}
+    closing: dict[str, dict[str, float]] = {}
     now = datetime.now(timezone.utc)
     for key, snaps in by_match.items():
         snaps_sorted = sorted(
@@ -249,7 +254,9 @@ def closing_odds(events: list[dict]) -> dict:
     return closing
 
 
-def compute_clv(closing: dict, taken_price: float, side: str = "home") -> dict:
+def compute_clv(
+    closing: dict[str, float], taken_price: float, side: str = "home"
+) -> dict[str, Any]:
     """CLV for a bet taken at ``taken_price`` vs the closing line.
 
     CLV = closing_price / taken_price - 1 (positive = we beat the market).
@@ -261,7 +268,7 @@ def compute_clv(closing: dict, taken_price: float, side: str = "home") -> dict:
     }
 
 
-def build_clv_report(events: list[dict], days: int = 14) -> dict:
+def build_clv_report(events: list[dict[str, Any]], days: int = 14) -> dict[str, Any]:
     """Summary of exchange coverage for the last N days."""
     closing = closing_odds(events)
     by_sport: dict[str, int] = {}

@@ -8,12 +8,14 @@ Usage:
     python -m data.download --tour both --overwrite
     python main.py download --tour atp --overwrite
 """
+
 from __future__ import annotations
 
 import argparse
 import os
 import sys
 import time
+from typing import Any
 
 import requests
 from tqdm import tqdm
@@ -62,7 +64,9 @@ def download_file(
             if attempt < retries:
                 time.sleep(1.5 * attempt)
                 continue
-            logger.warning(f"  [WARN] {url}: HTTP {resp.status_code} after {retries} attempts")
+            logger.warning(
+                f"  [WARN] {url}: HTTP {resp.status_code} after {retries} attempts"
+            )
             return False
         except requests.RequestException as exc:
             if attempt < retries:
@@ -88,7 +92,9 @@ def download_matches(
 
     downloaded: list[str] = []
     years = range(start_year, end_year + 1)
-    logger.info(f"\n--- Downloading {tour.upper()} matches ({start_year}-{end_year}) ---")
+    logger.info(
+        f"\n--- Downloading {tour.upper()} matches ({start_year}-{end_year}) ---"
+    )
     for year in tqdm(years, desc=f"{tour.upper()} matches"):
         filename = f"{tour}_matches_{year}.csv"
         url = f"{base_url}/{filename}"
@@ -97,8 +103,12 @@ def download_matches(
             downloaded.append(dest)
 
     if tour == "atp":
-        logger.info(f"\n--- Downloading ATP qual/chall ({max(1978, start_year)}-{end_year}) ---")
-        for year in tqdm(range(max(1978, start_year), end_year + 1), desc="ATP qual/chall"):
+        logger.info(
+            f"\n--- Downloading ATP qual/chall ({max(1978, start_year)}-{end_year}) ---"
+        )
+        for year in tqdm(
+            range(max(1978, start_year), end_year + 1), desc="ATP qual/chall"
+        ):
             filename = f"atp_matches_qual_chall_{year}.csv"
             url = f"{base_url}/{filename}"
             dest = os.path.join(dest_dir, filename)
@@ -213,9 +223,9 @@ def download_all(
     start_year: int | None = None,
     end_year: int | None = None,
     overwrite: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Download everything for one tour (full history by default)."""
-    results: dict = {}
+    results: dict[str, Any] = {}
     results["matches"] = download_matches(tour, start_year, end_year, overwrite)
     results["players"] = download_players(tour, overwrite)
     results["rankings"] = download_rankings(tour, overwrite)
@@ -231,12 +241,21 @@ def download_all(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Download tennis data (mirror + odds)")
     parser.add_argument("--tour", choices=["atp", "wta", "both"], default="atp")
-    parser.add_argument("--start", type=int, default=None,
-                        help=f"Start year (default: {config.MATCH_YEAR_START})")
-    parser.add_argument("--end", type=int, default=None,
-                        help=f"End year (default: {config.MATCH_YEAR_END})")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Re-download even if files exist")
+    parser.add_argument(
+        "--start",
+        type=int,
+        default=None,
+        help=f"Start year (default: {config.MATCH_YEAR_START})",
+    )
+    parser.add_argument(
+        "--end",
+        type=int,
+        default=None,
+        help=f"End year (default: {config.MATCH_YEAR_END})",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Re-download even if files exist"
+    )
     args = parser.parse_args()
     tours = ["atp", "wta"] if args.tour == "both" else [args.tour]
     for tour in tours:

@@ -3,8 +3,8 @@
 import { useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ApiError, apiFetch } from "@/lib/api"
-import type { NewsResponse } from "./types"
+import { researchPlayerNews } from "@/services/news"
+import type { NewsResponse } from "@/types/api"
 
 function diffBadge(
   label: string,
@@ -43,10 +43,7 @@ export function MatchNewsButton({
     setLoading(true)
     setError(null)
     try {
-      const data = await apiFetch<NewsResponse>("/api/player-news", {
-        method: "POST",
-        body: { player1, player2, surface },
-      })
+      const data = await researchPlayerNews({ player1, player2, surface })
       if (data.error) {
         setError(data.error)
         setNews(null)
@@ -55,7 +52,7 @@ export function MatchNewsButton({
       }
       setOpen(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Research failed")
+      setError(err instanceof Error ? err.message : "Research failed")
       setNews(null)
       setOpen(true)
     } finally {

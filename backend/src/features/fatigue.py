@@ -6,14 +6,17 @@ Computes for each player (forward-only):
   - matches_last_7_days               : number of matches in the last 7 days
   - travel_timezone_diff              : NOT implemented in v1
 """
+
 import os
 import sys
 from collections import defaultdict
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from logging_config import get_logger
+
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -22,11 +25,13 @@ class FatigueTracker:
     """Track fatigue-related data per player."""
 
     def __init__(self) -> None:
-        self.match_history: list = []  # [(pd.Timestamp, float), ...]
+        self.match_history: list[tuple[pd.Timestamp, float]] = (
+            []
+        )  # [(ts, minutes), ...]
 
-    def get_fatigue_stats(self, current_date: pd.Timestamp) -> dict:
+    def get_fatigue_stats(self, current_date: pd.Timestamp) -> dict[str, Any]:
         """Get fatigue features AT current_date (before this match)."""
-        stats: dict = {}
+        stats: dict[str, Any] = {}
         if not self.match_history:
             stats["days_rest"] = np.nan
             stats["minutes_on_court_last_10_days"] = np.nan
@@ -53,9 +58,9 @@ class FatigueTracker:
                 if pd.notna(dt) and dt >= cutoff_10d and dt < current_date:
                     # Guard against pd.NA / pd.NaT that np.isnan cannot handle
                     if mins is None or (isinstance(mins, float) and np.isnan(mins)):
-                        safe_mins = 0
+                        safe_mins = 0.0
                     else:
-                        safe_mins = float(mins) if pd.notna(mins) else 0
+                        safe_mins = float(mins) if pd.notna(mins) else 0.0
                     recent_minutes.append(safe_mins)
                     try:
                         days_ago = (current_date - dt).days
@@ -76,7 +81,8 @@ class FatigueTracker:
         if pd.notna(current_date):
             cutoff_7d = current_date - pd.Timedelta(days=7)
             count = sum(
-                1 for dt, _ in self.match_history
+                1
+                for dt, _ in self.match_history
                 if pd.notna(dt) and dt >= cutoff_7d and dt < current_date
             )
             stats["matches_last_7_days"] = count
@@ -95,17 +101,23 @@ class FatigueTracker:
             self.match_history = self.match_history[-200:]
 
 
-def compute_fatigue_features(df_original: pd.DataFrame, return_state: bool = False):
+def compute_fatigue_features(
+    df_original: pd.DataFrame, return_state: bool = False
+) -> pd.DataFrame | tuple[pd.DataFrame, dict[Any, FatigueTracker]]:
     """Compute fatigue features on the ORIGINAL (non-symmetric) dataset.
 
     Forward-only: features at match i use data from matches 0..i-1.
     With return_state=True, also returns the per-player trackers (picklable dict).
     """
     logger.info("\n  Computing fatigue & conditioning features ...")
-    sort_cols = [c for c in ["match_date_est", "tourney_date", "match_num"] if c in df_original.columns]
+    sort_cols = [
+        c
+        for c in ["match_date_est", "tourney_date", "match_num"]
+        if c in df_original.columns
+    ]
     df = df_original.sort_values(sort_cols).reset_index(drop=True)
     has_est_date = "match_date_est" in df.columns
-    trackers: dict = defaultdict(FatigueTracker)
+    trackers: dict[Any, FatigueTracker] = defaultdict(FatigueTracker)
     records = []
     for idx in range(len(df)):
         row = df.iloc[idx]

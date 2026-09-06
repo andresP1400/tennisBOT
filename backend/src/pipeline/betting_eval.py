@@ -26,8 +26,13 @@ HONESTY NOTES
 from __future__ import annotations
 
 import os
-import sys
+from os import PathLike
+from typing import Any
 
+import numpy as np
+import pandas as pd
+
+from logging_config import get_logger
 from pipeline.betting_metrics import (
     bootstrap_ci,
     expected_calibration_error,
@@ -51,52 +56,68 @@ __all__ = [
 ]
 
 
-def full_betting_report(df_test_single, y_test, test_probs, reports_dir=None) -> dict:
-    """Compute and print the professional metric suite. Writes a markdown
-    summary to reports_dir if given. Safe when odds columns are absent."""
-    if sys.stdout.encoding is None or sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
-        try:
-            sys.stdout.reconfigure(encoding="utf-8")
-        except Exception:
-            pass
-    print("\n  " + "=" * 52)
-    print("  PROFESSIONAL EVALUATION (calibration - CI - ROI - CLV)")
-    print("  " + "=" * 52)
+logger = get_logger(__name__)
 
-    report: dict = {}
+
+def full_betting_report(
+    df_test_single: pd.DataFrame,
+    y_test: np.ndarray[Any, Any],
+    test_probs: np.ndarray[Any, Any],
+    reports_dir: str | PathLike[str] | None = None,
+) -> dict[str, Any]:
+    """Compute and log the professional metric suite. Writes a markdown
+    summary to reports_dir if given. Safe when odds columns are absent."""
+    logger.info("=" * 52)
+    logger.info("PROFESSIONAL EVALUATION (calibration - CI - ROI - CLV)")
+    logger.info("=" * 52)
+
+    report: dict[str, Any] = {}
 
     # --- ECE ---
     ece = expected_calibration_error(y_test, test_probs)
     report["ece"] = round(ece, 4)
-    print(f"  ECE (10-bin): {ece:.4f}   (lower = better calibrated)")
+    logger.info(f"ECE (10-bin): {ece:.4f}   (lower = better calibrated)")
 
     # --- Bootstrap CIs ---
-    print("\n  95% bootstrap confidence intervals (1000 resamples):")
+    logger.info("95% bootstrap confidence intervals (1000 resamples):")
     ci = {}
     for m in ["auc", "accuracy", "brier", "logloss"]:
         pt, lo, hi = bootstrap_ci(y_test, test_probs, metric=m)
         ci[m] = {"point": round(pt, 4), "lo": round(lo, 4), "hi": round(hi, 4)}
-        print(f"    {m:>8}: {pt:.4f}  [{lo:.4f}, {hi:.4f}]")
+        logger.info(f"{m:>8}: {pt:.4f}  [{lo:.4f}, {hi:.4f}]")
     report["ci_95"] = ci
 
     # --- ROI + CLV (need odds) ---
     cols = df_test_single.columns
     if "p1_opening_odds" in cols and "p2_opening_odds" in cols:
         import pandas as pd
-        o1 = pd.to_numeric(df_test_single["p1_opening_odds"], errors="coerce").values
-        o2 = pd.to_numeric(df_test_single["p2_opening_odds"], errors="coerce").values
+
+        o1 = np.asarray(
+            pd.to_numeric(df_test_single["p1_opening_odds"], errors="coerce").values
+        )
+        o2 = np.asarray(
+            pd.to_numeric(df_test_single["p2_opening_odds"], errors="coerce").values
+        )
         roi = flat_stake_roi(y_test, test_probs, o1, o2)
         report["roi"] = roi
-        print("\n  Flat-stake ROI (positive-EV bets, out-of-sample):")
-        print(f"    bets={roi['bets']}  profit={roi['profit_units']}u  "
-              f"ROI={roi['roi_pct']}%  hit={roi['hit_rate_pct']}%")
+        logger.info("Flat-stake ROI (positive-EV bets, out-of-sample):")
+        logger.info(
+            f"bets={roi['bets']}  profit={roi['profit_units']}u  "
+            f"ROI={roi['roi_pct']}%  hit={roi['hit_rate_pct']}%"
+        )
 
         close_p1 = close_p2 = None
         if "p1_closing_odds" in cols and "p2_closing_odds" in cols:
-            close_p1 = pd.to_numeric(df_test_single["p1_closing_odds"], errors="coerce").values
-            close_p2 = pd.to_numeric(df_test_single["p2_closing_odds"], errors="coerce").values
+            close_p1 = np.asarray(
+                pd.to_numeric(df_test_single["p1_closing_odds"], errors="coerce").values
+            )
+            close_p2 = np.asarray(
+                pd.to_numeric(df_test_single["p2_closing_odds"], errors="coerce").values
+            )
 
-            clv = clv_closing(test_probs, o1, o2, close_p1, close_p2, close_source="closing")
+            clv = clv_closing(
+                test_probs, o1, o2, close_p1, close_p2, close_source="closing"
+            )
             report["clv"] = clv
             # keep proxy key for backward-compatible consumers
             report["clv_proxy"] = {
@@ -105,10 +126,12 @@ def full_betting_report(df_test_single, y_test, test_probs, reports_dir=None) ->
                 "beat_rate_pct": clv["beat_rate_pct"],
                 "note": clv["note"],
             }
-            print(f"\n  CLV (open -> closing line): bets={clv['bets']}  "
-                  f"avg={clv['avg_clv']}  median={clv['median_clv']}  "
-                  f"beat_rate={clv['beat_rate_pct']}%")
-            print(f"    [{clv['note']}]")
+            logger.info(
+                f"CLV (open -> closing line): bets={clv['bets']}  "
+                f"avg={clv['avg_clv']}  median={clv['median_clv']}  "
+                f"beat_rate={clv['beat_rate_pct']}%"
+            )
+            logger.info(f"[{clv['note']}]")
 
             # Bet-level simulation with CLV, edge bands, Kelly, vs-close benchmark
             bets = simulate_bets(y_test, test_probs, o1, o2, close_p1, close_p2)
@@ -116,19 +139,21 @@ def full_betting_report(df_test_single, y_test, test_probs, reports_dir=None) ->
                 report["roi_ci"] = roi_with_ci(bets)
                 report["edge_segments"] = segment_by_edge(bets)
                 report["kelly"] = kelly_backtest(bets)
-                print(f"\n  ROI with CI: {report['roi_ci']}")
-                print(f"  Edge segments: {report['edge_segments']}")
-                print(f"  Kelly (1/4): {report['kelly']}")
+                logger.info(f"ROI with CI: {report['roi_ci']}")
+                logger.info(f"Edge segments: {report['edge_segments']}")
+                logger.info(f"Kelly (1/4): {report['kelly']}")
 
             bench = benchmark_vs_closing(y_test, test_probs, close_p1, close_p2)
             if bench:
                 report["vs_closing"] = bench
-                print(f"\n  Model vs closing market: "
-                      f"beats_logloss={bench['beats_closing_logloss']}  "
-                      f"model_ll={bench['model']['logloss']}  "
-                      f"close_ll={bench['closing']['logloss']}  n={bench['n']}")
+                logger.info(
+                    f"Model vs closing market: "
+                    f"beats_logloss={bench['beats_closing_logloss']}  "
+                    f"model_ll={bench['model']['logloss']}  "
+                    f"close_ll={bench['closing']['logloss']}  n={bench['n']}"
+                )
     else:
-        print("\n  ROI/CLV skipped (no odds in this model variant).")
+        logger.info("ROI/CLV skipped (no odds in this model variant).")
 
     # --- write markdown ---
     if reports_dir:
@@ -136,21 +161,25 @@ def full_betting_report(df_test_single, y_test, test_probs, reports_dir=None) ->
         path = os.path.join(reports_dir, "betting_metrics.md")
         with open(path, "w", encoding="utf-8") as f:
             f.write(_to_markdown(report))
-        print(f"\n  Betting metrics written to: {path}")
+        logger.info(f"Betting metrics written to: {path}")
 
     return report
 
 
-def _to_markdown(r: dict) -> str:
-    def _f(v):
+def _to_markdown(r: dict[str, Any]) -> str:
+    def _f(v: object) -> object:
         """Render np.float64 / int cleanly without the numpy repr wrapper."""
         import numpy as np
+
         if isinstance(v, np.generic):
             return v.item()
         return v
+
     lines = ["# Professional evaluation metrics\n"]
     lines.append(f"**Expected Calibration Error (ECE, 10-bin):** {_f(r.get('ece'))}  ")
-    lines.append("_Lower is better; measures how well predicted probabilities match reality._\n")
+    lines.append(
+        "_Lower is better; measures how well predicted probabilities match reality._\n"
+    )
     if "ci_95" in r:
         lines.append("## 95% confidence intervals (bootstrap)\n")
         lines.append("| Metric | Estimate | 95% CI |")
@@ -165,15 +194,23 @@ def _to_markdown(r: dict) -> str:
         lines.append(f"- Profit: **{_f(roi['profit_units'])} units**")
         lines.append(f"- ROI: **{_f(roi['roi_pct'])}%**")
         lines.append(f"- Hit rate: **{_f(roi['hit_rate_pct'])}%**")
-        lines.append("\n_1-unit flat stakes, settled on real outcomes. Indicative only:_")
-        lines.append("_real betting faces stake limits and the closing line being sharper._\n")
+        lines.append(
+            "\n_1-unit flat stakes, settled on real outcomes. Indicative only:_"
+        )
+        lines.append(
+            "_real betting faces stake limits and the closing line being sharper._\n"
+        )
     if "roi_ci" in r and r["roi_ci"].get("bets", 0):
         rc = r["roi_ci"]
         lo, hi = rc["roi_ci95"]
         lines.append("## ROI bootstrap CI\n")
-        lines.append(f"- ROI: **{_f(rc['roi_pct'])}%**  95% CI: **[{_f(lo)}, {_f(hi)}]**")
-        lines.append(f"- p(ROI<=0): **{_f(rc['p_value_roi_le_0'])}** - "
-                     f"significant@5%: **{_f(rc['significant_5pct'])}**\n")
+        lines.append(
+            f"- ROI: **{_f(rc['roi_pct'])}%**  95% CI: **[{_f(lo)}, {_f(hi)}]**"
+        )
+        lines.append(
+            f"- p(ROI<=0): **{_f(rc['p_value_roi_le_0'])}** - "
+            f"significant@5%: **{_f(rc['significant_5pct'])}**\n"
+        )
     if "clv" in r:
         clv = r["clv"]
         lines.append("## Closing Line Value (open -> close)\n")
@@ -186,8 +223,10 @@ def _to_markdown(r: dict) -> str:
     elif "clv_proxy" in r:
         clv = r["clv_proxy"]
         lines.append("## Closing Line Value\n")
-        lines.append(f"- Bets: **{_f(clv['bets'])}** - avg CLV: **{_f(clv.get('avg_clv_proxy'))}** - "
-                     f"beat rate: **{_f(clv['beat_rate_pct'])}%**")
+        lines.append(
+            f"- Bets: **{_f(clv['bets'])}** - avg CLV: **{_f(clv.get('avg_clv_proxy'))}** - "
+            f"beat rate: **{_f(clv['beat_rate_pct'])}%**"
+        )
         lines.append(f"\n> {clv.get('note', '')}\n")
     if "edge_segments" in r and r["edge_segments"]:
         lines.append("## ROI / CLV by model edge band\n")
@@ -202,13 +241,27 @@ def _to_markdown(r: dict) -> str:
     if "kelly" in r and r["kelly"].get("bets", 0):
         k = r["kelly"]
         lines.append("## Fractional Kelly (0.25)\n")
-        lines.append(f"- Final bankroll: **{_f(k['final_bankroll'])}** "
-                     f"(growth **{_f(k['growth_x'])}x**, max DD **{_f(k['max_drawdown_pct'])}%**)\n")
+        lines.append(
+            f"- Final bankroll: **{_f(k['final_bankroll'])}** "
+            f"(growth **{_f(k['growth_x'])}x**, max DD **{_f(k['max_drawdown_pct'])}%**)\n"
+        )
     if "vs_closing" in r and r["vs_closing"]:
         b = r["vs_closing"]
+        model_trip = (
+            _f(b["model"]["logloss"]),
+            _f(b["model"]["auc"]),
+            _f(b["model"]["brier"]),
+        )
+        closing_trip = (
+            _f(b["closing"]["logloss"]),
+            _f(b["closing"]["auc"]),
+            _f(b["closing"]["brier"]),
+        )
         lines.append("## Model vs closing market\n")
         lines.append(f"- n matches with close: **{_f(b['n'])}**")
-        lines.append(f"- Model logloss/AUC/Brier: **{(_f(b['model']['logloss']), _f(b['model']['auc']), _f(b['model']['brier']))}**")
-        lines.append(f"- Closing logloss/AUC/Brier: **{(_f(b['closing']['logloss']), _f(b['closing']['auc']), _f(b['closing']['brier']))}**")
-        lines.append(f"- Beats closing on logloss: **{_f(b['beats_closing_logloss'])}**\n")
+        lines.append(f"- Model logloss/AUC/Brier: **{model_trip}**")
+        lines.append(f"- Closing logloss/AUC/Brier: **{closing_trip}**")
+        lines.append(
+            f"- Beats closing on logloss: **{_f(b['beats_closing_logloss'])}**\n"
+        )
     return "\n".join(lines) + "\n"

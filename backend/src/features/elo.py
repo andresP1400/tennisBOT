@@ -5,6 +5,7 @@ features/elo_system.py; this module exposes compute_elo_features(), which
 walks the ORIGINAL (non-symmetric) dataset chronologically and attaches
 pre-match ELO columns.
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -15,7 +16,9 @@ from features.elo_system import EloRatingSystem
 logger = get_logger(__name__)
 
 
-def compute_elo_features(df_original: pd.DataFrame, return_state: bool = False):
+def compute_elo_features(
+    df_original: pd.DataFrame, return_state: bool = False
+) -> pd.DataFrame | tuple[pd.DataFrame, EloRatingSystem]:
     """Compute ELO features on the ORIGINAL (non-symmetric) dataset.
 
     The DataFrame must have winner/loser columns and be sorted by date.
@@ -31,7 +34,11 @@ def compute_elo_features(df_original: pd.DataFrame, return_state: bool = False):
 
     # Ensure sorted chronologically (match_date_est orders rounds within
     # the same tournament, so a final never updates ratings before a R32)
-    sort_cols = [c for c in ["match_date_est", "tourney_date", "match_num"] if c in df_original.columns]
+    sort_cols = [
+        c
+        for c in ["match_date_est", "tourney_date", "match_num"]
+        if c in df_original.columns
+    ]
     df = df_original.sort_values(sort_cols).reset_index(drop=True)
 
     has_est_date = "match_date_est" in df.columns
@@ -66,7 +73,9 @@ def compute_elo_features(df_original: pd.DataFrame, return_state: bool = False):
 
         # Update ratings (AFTER reading pre-match)
         elo_system.update(
-            w_id, l_id, surface,
+            w_id,
+            l_id,
+            surface,
             level=row.get("tourney_level", None),
             score=row.get("score", None),
             date=match_date,

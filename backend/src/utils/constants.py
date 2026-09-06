@@ -3,20 +3,59 @@
 Maps Jeff Sackmann CSV columns to internal naming conventions and lists
 the canonical feature column names exposed to the training pipeline.
 """
+
 from __future__ import annotations
 
 SACKMANN_MATCH_COLS: list[str] = [
-    "tourney_id", "tourney_name", "surface", "draw_size", "tourney_level",
-    "tourney_date", "match_num", "winner_id", "winner_seed", "winner_entry",
-    "winner_name", "winner_hand", "winner_ht", "winner_ioc", "winner_age",
-    "winner_rank", "winner_rank_points", "loser_id", "loser_seed",
-    "loser_entry", "loser_name", "loser_hand", "loser_ht", "loser_ioc",
-    "loser_age", "loser_rank", "loser_rank_points", "score", "best_of",
-    "round", "minutes",
-    "w_ace", "w_df", "w_svpt", "w_1stIn", "w_1stWon", "w_2ndWon",
-    "w_SvGms", "w_bpSaved", "w_bpFaced",
-    "l_ace", "l_df", "l_svpt", "l_1stIn", "l_1stWon", "l_2ndWon",
-    "l_SvGms", "l_bpSaved", "l_bpFaced",
+    "tourney_id",
+    "tourney_name",
+    "surface",
+    "draw_size",
+    "tourney_level",
+    "tourney_date",
+    "match_num",
+    "winner_id",
+    "winner_seed",
+    "winner_entry",
+    "winner_name",
+    "winner_hand",
+    "winner_ht",
+    "winner_ioc",
+    "winner_age",
+    "winner_rank",
+    "winner_rank_points",
+    "loser_id",
+    "loser_seed",
+    "loser_entry",
+    "loser_name",
+    "loser_hand",
+    "loser_ht",
+    "loser_ioc",
+    "loser_age",
+    "loser_rank",
+    "loser_rank_points",
+    "score",
+    "best_of",
+    "round",
+    "minutes",
+    "w_ace",
+    "w_df",
+    "w_svpt",
+    "w_1stIn",
+    "w_1stWon",
+    "w_2ndWon",
+    "w_SvGms",
+    "w_bpSaved",
+    "w_bpFaced",
+    "l_ace",
+    "l_df",
+    "l_svpt",
+    "l_1stIn",
+    "l_1stWon",
+    "l_2ndWon",
+    "l_SvGms",
+    "l_bpSaved",
+    "l_bpFaced",
 ]
 
 WINNER_TO_P1: dict[str, str] = {
@@ -110,12 +149,26 @@ WINNER_TO_P2_MAP: dict[str, str] = {
 
 # Indoor tournament identifiers (partial matches on tourney_name).
 KNOWN_INDOOR_TOURNAMENTS: list[str] = [
-    "Paris Masters", "Paris", "Bercy",
-    "Basel", "Vienna", "Stockholm", "Marseille",
-    "Rotterdam", "Montpellier", "Metz", "Sofia",
-    "St. Petersburg", "Moscow", "Antwerp",
-    "Milan", "Lyon", "Nur-Sultan", "Astana",
-    "Dallas", "ATP Finals",
+    "Paris Masters",
+    "Paris",
+    "Bercy",
+    "Basel",
+    "Vienna",
+    "Stockholm",
+    "Marseille",
+    "Rotterdam",
+    "Montpellier",
+    "Metz",
+    "Sofia",
+    "St. Petersburg",
+    "Moscow",
+    "Antwerp",
+    "Milan",
+    "Lyon",
+    "Nur-Sultan",
+    "Astana",
+    "Dallas",
+    "ATP Finals",
 ]
 
 # -----------------------------------------------------------------------
@@ -124,15 +177,27 @@ KNOWN_INDOOR_TOURNAMENTS: list[str] = [
 # historical values are almost always NaN and would pollute the imputer.
 # -----------------------------------------------------------------------
 CONTEXT_FEATURES: list[str] = [
-    "surface_Hard", "surface_Clay", "surface_Grass", "surface_Carpet",
-    "tourney_level_encoded", "round_encoded", "best_of",
-    "indoor_outdoor", "altitude", "month",
+    "surface_Hard",
+    "surface_Clay",
+    "surface_Grass",
+    "surface_Carpet",
+    "tourney_level_encoded",
+    "round_encoded",
+    "best_of",
+    "indoor_outdoor",
+    "altitude",
+    "month",
 ]
 
 PLAYER_DIFF_FEATURES: list[str] = [
-    "ranking_diff", "ranking_points_diff", "log_rank_diff",
-    "elo_diff", "elo_surface_diff", "elo_blend_diff",
-    "hand_matchup", "home_country_flag",
+    "ranking_diff",
+    "ranking_points_diff",
+    "log_rank_diff",
+    "elo_diff",
+    "elo_surface_diff",
+    "elo_blend_diff",
+    "hand_matchup",
+    "home_country_flag",
     "qualifier_flag_diff",
 ]
 
@@ -141,14 +206,18 @@ INTERACTION_FEATURES: list[str] = [
 ]
 
 ROLLING_FEATURES: list[str] = [
-    "ace_pct_diff", "df_pct_diff",
+    "ace_pct_diff",
+    "df_pct_diff",
     "first_serve_in_pct_diff",
-    "win_on_1st_serve_pct_diff", "win_on_2nd_serve_pct_diff",
-    "bp_saved_pct_diff", "bp_converted_pct_diff",
+    "win_on_1st_serve_pct_diff",
+    "win_on_2nd_serve_pct_diff",
+    "bp_saved_pct_diff",
+    "bp_converted_pct_diff",
     "first_serve_return_pts_won_pct_diff",
     "second_serve_return_pts_won_pct_diff",
     "return_games_won_pct_diff",
-    "win_pct_surface_diff", "win_pct_last_10_diff",
+    "win_pct_surface_diff",
+    "win_pct_last_10_diff",
     "tiebreak_win_pct_diff",
     "first_set_win_rate_diff",
 ]
@@ -160,7 +229,8 @@ FATIGUE_FEATURES: list[str] = [
 ]
 
 H2H_FEATURES: list[str] = [
-    "h2h_win_pct", "h2h_win_pct_surface",
+    "h2h_win_pct",
+    "h2h_win_pct_surface",
 ]
 
 # Closing odds / line movement deliberately excluded (train/serve mismatch).
@@ -181,17 +251,24 @@ MISC_FEATURES: list[str] = [
 
 # Runtime-only feature groups (API enrichment; NOT in ALL_FEATURES for training)
 WEATHER_FEATURES: list[str] = [
-    "temperature_c", "wind_speed_kmh", "rain_probability",
-    "humidity_pct", "cloud_cover_pct",
+    "temperature_c",
+    "wind_speed_kmh",
+    "rain_probability",
+    "humidity_pct",
+    "cloud_cover_pct",
 ]
 
 NEWS_FEATURES: list[str] = [
-    "injury_flag_diff", "injury_severity_diff",
-    "form_sentiment_diff", "coach_change_diff",
+    "injury_flag_diff",
+    "injury_severity_diff",
+    "form_sentiment_diff",
+    "coach_change_diff",
 ]
 
 LIVE_ODDS_FEATURES: list[str] = [
-    "live_implied_prob1", "live_implied_prob2", "live_margin",
+    "live_implied_prob1",
+    "live_implied_prob2",
+    "live_margin",
 ]
 
 ALL_FEATURES: list[str] = (

@@ -1,5 +1,8 @@
 """Track Record routes: read, settle, verify and match history."""
+
 from __future__ import annotations
+
+from typing import Any
 
 import joblib
 import numpy as np
@@ -13,9 +16,10 @@ router = APIRouter()
 
 
 @router.get("/api/track")
-def get_track(tour: str = "atp", limit: int = 500) -> dict:
+def get_track(tour: str = "atp", limit: int = 500) -> dict[str, Any]:
     try:
         from pipeline.track import read_log, summary
+
         records = read_log(tour)
         records = sorted(records, key=lambda r: r.get("ts", ""), reverse=True)[:limit]
         return {"summary": summary(tour), "records": records}
@@ -24,25 +28,27 @@ def get_track(tour: str = "atp", limit: int = 500) -> dict:
 
 
 @router.post("/api/track/settle")
-def settle_track(tour: str = "atp") -> dict:
+def settle_track(tour: str = "atp") -> dict[str, Any]:
     try:
         from pipeline.track import settle_predictions
+
         return settle_predictions(tour)
     except Exception as e:
         return {"error": str(e)}
 
 
 @router.get("/api/track/verify")
-def verify_track(tour: str = "atp") -> dict:
+def verify_track(tour: str = "atp") -> dict[str, Any]:
     try:
         from pipeline.track import verify_integrity
+
         return verify_integrity(tour)
     except Exception as e:
         return {"error": str(e)}
 
 
 @router.get("/api/history")
-def get_match_history(limit: int = 200) -> dict:
+def get_match_history(limit: int = 200) -> dict[str, Any]:
     try:
         for name in ("atp_stacking_model.pkl", "atp_model.pkl"):
             model_path = resolve_model_path(name)
@@ -54,7 +60,9 @@ def get_match_history(limit: int = 200) -> dict:
         bundle = joblib.load(model_path)
         data_path = BASE_DIR / "data" / "processed" / "atp_features.parquet"
         if not data_path.exists():
-            return {"error": "atp_features.parquet non trovato. Addestrare prima il modello!"}
+            return {
+                "error": "atp_features.parquet non trovato. Addestrare prima il modello!"
+            }
 
         df = pd.read_parquet(data_path)
         df = df[~df["tourney_name"].str.contains("Next Gen", na=False)]
@@ -66,7 +74,11 @@ def get_match_history(limit: int = 200) -> dict:
         keep_a = (base_ids % 2 == 0) & df["match_id"].str.endswith("_A", na=False)
         keep_b = (base_ids % 2 != 0) & df["match_id"].str.endswith("_B", na=False)
         df_single = df[keep_a | keep_b].copy()
-        sort_col = "match_date_est" if "match_date_est" in df_single.columns else "tourney_date"
+        sort_col = (
+            "match_date_est"
+            if "match_date_est" in df_single.columns
+            else "tourney_date"
+        )
         # Fetch enough rows for the requested limit (no artificial 100-row ceiling)
         take = max(int(limit), 1)
         df_single = df_single.sort_values(sort_col, ascending=False).head(take)
@@ -92,17 +104,19 @@ def get_match_history(limit: int = 200) -> dict:
             prob1 = float(final_probs[i])
             actual_winner = row.p1_name if row.label == 1 else row.p2_name
             d_str = str(getattr(row, "tourney_date", ""))[:10]
-            results.append({
-                "id": str(row.match_id),
-                "date": d_str,
-                "tournament": str(row.tourney_name),
-                "surface": str(row.surface),
-                "player1": str(row.p1_name),
-                "player2": str(row.p2_name),
-                "prob1": prob1,
-                "prob2": 1.0 - prob1,
-                "winner": actual_winner,
-            })
+            results.append(
+                {
+                    "id": str(row.match_id),
+                    "date": d_str,
+                    "tournament": str(row.tourney_name),
+                    "surface": str(row.surface),
+                    "player1": str(row.p1_name),
+                    "player2": str(row.p2_name),
+                    "prob1": prob1,
+                    "prob2": 1.0 - prob1,
+                    "winner": actual_winner,
+                }
+            )
         return {"matches": results[:limit]}
     except Exception as e:
         return {"error": str(e)}

@@ -8,6 +8,7 @@ This gives free opening + current odds for ~12 bookmakers on every listed
 tennis event, including already-finished matches — enough to build a CLV
 dataset and live value detection without paid APIs.
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -15,6 +16,7 @@ import json
 import os
 import sys
 import time
+from typing import Any
 
 from logging_config import get_logger
 from features.oddsportal_crypto import decrypt_payload
@@ -52,17 +54,27 @@ BOOKMAKER_IDS: dict[int, str] = {
 UNKNOWN_BOOKIE_IDS: set[int] = set()
 
 
-def event_row(event: dict, odds_by_bookie: dict, names: dict[int, str] | None = None) -> dict:
+def event_row(
+    event: dict[str, Any],
+    odds_by_bookie: dict[int, dict[str, Any]],
+    names: dict[int, str] | None = None,
+) -> dict[str, Any]:
     """Flatten one event + its bookmaker odds into a CSV-friendly row.
 
     Per-bookie columns keep the numeric id (h_27/oh_27/...); a ``bookies``
     list maps ids to resolved names for readability.
     """
     names = names or {}
-    row: dict = {
-        "match_date": _dt.datetime.fromtimestamp(
-            int(event.get("date-start-timestamp") or 0), tz=_dt.timezone.utc
-        ).date().isoformat() if event.get("date-start-timestamp") else None,
+    row: dict[str, Any] = {
+        "match_date": (
+            _dt.datetime.fromtimestamp(
+                int(event.get("date-start-timestamp") or 0), tz=_dt.timezone.utc
+            )
+            .date()
+            .isoformat()
+            if event.get("date-start-timestamp")
+            else None
+        ),
         "home": event.get("home-name"),
         "away": event.get("away-name"),
         "tour": (event.get("superTemplate") or {}).get("name"),
@@ -79,8 +91,16 @@ def event_row(event: dict, odds_by_bookie: dict, names: dict[int, str] | None = 
         row[f"oa_{bid}"] = o["opening_away"]
     homes = [o["home"] for o in odds_by_bookie.values()]
     aways = [o["away"] for o in odds_by_bookie.values()]
-    opens_h = [o["opening_home"] for o in odds_by_bookie.values() if o["opening_home"] == o["opening_home"]]
-    opens_a = [o["opening_away"] for o in odds_by_bookie.values() if o["opening_away"] == o["opening_away"]]
+    opens_h = [
+        o["opening_home"]
+        for o in odds_by_bookie.values()
+        if o["opening_home"] == o["opening_home"]
+    ]
+    opens_a = [
+        o["opening_away"]
+        for o in odds_by_bookie.values()
+        if o["opening_away"] == o["opening_away"]
+    ]
     row["best_home"] = max(homes) if homes else None
     row["best_away"] = max(aways) if aways else None
     row["best_open_home"] = max(opens_h) if opens_h else None
@@ -114,7 +134,8 @@ def scrape_tennis(
     if tour_filter:
         tl = tour_filter.lower()
         events = [
-            e for e in events
+            e
+            for e in events
             if tl in ((e.get("superTemplate") or {}).get("name", "")).lower()
         ]
     if max_events:
@@ -122,7 +143,7 @@ def scrape_tennis(
     logger.info(f"  Scraping odds for {len(events)} tennis events (xHash={xhash}) ...")
 
     names = fetch_providers_names(use_backend=use_backend)
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     ok = 0
     fail = 0
     for i, ev in enumerate(events, 1):
@@ -148,7 +169,9 @@ def scrape_tennis(
 
     stamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d_%H%M")
     tag = f"{tour_filter}_{stamp}" if tour_filter else stamp
-    base = out_dir or os.path.join(config.RAW_DIR, (tour_filter or "tennis"), "odds_portal")
+    base = out_dir or os.path.join(
+        config.RAW_DIR, (tour_filter or "tennis"), "odds_portal"
+    )
     os.makedirs(base, exist_ok=True)
     jsonl_path = os.path.join(base, f"oddsportal_{tag}.jsonl")
     csv_path = os.path.join(base, f"oddsportal_{tag}.csv")
@@ -159,16 +182,20 @@ def scrape_tennis(
 
     try:
         import pandas as pd
+
         pd.DataFrame(rows).to_csv(csv_path, index=False)
     except Exception:  # noqa: BLE001
         pass
 
     with open(os.path.join(base, "providers.json"), "w", encoding="utf-8") as f:
-        json.dump({str(k): v for k, v in sorted(names.items())}, f, ensure_ascii=False, indent=1)
+        json.dump(
+            {str(k): v for k, v in sorted(names.items())},
+            f,
+            ensure_ascii=False,
+            indent=1,
+        )
 
-    logger.info(
-        f"  Saved {len(rows)} events ({ok} ok / {fail} failed) -> {jsonl_path}"
-    )
+    logger.info(f"  Saved {len(rows)} events ({ok} ok / {fail} failed) -> {jsonl_path}")
     return jsonl_path
 
 
@@ -179,7 +206,9 @@ def bookmaker_name(bookie_id: int) -> str:
 _PROVIDERS_CACHE: dict[int, str] | None = None
 
 
-def fetch_providers_names(use_backend: bool = True, force_refresh: bool = False) -> dict[int, str]:
+def fetch_providers_names(
+    use_backend: bool = True, force_refresh: bool = False
+) -> dict[int, str]:
     """Fetch the bookmaker id -> name map from /ajax-providers-bonus-data/0/.
 
     The response is encrypted like every other backend .dat payload and
@@ -191,8 +220,14 @@ def fetch_providers_names(use_backend: bool = True, force_refresh: bool = False)
     if _PROVIDERS_CACHE is not None and not force_refresh:
         return _PROVIDERS_CACHE
     try:
-        prefix = "https://backend.oddsportal.com" if use_backend else "https://www.centroquote.it/proxy"
-        resp = _fetch(f"{prefix}/ajax-providers-bonus-data/0/?geo=it&lang=it", referer=_HOME_URL)
+        prefix = (
+            "https://backend.oddsportal.com"
+            if use_backend
+            else "https://www.centroquote.it/proxy"
+        )
+        resp = _fetch(
+            f"{prefix}/ajax-providers-bonus-data/0/?geo=it&lang=it", referer=_HOME_URL
+        )
         payload = decrypt_payload(resp)
         names = (payload.get("d") or {}).get("providersNames") or {}
         out: dict[int, str] = {}
@@ -212,12 +247,20 @@ def fetch_providers_names(use_backend: bool = True, force_refresh: bool = False)
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Scrape OddsPortal tennis odds (free, no API)")
+    parser = argparse.ArgumentParser(
+        description="Scrape OddsPortal tennis odds (free, no API)"
+    )
     parser.add_argument("--tour", choices=["atp", "wta"], default=None)
-    parser.add_argument("--status", choices=["scheduled", "finished", "all"], default="all")
+    parser.add_argument(
+        "--status", choices=["scheduled", "finished", "all"], default="all"
+    )
     parser.add_argument("--max-events", type=int, default=None)
     parser.add_argument("--out", default=None)
-    parser.add_argument("--proxy", action="store_true", help="route via centroquote proxy instead of backend")
+    parser.add_argument(
+        "--proxy",
+        action="store_true",
+        help="route via centroquote proxy instead of backend",
+    )
     args = parser.parse_args()
 
     status_map = {"scheduled": {1}, "finished": {3}, "all": None}

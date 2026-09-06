@@ -52,7 +52,7 @@ export function AutoDailyCard() {
             Generated automatically on page open: model prediction for EVERY{" "}
             {tour.toUpperCase()} match of the day (all tournaments in the live feed) with
             odds, edge vs market, value-bet flags, player context (rank, recent form,
-            retirement marks — from local data) and weather (open-meteo). The "News"
+            retirement marks — from local data) and weather (open-meteo). The &quot;News&quot;
             button researches injuries/form/coach for that match on demand. Predictions
             are logged to the Track Record automatically. Source:{" "}
             <span className="font-mono">/api/predict-card?tour={tour}</span>.
@@ -93,14 +93,14 @@ export function AutoDailyCard() {
             <div className="flex flex-wrap gap-2 text-xs">
               <Badge variant="outline">{card.count} matches</Badge>
               <Badge
-                variant={card.n_value_bets > 0 ? "default" : "outline"}
+                variant={(card.n_value_bets ?? 0) > 0 ? "default" : "outline"}
                 className={
-                  card.n_value_bets > 0
+                  (card.n_value_bets ?? 0) > 0
                     ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/40"
                     : ""
                 }
               >
-                {card.n_value_bets} value bets (edge ≥ {(card.min_edge * 100).toFixed(0)}%)
+                {card.n_value_bets ?? 0} value bets (edge ≥ {((card.min_edge ?? 0.05) * 100).toFixed(0)}%)
               </Badge>
               <Badge variant="outline">{card.n_logged ?? 0} logged to Track</Badge>
               <Badge variant="outline" className="font-mono">

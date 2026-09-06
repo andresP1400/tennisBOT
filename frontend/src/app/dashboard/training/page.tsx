@@ -5,16 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { IconAdjustments, IconPlayerPlay, IconTerminal2, IconCheck, IconX, IconCopy } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { API_DISPLAY_URL, ApiError, apiFetch } from "@/lib/api"
-
-interface TrainingStatus {
-  is_training: boolean
-  current_task: string
-  progress: number
-  logs: string[]
-  error: boolean
-  success: boolean
-}
+import { API_DISPLAY_URL } from "@/lib/api"
+import { getTrainingStatus, startTraining } from "@/services/training"
+import type { TrainingStatus } from "@/types/api"
 
 export default function TrainingPage() {
   const [trials, setTrials] = useState(50)
@@ -38,7 +31,7 @@ export default function TrainingPage() {
     const tick = async () => {
       if (controller.signal.aborted) return
       try {
-        const data = await apiFetch<TrainingStatus>("/api/status", { signal: controller.signal })
+        const data = await getTrainingStatus(controller.signal)
         setStatus({
           is_training: !!data.is_training,
           current_task: data.current_task ?? "Idle",
@@ -52,7 +45,7 @@ export default function TrainingPage() {
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
         setBackendOnline(false)
-        setPollError(err instanceof ApiError ? err.message : "Backend non raggiungibile")
+        setPollError(err instanceof Error ? err.message : "Backend non raggiungibile")
       }
     }
     void tick()
@@ -71,14 +64,11 @@ export default function TrainingPage() {
   const handleStart = async () => {
     if (status.is_training) return
     try {
-      await apiFetch("/api/train/start", {
-        method: "POST",
-        body: { tour, trials, startYear, endYear },
-      })
+      await startTraining({ tour, trials, startYear, endYear })
       setPollError(null)
       setBackendOnline(true)
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof Error) {
         alert(`Training non avviato: ${err.message}`)
       } else {
         alert("Errore avvio server Python. Hai lanciato 'python api_server.py' (porta 9090)?")

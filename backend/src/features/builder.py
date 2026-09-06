@@ -18,6 +18,7 @@ Steps:
 The heavy lifting is in features/builder_helpers.py; this module keeps
 the orchestration entry point build_features().
 """
+
 import os
 import sys
 
@@ -30,10 +31,12 @@ logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 from features.builder_helpers import (  # noqa: E402
-    compute_diffs,
     compute_news_features,
-    rename_forward_features_for_symmetric,
     save_inference_state,
+)
+from features.builder_symmetric import (  # noqa: E402
+    compute_diffs,
+    rename_forward_features_for_symmetric,
 )
 from features.cleaning import (  # noqa: E402
     add_altitude,
@@ -56,10 +59,10 @@ from features.weather import compute_weather_features  # noqa: E402
 
 def build_features(
     tour: str = "atp",
-    start_year: int = None,
-    end_year: int = None,
-    odds_path: str = None,
-    stats_from_year: int = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    odds_path: str | None = None,
+    stats_from_year: int | None = None,
 ) -> pd.DataFrame:
     """Full feature engineering pipeline.
 
@@ -90,13 +93,13 @@ def build_features(
 
     # Forward-only features with return_state for live inference
     logger.info("\n[3/10] Computing ELO ratings ...")
-    df, elo_state = compute_elo_features(df, return_state=True)
+    df, elo_state = compute_elo_features(df, return_state=True)  # type: ignore[assignment]
     logger.info("\n[4/10] Computing rolling statistics ...")
-    df, rolling_state = compute_rolling_features(df, return_state=True)
+    df, rolling_state = compute_rolling_features(df, return_state=True)  # type: ignore[assignment]
     logger.info("\n[5/10] Computing fatigue features ...")
-    df, fatigue_state = compute_fatigue_features(df, return_state=True)
+    df, fatigue_state = compute_fatigue_features(df, return_state=True)  # type: ignore[assignment]
     logger.info("\n[6/10] Computing H2H features ...")
-    df, h2h_state = compute_h2h_features(df, return_state=True)
+    df, h2h_state = compute_h2h_features(df, return_state=True)  # type: ignore[assignment]
 
     logger.info("\n[6b/10] Processing odds ...")
     odds_df = load_odds_data(odds_path, tour=tour)
@@ -104,12 +107,20 @@ def build_features(
 
     # Weather is RUNTIME-only (API). Batch historical fetch is slow/rate-limited
     # and weather columns are NOT in ALL_FEATURES, so skip live API during build.
-    logger.info("\n[6c/10] Weather columns left empty for batch (live via /api/weather) ...")
-    for col in ["temperature_c", "wind_speed_kmh", "rain_probability", "humidity_pct", "cloud_cover_pct"]:
+    logger.info(
+        "\n[6c/10] Weather columns left empty for batch (live via /api/weather) ..."
+    )
+    for col in [
+        "temperature_c",
+        "wind_speed_kmh",
+        "rain_probability",
+        "humidity_pct",
+        "cloud_cover_pct",
+    ]:
         if col not in df.columns:
             df[col] = np.nan
     # Optional opt-in for offline research: TENNISBOT_BATCH_WEATHER=1
-    if os.environ.get("TENNISBOT_BATCH_WEATHER", "").strip() in ("1", "true", "yes"):
+    if config.settings.tennisbot_batch_weather.strip() in ("1", "true", "yes"):
         try:
             df = compute_weather_features(df)
         except Exception as exc:
@@ -135,7 +146,9 @@ def build_features(
     if stats_from_year:
         before = len(sym)
         sym = sym[sym["year"] >= stats_from_year].reset_index(drop=True)
-        logger.info(f"  Filtered to year >= {stats_from_year}: {before:,} -> {len(sym):,} rows")
+        logger.info(
+            f"  Filtered to year >= {stats_from_year}: {before:,} -> {len(sym):,} rows"
+        )
 
     threshold = config.COLD_START_THRESHOLD
     if "p1_match_count" in sym.columns and "p2_match_count" in sym.columns:
@@ -172,14 +185,24 @@ def build_features(
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Build feature dataset for tennis prediction")
+
+    parser = argparse.ArgumentParser(
+        description="Build feature dataset for tennis prediction"
+    )
     parser.add_argument("--tour", default="atp", choices=["atp", "wta"])
-    parser.add_argument("--start", type=int, default=None,
-                        help="Start year for raw data loading (default: 1968)")
+    parser.add_argument(
+        "--start",
+        type=int,
+        default=None,
+        help="Start year for raw data loading (default: 1968)",
+    )
     parser.add_argument("--end", type=int, default=None)
-    parser.add_argument("--odds", type=str, default=None,
-                        help="Path to odds CSV file")
-    parser.add_argument("--stats-from", type=int, default=None,
-                        help=f"Only output rows from this year (default: {config.STATS_RELIABLE_FROM})")
+    parser.add_argument("--odds", type=str, default=None, help="Path to odds CSV file")
+    parser.add_argument(
+        "--stats-from",
+        type=int,
+        default=None,
+        help=f"Only output rows from this year (default: {config.STATS_RELIABLE_FROM})",
+    )
     args = parser.parse_args()
     build_features(args.tour, args.start, args.end, args.odds, args.stats_from)

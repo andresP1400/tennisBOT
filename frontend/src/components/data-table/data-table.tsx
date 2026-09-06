@@ -17,57 +17,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { API_BASE_URL, ApiError, apiFetch } from "@/lib/api"
-
-interface MatchRow {
-  id: string
-  date: string
-  tournament: string
-  surface: string
-  player1: string
-  player2: string
-  prob1: number
-  prob2: number
-  winner: string
-}
-
-interface HistoryResponse {
-  matches: MatchRow[]
-  error?: string
-}
+import { API_BASE_URL } from "@/lib/api"
+import { useHistory } from "@/hooks/useHistory"
 
 export function DataTable() {
-  const [matches, setMatches] = React.useState<MatchRow[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState("")
   const [limit, setLimit] = React.useState(30)
-
-  React.useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError("")
-      try {
-        const data = await apiFetch<HistoryResponse>(`/api/history?limit=${limit}`, {
-          signal: controller.signal,
-        })
-        if (data.error) {
-          setError(data.error)
-          setMatches([])
-        } else {
-          setMatches(data.matches ?? [])
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        setError(err instanceof ApiError ? err.message : "Impossibile connettersi a FastAPI. Avvia Python!")
-        setMatches([])
-      } finally {
-        setLoading(false)
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [limit])
+  const { matches, loading, error } = useHistory(limit)
 
   return (
     <Card>

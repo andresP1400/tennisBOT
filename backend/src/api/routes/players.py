@@ -1,5 +1,8 @@
 """Player roster and today's-matches routes."""
+
 from __future__ import annotations
+
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -10,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/api/players")
-def list_players(q: str = "", limit: int = 100, tour: str = "atp") -> dict:
+def list_players(q: str = "", limit: int = 100, tour: str = "atp") -> dict[str, Any]:
     if tour not in ("atp", "wta"):
         raise HTTPException(status_code=400, detail="Invalid tour")
     state = load_state(tour)
@@ -31,7 +34,7 @@ def list_players(q: str = "", limit: int = 100, tour: str = "atp") -> dict:
 
 
 @router.get("/api/todays-matches")
-def get_todays_matches(tour: str = "atp") -> dict:
+def get_todays_matches(tour: str = "atp") -> dict[str, Any]:
     """Return today's matches, cached with stale-while-revalidate.
 
     Fetching from SofaScore/TheOddsAPI can take 30-60s, which blows past
@@ -39,6 +42,7 @@ def get_todays_matches(tour: str = "atp") -> dict:
     the background so callers always get a fast cached response.
     """
     from features.live_odds import LiveOddsScraper
+
     scraper = LiveOddsScraper()
     result = scraper.get_todays_matches_cached(tour)
-    return sanitize_nan({"tour": tour, "count": len(result), "matches": result})
+    return sanitize_nan({"tour": tour, "count": len(result), "matches": result})  # type: ignore[no-any-return]

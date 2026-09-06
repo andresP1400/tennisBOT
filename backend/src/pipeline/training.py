@@ -20,6 +20,7 @@ benchmarks); this module is the orchestration entry point.
 import os
 import sys
 import warnings
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -32,16 +33,17 @@ from logging_config import get_logger
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
+from exceptions import DataNotFoundError  # noqa: E402
 from pipeline.calibration import calibrate_probabilities  # noqa: E402
 from pipeline.split import fixed_temporal_split  # noqa: E402
 from pipeline.train_helpers import (  # noqa: E402
     benchmark_vs_market,
-    generate_oof_predictions,
     get_feature_columns,
     predict_stacking,
     symmetrize_probs,
     train_meta_learner,
 )
+from pipeline.train_oof import generate_oof_predictions  # noqa: E402
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -49,11 +51,11 @@ warnings.filterwarnings("ignore", category=UserWarning)
 def train_pipeline(
     tour: str = "atp",
     n_optuna_trials: int = 50,
-    start_year: int = None,
-    end_year: int = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
     use_odds: bool = False,
-    model_name: str = None,
-) -> dict:
+    model_name: str | None = None,
+) -> dict[str, Any]:
     """Full training pipeline.
 
     Steps:
@@ -74,7 +76,7 @@ def train_pipeline(
     logger.info("#" * 70)
     data_path = os.path.join(config.PROCESSED_DIR, f"{tour}_features.parquet")
     if not os.path.exists(data_path):
-        raise FileNotFoundError(
+        raise DataNotFoundError(
             f"Feature dataset not found: {data_path}. Run `python main.py features` first."
         )
     df = pd.read_parquet(data_path)
@@ -85,8 +87,12 @@ def train_pipeline(
 
     variant = "odds" if use_odds else "no-odds"
     if model_name is None:
-        model_name = f"{tour}_model_odds.pkl" if use_odds else f"{tour}_stacking_model.pkl"
-    logger.info(f"\n  Loaded {len(df):,} rows from {data_path} (Filter: {start_year}-{end_year})")
+        model_name = (
+            f"{tour}_model_odds.pkl" if use_odds else f"{tour}_stacking_model.pkl"
+        )
+    logger.info(
+        f"\n  Loaded {len(df):,} rows from {data_path} (Filter: {start_year}-{end_year})"
+    )
     logger.info(f"  Variant: {variant}  ->  {model_name}")
     feature_cols = get_feature_columns(df, use_odds=use_odds)
 
@@ -115,8 +121,7 @@ def train_pipeline(
 
     logger.info("\n  Calibrating on validation set ...")
     val_probs_raw = predict_stacking(
-        df_val, feature_cols, imputer, scaler,
-        oof_result["models"], meta_model
+        df_val, feature_cols, imputer, scaler, oof_result["models"], meta_model
     )
     val_probs_all = symmetrize_probs(df_val, val_probs_raw)
     y_val_all = df_val["label"].values
@@ -125,8 +130,7 @@ def train_pipeline(
 
     logger.info("\n  Predicting on TEST set (one-time evaluation) ...")
     test_probs_raw = predict_stacking(
-        df_test, feature_cols, imputer, scaler,
-        oof_result["models"], meta_model
+        df_test, feature_cols, imputer, scaler, oof_result["models"], meta_model
     )
     test_probs_all = calibrator.predict(
         symmetrize_probs(df_test, test_probs_raw).reshape(-1, 1)
@@ -134,24 +138,29 @@ def train_pipeline(
     y_test_all = df_test["label"].values
 
     logger.info("\n  De-duplicating to single matches for evaluation ...")
-    def get_balanced_mask(dataset: pd.DataFrame) -> np.ndarray:
+
+    def get_balanced_mask(dataset: pd.DataFrame) -> np.ndarray[Any, Any]:
         try:
             base_ids = dataset["match_id"].str.split("_").str[0].astype(int)
         except ValueError:
             base_ids = pd.Series(range(len(dataset)))
         keep_a = (base_ids % 2 == 0) & dataset["match_id"].str.endswith("_A", na=False)
         keep_b = (base_ids % 2 != 0) & dataset["match_id"].str.endswith("_B", na=False)
-        return (keep_a | keep_b).values
+        return np.asarray((keep_a | keep_b).values)
 
     val_single_mask = get_balanced_mask(df_val)
     val_probs = val_probs_all[val_single_mask]
     y_val = y_val_all[val_single_mask]
-    logger.info(f"  VAL: {len(df_val):,} symmetric -> {val_single_mask.sum():,} single matches")
+    logger.info(
+        f"  VAL: {len(df_val):,} symmetric -> {val_single_mask.sum():,} single matches"
+    )
     test_single_mask = get_balanced_mask(df_test)
     test_probs = test_probs_all[test_single_mask]
     y_test = y_test_all[test_single_mask]
     df_test_single = df_test[test_single_mask]
-    logger.info(f"  TEST: {len(df_test):,} symmetric -> {test_single_mask.sum():,} single matches")
+    logger.info(
+        f"  TEST: {len(df_test):,} symmetric -> {test_single_mask.sum():,} single matches"
+    )
 
     os.makedirs(config.MODELS_DIR, exist_ok=True)
     model_bundle = {
@@ -180,6 +189,7 @@ def train_pipeline(
 
     report_tour = f"{tour}_odds" if use_odds else tour
     from pipeline.evaluation import full_evaluation
+
     full_evaluation(
         y_test=y_test,
         test_probs=test_probs,
@@ -197,6 +207,7 @@ def train_pipeline(
 
     try:
         from pipeline.betting_eval import full_betting_report
+
         reports_dir = os.path.join(config.REPORTS_DIR, report_tour)
         full_betting_report(df_test_single, y_test, test_probs, reports_dir=reports_dir)
     except Exception as exc:
@@ -214,11 +225,21 @@ def train_pipeline(
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Train stacking ensemble for tennis prediction")
+
+    parser = argparse.ArgumentParser(
+        description="Train stacking ensemble for tennis prediction"
+    )
     parser.add_argument("--tour", default="atp", choices=["atp", "wta"])
-    parser.add_argument("--optuna-trials", type=int, default=50,
-                        help="Number of Optuna trials per model (default: 50)")
-    parser.add_argument("--use-odds", action="store_true",
-                        help="Train the market-aware variant with opening odds")
+    parser.add_argument(
+        "--optuna-trials",
+        type=int,
+        default=50,
+        help="Number of Optuna trials per model (default: 50)",
+    )
+    parser.add_argument(
+        "--use-odds",
+        action="store_true",
+        help="Train the market-aware variant with opening odds",
+    )
     args = parser.parse_args()
     train_pipeline(args.tour, args.optuna_trials, use_odds=args.use_odds)

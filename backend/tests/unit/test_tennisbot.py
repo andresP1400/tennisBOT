@@ -13,6 +13,7 @@ Test layers:
   - H2H (symmetric pair key works)
   - Fatigue (NaN safety)
 """
+
 from __future__ import annotations
 
 import sys
@@ -112,13 +113,15 @@ def _make_yearly_df(years: list[int], n_per_year: int = 10) -> pd.DataFrame:
     rows: list[dict] = []
     for y in years:
         for i in range(n_per_year):
-            rows.append({
-                "year": y,
-                "tourney_date": pd.Timestamp(f"{y}-06-{i % 28 + 1:02d}"),
-                "label": i % 2,
-                "p1_name": f"P1_{i}",
-                "p2_name": f"P2_{i}",
-            })
+            rows.append(
+                {
+                    "year": y,
+                    "tourney_date": pd.Timestamp(f"{y}-06-{i % 28 + 1:02d}"),
+                    "label": i % 2,
+                    "p1_name": f"P1_{i}",
+                    "p2_name": f"P2_{i}",
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -138,12 +141,19 @@ def test_walk_forward_skips_empty_folds() -> None:
     from pipeline.split import walk_forward_splits
 
     # Build df with a gap so some folds would be empty -> must be skipped
-    df = pd.concat([
-        _make_yearly_df([2015, 2016]),
-        _make_yearly_df([2018, 2019]),
-    ], ignore_index=True)
+    df = pd.concat(
+        [
+            _make_yearly_df([2015, 2016]),
+            _make_yearly_df([2018, 2019]),
+        ],
+        ignore_index=True,
+    )
     splits = walk_forward_splits(
-        df, train_start=2015, train_end_initial=2015, val_years=1, step=1,
+        df,
+        train_start=2015,
+        train_end_initial=2015,
+        val_years=1,
+        step=1,
     )
     for s in splits:
         assert len(s["train"]) > 0
@@ -403,7 +413,11 @@ def test_player_name_matching_is_accent_insensitive() -> None:
 
     import pipeline.inference as inf
 
-    assert inf.fold_name("Miomir Kecmanovi\u0107") == inf.fold_name("Miomir Kecmanovic") == "miomir kecmanovic"
+    assert (
+        inf.fold_name("Miomir Kecmanovi\u0107")
+        == inf.fold_name("Miomir Kecmanovic")
+        == "miomir kecmanovic"
+    )
     assert inf.fold_name("Toma\u0161 Macha\u010d") == inf.fold_name("Tomas Machac")
 
     state = {
@@ -454,15 +468,17 @@ def test_calibration_logger_initialized_at_import() -> None:
     first_def_idx = next(
         (i for i, ln in enumerate(lines) if ln.startswith("def ")), len(lines)
     )
-    assert logger_assign_idx < first_def_idx, (
-        "logger = get_logger(...) must be defined BEFORE any function that uses it"
-    )
+    assert (
+        logger_assign_idx < first_def_idx
+    ), "logger = get_logger(...) must be defined BEFORE any function that uses it"
 
 
 # ----------------------------------------------------------------------
 # End-to-end training smoke test
 # ----------------------------------------------------------------------
-def test_training_pipeline_runs_end_to_end_with_synthetic_data(tmp_path, monkeypatch) -> None:
+def test_training_pipeline_runs_end_to_end_with_synthetic_data(
+    tmp_path, monkeypatch
+) -> None:
     """Run the full pipeline on synthetic data and verify Platt calibration
     produces continuous (not binary) probabilities.
 
@@ -478,33 +494,57 @@ def test_training_pipeline_runs_end_to_end_with_synthetic_data(tmp_path, monkeyp
     # Build a tiny synthetic parquet with the right shape.
     rng = np.random.default_rng(0)
     n = 1500
-    df = pd.DataFrame({
-        "match_id": [f"{i}_A" if i % 2 == 0 else f"{i}_B" for i in range(n)],
-        "tourney_date": pd.to_datetime("2020-01-01")
+    df = pd.DataFrame(
+        {
+            "match_id": [f"{i}_A" if i % 2 == 0 else f"{i}_B" for i in range(n)],
+            "tourney_date": pd.to_datetime("2020-01-01")
             + pd.to_timedelta(rng.integers(0, 1500, size=n), unit="D"),
-        "tourney_name": rng.choice(["AO", "RG", "W"], size=n),
-        "surface": rng.choice(["Hard", "Clay", "Grass"], size=n),
-        "year": 2020 + rng.integers(0, 5, size=n),
-        "p1_name": "A", "p2_name": "B",
-        "label": rng.integers(0, 2, size=n),
-    })
+            "tourney_name": rng.choice(["AO", "RG", "W"], size=n),
+            "surface": rng.choice(["Hard", "Clay", "Grass"], size=n),
+            "year": 2020 + rng.integers(0, 5, size=n),
+            "p1_name": "A",
+            "p2_name": "B",
+            "label": rng.integers(0, 2, size=n),
+        }
+    )
     feature_names = [
-        "ranking_diff", "ranking_points_diff", "elo_diff", "elo_surface_diff",
-        "age_diff", "height_diff", "hand_matchup", "home_country_flag",
-        "qualifier_flag_diff", "h2h_win_pct", "h2h_win_pct_surface",
-        "days_rest_diff", "matches_last_7_days_diff",
-        "ace_pct_diff", "df_pct_diff", "first_serve_in_pct_diff",
-        "win_on_1st_serve_pct_diff", "win_on_2nd_serve_pct_diff",
-        "bp_saved_pct_diff", "bp_converted_pct_diff",
+        "ranking_diff",
+        "ranking_points_diff",
+        "elo_diff",
+        "elo_surface_diff",
+        "age_diff",
+        "height_diff",
+        "hand_matchup",
+        "home_country_flag",
+        "qualifier_flag_diff",
+        "h2h_win_pct",
+        "h2h_win_pct_surface",
+        "days_rest_diff",
+        "matches_last_7_days_diff",
+        "ace_pct_diff",
+        "df_pct_diff",
+        "first_serve_in_pct_diff",
+        "win_on_1st_serve_pct_diff",
+        "win_on_2nd_serve_pct_diff",
+        "bp_saved_pct_diff",
+        "bp_converted_pct_diff",
         "first_serve_return_pts_won_pct_diff",
         "second_serve_return_pts_won_pct_diff",
         "return_games_won_pct_diff",
-        "win_pct_surface_diff", "win_pct_last_10_diff",
-        "tiebreak_win_pct_diff", "first_set_win_rate_diff",
-        "sos_last_10_diff", "service_games_won_pct_diff",
-        "surface_Hard", "surface_Clay", "surface_Grass",
-        "tourney_level_encoded", "round_encoded", "best_of",
-        "indoor_outdoor", "month",
+        "win_pct_surface_diff",
+        "win_pct_last_10_diff",
+        "tiebreak_win_pct_diff",
+        "first_set_win_rate_diff",
+        "sos_last_10_diff",
+        "service_games_won_pct_diff",
+        "surface_Hard",
+        "surface_Clay",
+        "surface_Grass",
+        "tourney_level_encoded",
+        "round_encoded",
+        "best_of",
+        "indoor_outdoor",
+        "month",
     ]
     for name in feature_names:
         df[name] = rng.normal(0, 1, size=n).astype(float)

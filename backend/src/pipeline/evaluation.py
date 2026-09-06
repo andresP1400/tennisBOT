@@ -9,12 +9,15 @@ Metrics (in order of importance):
   - ROC-AUC
   - Accuracy
 """
+
 from __future__ import annotations
 
 import os
 import sys
 from typing import Any
 
+import numpy as np
+import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     accuracy_score,
@@ -38,7 +41,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 
 
-def print_metrics_summary(y_true, y_pred_proba, label: str = "TEST") -> dict:
+def print_metrics_summary(
+    y_true: np.ndarray[Any, Any],
+    y_pred_proba: np.ndarray[Any, Any],
+    label: str = "TEST",
+) -> dict[str, Any]:
     """Print all key metrics for one split."""
     brier = brier_score_loss(y_true, y_pred_proba)
     ll = log_loss(y_true, y_pred_proba)
@@ -52,7 +59,9 @@ def print_metrics_summary(y_true, y_pred_proba, label: str = "TEST") -> dict:
     logger.info(f"  ROC-AUC:      {auc:.5f}  (higher is better)")
     logger.info(f"  Accuracy:     {acc:.4f}  ({acc*100:.2f}%)")
     if auc > 0.80:
-        logger.warning("\n  [WARNING] AUC > 0.80 detected! This may indicate data leakage.")
+        logger.warning(
+            "\n  [WARNING] AUC > 0.80 detected! This may indicate data leakage."
+        )
         logger.info("  Check feature importance and SHAP plots carefully.")
     elif auc > 0.72:
         logger.info("\n  [EXCELLENT] AUC in the 0.72-0.80 range -- top-tier model.")
@@ -64,13 +73,13 @@ def print_metrics_summary(y_true, y_pred_proba, label: str = "TEST") -> dict:
 
 
 def full_evaluation(
-    y_test,
-    test_probs,
-    y_val,
-    val_probs,
-    df_test,
-    feature_cols,
-    lgbm_model,
+    y_test: np.ndarray[Any, Any],
+    test_probs: np.ndarray[Any, Any],
+    y_val: np.ndarray[Any, Any],
+    val_probs: np.ndarray[Any, Any],
+    df_test: pd.DataFrame,
+    feature_cols: list[str],
+    lgbm_model: Any,
     tour: str = "atp",
     total_matches: int = 0,
     imputer: Any = None,
@@ -84,8 +93,12 @@ def full_evaluation(
     test_metrics = print_metrics_summary(y_test, test_probs, label="TEST SET")
     val_metrics = print_metrics_summary(y_val, val_probs, label="VALIDATION SET")
     plot_roc_curve(y_test, test_probs, os.path.join(reports_dir, "1_roc_curve.png"))
-    plot_calibration_curve(y_test, test_probs, os.path.join(reports_dir, "2_calibration_curve.png"))
-    plot_feature_importance(lgbm_model, feature_cols, os.path.join(reports_dir, "3_feature_importance.png"))
+    plot_calibration_curve(
+        y_test, test_probs, os.path.join(reports_dir, "2_calibration_curve.png")
+    )
+    plot_feature_importance(
+        lgbm_model, feature_cols, os.path.join(reports_dir, "3_feature_importance.png")
+    )
 
     # Chart 4: SHAP -- use train-fitted imputer if available; refit on test
     # would leak test-set medians into the SHAP attributions.
@@ -97,30 +110,50 @@ def full_evaluation(
         X_test_raw = df_test[feature_cols].values.astype(float)
         X_test_imputed = imputer.transform(X_test_raw)
     plot_shap_summary(
-        lgbm_model, X_test_imputed, feature_cols,
+        lgbm_model,
+        X_test_imputed,
+        feature_cols,
         os.path.join(reports_dir, "4_shap_summary.png"),
     )
 
     if "tourney_date" in df_test.columns:
         plot_brier_monthly(
-            y_test, test_probs, df_test["tourney_date"].values,
+            y_test,
+            test_probs,
+            np.asarray(df_test["tourney_date"].values),
             os.path.join(reports_dir, "5_brier_monthly.png"),
         )
 
     import pandas as pd
-    metrics_df = pd.DataFrame({
-        "metric": ["brier", "logloss", "auc", "accuracy", "totalMatches", "testMatches"],
-        "test": [
-            test_metrics["brier"], test_metrics["logloss"],
-            test_metrics["auc"], test_metrics["accuracy"],
-            total_matches, len(y_test),
-        ],
-        "val": [
-            val_metrics["brier"], val_metrics["logloss"],
-            val_metrics["auc"], val_metrics["accuracy"],
-            total_matches, len(y_val),
-        ],
-    })
+
+    metrics_df = pd.DataFrame(
+        {
+            "metric": [
+                "brier",
+                "logloss",
+                "auc",
+                "accuracy",
+                "totalMatches",
+                "testMatches",
+            ],
+            "test": [
+                test_metrics["brier"],
+                test_metrics["logloss"],
+                test_metrics["auc"],
+                test_metrics["accuracy"],
+                total_matches,
+                len(y_test),
+            ],
+            "val": [
+                val_metrics["brier"],
+                val_metrics["logloss"],
+                val_metrics["auc"],
+                val_metrics["accuracy"],
+                total_matches,
+                len(y_val),
+            ],
+        }
+    )
     metrics_path = os.path.join(reports_dir, "metrics_summary.csv")
     metrics_df.to_csv(metrics_path, index=False)
     logger.info(f"\n  Metrics saved to: {metrics_path}")

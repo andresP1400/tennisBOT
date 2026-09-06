@@ -7,14 +7,17 @@ without import cycles.
 
 Keep this module free of route decorators: it only holds state + loaders.
 """
+
 from __future__ import annotations
+
+from typing import Any
 
 import pandas as pd
 from fastapi import HTTPException
 from config import BASE_DIR
 
 # Training progress (mutated by the background training subprocess reader).
-training_status: dict = {
+training_status: dict[str, Any] = {
     "is_training": False,
     "current_task": "Idle",
     "progress": 0,
@@ -29,7 +32,7 @@ _global_dataset_mtime: float | None = None
 _global_dataset_tour: str | None = None
 
 # Serialized tracker state cache, per tour.
-_inference_states: dict = {}
+_inference_states: dict[str, Any] = {}
 
 
 def load_dataset(tour: str) -> pd.DataFrame | None:
@@ -60,10 +63,11 @@ def load_dataset(tour: str) -> pd.DataFrame | None:
     return _global_dataset
 
 
-def load_state(tour: str = "atp"):
+def load_state(tour: str = "atp") -> Any | None:
     """Tracker state serialized by the feature builder (tour-aware cache)."""
     if tour not in _inference_states:
         from pipeline.inference import load_inference_state
+
         _inference_states[tour] = load_inference_state(tour)
     return _inference_states[tour]
 

@@ -18,12 +18,14 @@ Internal column names (winner / loser side):
   bf_w/bf_l      Betfair Exchange      max_w/max_l    Max market
   avg_w/avg_l    Avg market (real, or synthetic fallback)
 """
+
 from __future__ import annotations
 
 import glob
 import os
 import re
 import sys
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -87,9 +89,12 @@ def load_odds_from_tennis_data(tour: str = "atp") -> pd.DataFrame:
                         try:
                             df = pd.read_html(fp)[0]
                         except Exception:
-                            logger.warning(f"    [WARN] Could not read {os.path.basename(fp)} with any engine")
+                            logger.warning(
+                                f"    [WARN] Could not read {os.path.basename(fp)} with any engine"
+                            )
                             continue
-            frames.append(df)
+            if df is not None:
+                frames.append(df)
         except Exception as exc:
             logger.warning(f"    [WARN] Failed to read {os.path.basename(fp)}: {exc}")
     if not frames:
@@ -97,7 +102,7 @@ def load_odds_from_tennis_data(tour: str = "atp") -> pd.DataFrame:
     combined = pd.concat(frames, ignore_index=True)
     logger.info(f"  Loaded {len(combined):,} odds records total")
     # Standardize columns: tennis-data.co.uk naming -> internal naming
-    col_map: dict = {}
+    col_map: dict[str, Any] = {}
     for col in combined.columns:
         cl = str(col).strip().lower()
         if cl == "date":
@@ -171,9 +176,16 @@ def load_odds_from_tennis_data(tour: str = "atp") -> pd.DataFrame:
 
 # Columns that participate in the synthetic average fallback, winner/loser.
 _SYNTH_AVG_COLS = [
-    ("b365_w", "b365_l"), ("ps_w", "ps_l"), ("cb_w", "cb_l"),
-    ("ex_w", "ex_l"), ("lb_w", "lb_l"), ("ub_w", "ub_l"),
-    ("iw_w", "iw_l"), ("sj_w", "sj_l"), ("gb_w", "gb_l"), ("sb_w", "sb_l"),
+    ("b365_w", "b365_l"),
+    ("ps_w", "ps_l"),
+    ("cb_w", "cb_l"),
+    ("ex_w", "ex_l"),
+    ("lb_w", "lb_l"),
+    ("ub_w", "ub_l"),
+    ("iw_w", "iw_l"),
+    ("sj_w", "sj_l"),
+    ("gb_w", "gb_l"),
+    ("sb_w", "sb_l"),
 ]
 
 
@@ -197,4 +209,6 @@ def _add_synthetic_avg(df: pd.DataFrame) -> None:
     df.loc[need, "avg_l"] = lose_num.mean(axis=1, skipna=True)
     filled = df.loc[need, "avg_w"].notna().sum()
     if filled:
-        logger.info(f"  [INFO] avg_w/avg_l: synthetic average filled for {filled:,} legacy rows")
+        logger.info(
+            f"  [INFO] avg_w/avg_l: synthetic average filled for {filled:,} legacy rows"
+        )

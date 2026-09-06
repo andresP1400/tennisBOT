@@ -17,6 +17,7 @@ Normalized schema for every source::
         "num_sources": int,
     }
 """
+
 from __future__ import annotations
 
 import unicodedata
@@ -27,6 +28,7 @@ from datetime import datetime, timezone
 @dataclass
 class MatchOdds:
     """Normalized odds for a single match from one source."""
+
     source: str
     player1: str
     player2: str

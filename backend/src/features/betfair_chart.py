@@ -12,11 +12,13 @@ Response format::
 Each point is a bar of the runner's price chart: timestamp (ms), price and
 traded volume at that price.
 """
+
 from __future__ import annotations
 
 import json
 import time
 import urllib.request
+from typing import Any
 
 _CHART_URL = "https://graphs.betfair.com/loadRunnerChart"
 _USER_AGENT = (
@@ -30,18 +32,20 @@ def fetch_runner_chart(
     selection_id: int,
     handicap: float = 0.0,
     timeout: int = 20,
-) -> dict:
+) -> dict[str, Any]:
     """Fetch the raw runner chart JSON from graphs.betfair.com."""
     url = (
         f"{_CHART_URL}?marketId={market_id}&selectionId={selection_id}"
         f"&handicap={handicap}&alt=json"
     )
-    req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT, "Accept": "application/json"})
+    req = urllib.request.Request(
+        url, headers={"User-Agent": _USER_AGENT, "Accept": "application/json"}
+    )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+        return json.loads(resp.read().decode("utf-8"))  # type: ignore[no-any-return]
 
 
-def parse_runner_chart(chart: dict) -> dict:
+def parse_runner_chart(chart: dict[str, Any]) -> dict[str, Any]:
     """Parse a loadRunnerChart payload into a compact runner snapshot.
 
     Returns::
@@ -89,7 +93,7 @@ def get_runner_snapshot(
     handicap: float = 0.0,
     tries: int = 3,
     timeout: int = 20,
-) -> dict:
+) -> dict[str, Any]:
     """Fetch + parse one runner snapshot with retries."""
     last = None
     for attempt in range(tries):

@@ -1,4 +1,5 @@
 """Tests for features.player_context (rank, form, ret, age from local CSVs)."""
+
 from __future__ import annotations
 
 import pytest

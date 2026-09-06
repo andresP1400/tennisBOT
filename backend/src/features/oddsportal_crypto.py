@@ -4,11 +4,13 @@ The encrypted backend feed decrypts as: outer base64 -> split(':', 1) ->
 AES-CBC(PKCS7) with PBKDF2-HMAC-SHA256(1000 iters, fixed salt) -> gzip ->
 JSON. The keys are fixed site-wide and embedded in the front-end bundle.
 """
+
 from __future__ import annotations
 
 import base64
 import gzip
 import json
+from typing import Any
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -19,7 +21,7 @@ _PASS_B64 = "Sio4c1EhcCQ3YURfZlIyeVdAZ0huKjNiVnAjc0FkTGRfaw=="
 _SALT_B64 = "NWI5YThmMmMzZTZkMWE0YjdjOGU5ZDBmMWEyYjNjNGQ="
 
 
-def decrypt_payload(raw: bytes | str) -> dict:
+def decrypt_payload(raw: bytes | str) -> dict[str, Any]:
     """Decrypt an OddsPortal .dat payload into its JSON dict."""
     if isinstance(raw, str):
         raw = raw.encode("latin-1")
@@ -30,15 +32,20 @@ def decrypt_payload(raw: bytes | str) -> dict:
     passwd = base64.b64decode(_PASS_B64)
     salt = base64.b64decode(_SALT_B64)
     kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(), length=32, salt=salt,
-        iterations=1000, backend=default_backend(),
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=1000,
+        backend=default_backend(),
     )
     key = kdf.derive(passwd)
-    dec = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend()).decryptor()
+    dec = Cipher(
+        algorithms.AES(key), modes.CBC(iv), backend=default_backend()
+    ).decryptor()
     pt = dec.update(ct) + dec.finalize()
     pad = pt[-1]
     if pad and pt[-pad:] == bytes([pad]) * pad:
         pt = pt[:-pad]
     if pt[:2] == b"\x1f\x8b":
         pt = gzip.decompress(pt)
-    return json.loads(pt.decode("utf-8"))
+    return json.loads(pt.decode("utf-8"))  # type: ignore[no-any-return]

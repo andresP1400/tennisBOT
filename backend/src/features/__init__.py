@@ -1,9 +1,13 @@
 """Features subpackage: feature engineering modules for tennis match prediction."""
-from features.elo import compute_elo_features, EloRatingSystem
+
+from features.elo import compute_elo_features, EloRatingSystem  # type: ignore[attr-defined]
 from features.fatigue import compute_fatigue_features, FatigueTracker
 from features.h2h import compute_h2h_features, H2HTracker
 from features.player import compute_player_features
-from features.rolling_stats import compute_rolling_features, PlayerStatsTracker
+from features.rolling_stats import (  # type: ignore[attr-defined]
+    compute_rolling_features,
+    PlayerStatsTracker,
+)
 from features.cleaning import (
     add_altitude,
     add_indoor_flag,

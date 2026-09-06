@@ -5,6 +5,7 @@ This script does NOT require data files. It only checks that:
   - Core utility functions produce sensible output
   - Exception classes are exposed
 """
+
 import sys
 import importlib
 from pathlib import Path

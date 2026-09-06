@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-const THEMES = { light: "", dark: ".dark" } as const
+type ChartThemeKey = "light" | "dark"
 
 export type ChartConfig = {
   [k in string]: {
@@ -10,7 +10,7 @@ export type ChartConfig = {
     icon?: React.ComponentType
   } & (
     | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
+    | { color?: never; theme: Record<ChartThemeKey, string> }
   )
 }
 

@@ -4,17 +4,21 @@ These paths are geo-blocked from Italy and unreliable in production, so
 LiveOddsScraper only invokes them when enable_scraping=True. Kept as
 pure functions so the main module stays under the line budget.
 """
+
 from __future__ import annotations
 
 import re
 import time
+from typing import Any
 
 from logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-def scrape_oddsportal(fetcher, use_stealth: bool, player1: str, player2: str) -> dict:
+def scrape_oddsportal(
+    fetcher: Any, use_stealth: bool, player1: str, player2: str
+) -> dict[str, Any]:
     """Scrape today's tennis odds from OddsPortal.
 
     Disabled by default. Enable with `enable_scraping=True`.
@@ -23,7 +27,7 @@ def scrape_oddsportal(fetcher, use_stealth: bool, player1: str, player2: str) ->
 
     p1_key = _normalize_player_name(player1)
     p2_key = _normalize_player_name(player2)
-    all_odds: dict = {}
+    all_odds: dict[str, Any] = {}
     urls = [
         "https://www.oddsportal.com/tennis/atp/",
         "https://www.oddsportal.com/tennis/wta/",
@@ -56,11 +60,11 @@ def scrape_oddsportal(fetcher, use_stealth: bool, player1: str, player2: str) ->
     return all_odds
 
 
-def scrape_pinnacle(player1: str, player2: str) -> dict:
+def scrape_pinnacle(player1: str, player2: str) -> dict[str, Any]:
     """DISABLED: Pinnacle geo-blocks Italy. Use TheOddsAPI instead."""
     return {}
 
 
-def scrape_tennis_explorer(player1: str, player2: str) -> dict:
+def scrape_tennis_explorer(player1: str, player2: str) -> dict[str, Any]:
     """DISABLED: Tennis Explorer scraper no longer matches the live DOM."""
     return {}

@@ -17,6 +17,7 @@ Notes on "closing":
   pair per book. We treat Avg as the best free *closing consensus* and Max as
   a soft upper bound. CLV metrics label the source accordingly.
 """
+
 from __future__ import annotations
 
 import os
@@ -80,9 +81,12 @@ def merge_odds_to_matches(
               winner_line_movement, loser_line_movement.
     """
     nan_cols = [
-        "winner_opening_odds", "loser_opening_odds",
-        "winner_closing_odds", "loser_closing_odds",
-        "winner_line_movement", "loser_line_movement",
+        "winner_opening_odds",
+        "loser_opening_odds",
+        "winner_closing_odds",
+        "loser_closing_odds",
+        "winner_line_movement",
+        "loser_line_movement",
     ]
     if odds_df is None or odds_df.empty:
         for col in nan_cols:
@@ -128,7 +132,9 @@ def merge_odds_to_matches(
         odds["_open_l"] = odds["avg_l"]
         open_source = "Average"
     else:
-        logger.warning("  [WARN] No recognized odds columns found. Skipping odds merge.")
+        logger.warning(
+            "  [WARN] No recognized odds columns found. Skipping odds merge."
+        )
         for col in nan_cols:
             matches_df[col] = np.nan
         return matches_df
@@ -159,22 +165,33 @@ def merge_odds_to_matches(
     work["_l_key"] = work["loser_name"].apply(extract_last_name)
     work["_yw"] = _year_week_key(work["tourney_date"])
     if "odds_winner_key" not in odds.columns:
-        odds["odds_winner_key"] = (
-            odds.get("odds_winner", pd.Series(dtype=str)).apply(extract_last_name)
+        odds["odds_winner_key"] = odds.get("odds_winner", pd.Series(dtype=str)).apply(
+            extract_last_name
         )
     if "odds_loser_key" not in odds.columns:
-        odds["odds_loser_key"] = (
-            odds.get("odds_loser", pd.Series(dtype=str)).apply(extract_last_name)
+        odds["odds_loser_key"] = odds.get("odds_loser", pd.Series(dtype=str)).apply(
+            extract_last_name
         )
     if "odds_date" in odds.columns:
         odds["_yw"] = _year_week_key(odds["odds_date"])
     else:
         odds["_yw"] = None
 
-    odds_subset = odds[
-        ["_yw", "odds_winner_key", "odds_loser_key",
-         "_open_w", "_open_l", "_close_w", "_close_l"]
-    ].dropna(subset=["odds_winner_key", "odds_loser_key", "_yw"]).copy()
+    odds_subset = (
+        odds[
+            [
+                "_yw",
+                "odds_winner_key",
+                "odds_loser_key",
+                "_open_w",
+                "_open_l",
+                "_close_w",
+                "_close_l",
+            ]
+        ]
+        .dropna(subset=["odds_winner_key", "odds_loser_key", "_yw"])
+        .copy()
+    )
     odds_subset = odds_subset.drop_duplicates(
         subset=["_yw", "odds_winner_key", "odds_loser_key"],
         keep="first",
@@ -202,11 +219,19 @@ def merge_odds_to_matches(
         merged["loser_closing_odds"] - merged["loser_opening_odds"]
     )
     drop_cols = [
-        "_w_key", "_l_key", "_yw",
-        "_open_w", "_open_l", "_close_w", "_close_l",
-        "odds_winner_key", "odds_loser_key",
+        "_w_key",
+        "_l_key",
+        "_yw",
+        "_open_w",
+        "_open_l",
+        "_close_w",
+        "_close_l",
+        "odds_winner_key",
+        "odds_loser_key",
     ]
-    merged = merged.drop(columns=[c for c in drop_cols if c in merged.columns], errors="ignore")
+    merged = merged.drop(
+        columns=[c for c in drop_cols if c in merged.columns], errors="ignore"
+    )
 
     matched = merged["winner_opening_odds"].notna().sum()
     if len(merged) > 0:

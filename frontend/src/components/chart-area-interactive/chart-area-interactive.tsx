@@ -10,18 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { API_DISPLAY_URL, ApiError, apiFetch } from "@/lib/api"
-
-interface ChartInfo {
-  name: string
-  file: string
-  exists: boolean
-}
-
-interface ChartsResponse {
-  tour: "atp" | "wta"
-  charts: ChartInfo[]
-}
+import { API_DISPLAY_URL } from "@/lib/api"
+import { getCharts } from "@/services/analytics"
+import type { ChartInfo } from "@/types/api"
 
 export function ChartAreaInteractive() {
   const [charts, setCharts] = useState<ChartInfo[]>([])
@@ -33,9 +24,7 @@ export function ChartAreaInteractive() {
     const controller = new AbortController()
     const load = async () => {
       try {
-        const data = await apiFetch<ChartsResponse>(`/api/charts?tour=${tour}`, {
-          signal: controller.signal,
-        })
+        const data = await getCharts(tour, controller.signal)
         const available = (data.charts ?? []).filter((c) => c.exists)
         setCharts(available)
         setError(null)
@@ -46,7 +35,7 @@ export function ChartAreaInteractive() {
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
-        setError(err instanceof ApiError ? err.message : "Failed to load charts")
+        setError(err instanceof Error ? err.message : "Failed to load charts")
         setCharts([])
         setActiveChart("")
       }

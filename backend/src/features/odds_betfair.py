@@ -4,11 +4,12 @@ Docs: https://docs.betfair.com/display/1smk3cen4v3lu3yri5p4/account-api
 Free tier: free, unlimited requests, requires app key (no real-money
 account needed for read-only market data via delayed API).
 """
+
 from __future__ import annotations
 
 import logging
-import os
 
+from config import settings
 from features.odds_cache import TtlCache
 from features.odds_common import MatchOdds, _is_live
 
@@ -21,11 +22,11 @@ class BetfairAdapter:
     BASE_URL = "https://api.betfair.com/exchange/betting/rest/v1.0"
     NAME = "betfair"
 
-    def __init__(self, app_key: str | None = None, session_token: str | None = None) -> None:
-        self._app_key = app_key or os.environ.get("BETFAIR_APP_KEY", "")
-        self._session_token = session_token or os.environ.get(
-            "BETFAIR_SESSION_TOKEN", ""
-        )
+    def __init__(
+        self, app_key: str | None = None, session_token: str | None = None
+    ) -> None:
+        self._app_key = app_key or settings.betfair_app_key
+        self._session_token = session_token or settings.betfair_session_token
 
     def is_configured(self) -> bool:
         return bool(self._app_key)
@@ -41,9 +42,10 @@ class BetfairAdapter:
             return []
         try:
             import requests
+
             url = f"{self.BASE_URL}/listMarketCatalogue/"
             cached = cache.get(self.NAME, url)
-            if cached is not None:
+            if cached is not None and isinstance(cached, list):
                 return cached
             headers = {
                 "X-Application": self._app_key,
@@ -71,10 +73,7 @@ class BetfairAdapter:
                 if not p1 or not p2:
                     continue
                 ct = m.get("marketStartTime", "")
-                tournament = (
-                    m.get("event", {})
-                    .get("name", m.get("eventName", ""))
-                )
+                tournament = m.get("event", {}).get("name", m.get("eventName", ""))
                 out.append(
                     MatchOdds(
                         source=self.NAME,

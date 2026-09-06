@@ -4,6 +4,7 @@ Pure functions only (no route decorators): model resolution, NaN sanitising,
 historical-row feature building, live tracker-state inference, prediction
 logging and market-odds autofill.
 """
+
 from __future__ import annotations
 
 import math
@@ -22,9 +23,7 @@ from api.schemas import PredictRequest
 log = get_logger(__name__)
 
 # Accept pure-stats stacking, pure alias, and market-aware variants
-MODEL_NAME_PATTERN = re.compile(
-    r"^(atp|wta)_(stacking_model|model|model_odds)\.pkl$"
-)
+MODEL_NAME_PATTERN = re.compile(r"^(atp|wta)_(stacking_model|model|model_odds)\.pkl$")
 
 
 def sanitize_nan(obj: Any) -> Any:
@@ -53,7 +52,7 @@ def resolve_model_path(model_name: str) -> Path:
     return candidate
 
 
-def predict_proba_from_features(bundle, df_fake) -> float:
+def predict_proba_from_features(bundle: Any, df_fake: pd.DataFrame) -> float:
     X_imp = bundle["imputer"].transform(df_fake.values)
     X_scaled = bundle["scaler"].transform(X_imp)
     p_lgbm = bundle["base_models"]["lgbm"].predict_proba(X_scaled)[:, 1]
@@ -66,7 +65,7 @@ def predict_proba_from_features(bundle, df_fake) -> float:
     return float(raw_prob)
 
 
-def predict_with_state(bundle, state, req: PredictRequest) -> dict:
+def predict_with_state(bundle: Any, state: Any, req: PredictRequest) -> dict[str, Any]:
     """Live inference from serialized tracker state."""
     from pipeline.inference import (
         assess_reliability,
@@ -84,14 +83,30 @@ def predict_with_state(bundle, state, req: PredictRequest) -> dict:
     best_of = req.best_of if req.best_of in (3, 5) else 3
 
     row_fwd = build_match_features(
-        state, feature_cols, snap1, snap2, id1, id2,
-        req.surface, best_of=best_of,
-        odds_a=req.odds1, odds_b=req.odds2, now=now,
+        state,
+        feature_cols,
+        snap1,
+        snap2,
+        id1,
+        id2,
+        req.surface,
+        best_of=best_of,
+        odds_a=req.odds1,
+        odds_b=req.odds2,
+        now=now,
     )
     row_rev = build_match_features(
-        state, feature_cols, snap2, snap1, id2, id1,
-        req.surface, best_of=best_of,
-        odds_a=req.odds2, odds_b=req.odds1, now=now,
+        state,
+        feature_cols,
+        snap2,
+        snap1,
+        id2,
+        id1,
+        req.surface,
+        best_of=best_of,
+        odds_a=req.odds2,
+        odds_b=req.odds1,
+        now=now,
     )
     prob_fwd = predict_proba_from_features(bundle, row_fwd)
     prob_rev = predict_proba_from_features(bundle, row_rev)
@@ -102,9 +117,15 @@ def predict_with_state(bundle, state, req: PredictRequest) -> dict:
         if (id1 is not None and id2 is not None)
         else {"h2h_win_pct": None, "h2h_total_matches": 0}
     )
+    h2h_total = h2h.get("h2h_total_matches", 0)
+    if not isinstance(h2h_total, int):
+        h2h_total = 0
     reliability = assess_reliability(
-        snap1, snap2, h2h.get("h2h_total_matches", 0),
-        id1 is not None, id2 is not None,
+        snap1,
+        snap2,
+        h2h_total,
+        id1 is not None,
+        id2 is not None,
     )
     prob1 = max(0.01, min(0.99, final_prob))
     h2h_pct = h2h.get("h2h_win_pct")
@@ -120,11 +141,11 @@ def predict_with_state(bundle, state, req: PredictRequest) -> dict:
         "reliability_notes": reliability["reasons"],
         "h2h": {
             "p1_win_pct": (
-                None if h2h_pct is None
-                or (isinstance(h2h_pct, float) and np.isnan(h2h_pct))
+                None
+                if h2h_pct is None or (isinstance(h2h_pct, float) and np.isnan(h2h_pct))
                 else round(float(h2h_pct), 3)
             ),
-            "total_matches": int(h2h.get("h2h_total_matches", 0)),
+            "total_matches": h2h_total,
         },
         "elo": {
             "p1": round(snap1.get("elo", 0), 1) if snap1 else None,
@@ -139,11 +160,12 @@ def predict_with_state(bundle, state, req: PredictRequest) -> dict:
     }
 
 
-def maybe_log_prediction(req: PredictRequest, result: dict) -> None:
+def maybe_log_prediction(req: PredictRequest, result: dict[str, Any]) -> None:
     if not result or result.get("error") or result.get("prob1") is None:
         return
     try:
         from pipeline.track import log_prediction
+
         tour = "wta" if "wta" in (req.model or "").lower() else "atp"
         log_prediction(
             tour=tour,
@@ -176,13 +198,22 @@ def autofill_odds(req: PredictRequest) -> PredictRequest:
         odds = LiveOddsScraper().get_match_odds(req.player1, req.player2, req.surface)
         best = odds.get("best_odds", {})
         o1, o2 = best.get("player1"), best.get("player2")
-        o1 = None if o1 is None or (isinstance(o1, float) and math.isnan(o1)) else float(o1)
-        o2 = None if o2 is None or (isinstance(o2, float) and math.isnan(o2)) else float(o2)
+        o1 = (
+            None
+            if o1 is None or (isinstance(o1, float) and math.isnan(o1))
+            else float(o1)
+        )
+        o2 = (
+            None
+            if o2 is None or (isinstance(o2, float) and math.isnan(o2))
+            else float(o2)
+        )
         return req.model_copy(
             update={
                 "odds1": req.odds1 if req.odds1 is not None else o1,
                 "odds2": req.odds2 if req.odds2 is not None else o2,
             }
         )
-    except Exception:
+    except Exception as exc:
+        log.debug("odds autofill skipped: %s", exc)
         return req

@@ -1,4 +1,5 @@
 """Pydantic request models shared by the API route modules."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

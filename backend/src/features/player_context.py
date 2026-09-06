@@ -4,6 +4,7 @@ Zero-scraping alternative to the ATP/WTA sites: rankings, recent results and
 retirement marks are read from the raw CSVs refreshed by the weekly job.
 Designed for the automatic daily card: one lookup per player, ~ms each.
 """
+
 from __future__ import annotations
 
 import os
@@ -19,11 +20,17 @@ logger = get_logger(__name__)
 _rankings_cache: dict[str, dict[str, dict[str, Any]]] = {}
 _players_cache: dict[str, dict[str, dict[str, Any]]] = {}
 _recent_cache: dict[str, dict[str, list[dict[str, Any]]]] = {}
-_form_cache: dict[tuple, dict[str, Any]] = {}
+_form_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
 _latest_rank_date: dict[str, str] = {}
 
 _CONTEXT_FIELDS = [
-    "rank", "rank_points", "age", "form", "ret", "last_match_date", "surface",
+    "rank",
+    "rank_points",
+    "age",
+    "form",
+    "ret",
+    "last_match_date",
+    "surface",
 ]
 
 
@@ -38,6 +45,7 @@ def _load_players(tour: str) -> dict[str, dict[str, Any]]:
         return players
     with open(path, encoding="utf-8", errors="replace") as f:
         import csv
+
         for row in csv.DictReader(f):
             pid = row.get("player_id", "")
             if not pid:
@@ -64,6 +72,7 @@ def _load_rankings(tour: str) -> dict[str, dict[str, Any]]:
         return result
     with open(path, encoding="utf-8", errors="replace") as f:
         import csv
+
         for row in csv.DictReader(f):
             rdate = row.get("ranking_date", "")
             if rdate > latest:
@@ -71,6 +80,7 @@ def _load_rankings(tour: str) -> dict[str, dict[str, Any]]:
     _latest_rank_date[tour] = latest
     with open(path, encoding="utf-8", errors="replace") as f:
         import csv
+
         for row in csv.DictReader(f):
             if row.get("ranking_date") != latest:
                 continue
@@ -103,6 +113,7 @@ def _load_recent(tour: str) -> dict[str, list[dict[str, Any]]]:
     if tour in _recent_cache:
         return _recent_cache[tour]
     import csv
+
     result: dict[str, list[dict[str, Any]]] = {}
     for path in _iter_match_files(tour):
         try:
@@ -116,11 +127,21 @@ def _load_recent(tour: str) -> dict[str, list[dict[str, Any]]]:
                     ret = "RET" in score or "W/O" in score
                     if w:
                         result.setdefault(w, []).append(
-                            {"date": date_s, "result": "W", "surface": surface, "ret": ret}
+                            {
+                                "date": date_s,
+                                "result": "W",
+                                "surface": surface,
+                                "ret": ret,
+                            }
                         )
                     if loser_id:
                         result.setdefault(loser_id, []).append(
-                            {"date": date_s, "result": "L", "surface": surface, "ret": ret}
+                            {
+                                "date": date_s,
+                                "result": "L",
+                                "surface": surface,
+                                "ret": ret,
+                            }
                         )
         except Exception as exc:
             logger.warning("player_context: skipping %s: %s", path, exc)
@@ -169,7 +190,7 @@ def player_context(
     tour: str,
     player_name: str,
     max_form: int = 5,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Best-effort context for one player: rank, age, recent form, ret marks.
 
     Returns {} when the player is unknown to the local dataset so callers can

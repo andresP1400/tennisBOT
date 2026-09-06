@@ -10,14 +10,17 @@ event's odds come from the encrypted backend feed::
 For tennis match winner: bt=3, sc=2 (Full Time), market ``E-3-2-0-0-0``
 with per-bookmaker ``odds`` (current) and ``openingOdd`` (open price).
 """
+
 from __future__ import annotations
 
 import json
 import re
 import time
 import urllib.request
+from typing import Any
 
 from logging_config import get_logger
+from exceptions import ExternalAPIError
 from features.oddsportal_crypto import decrypt_payload
 
 logger = get_logger(__name__)
@@ -38,7 +41,9 @@ VERSION_ID = 1
 SPORT_ID_TENNIS = 2
 
 
-def _fetch(url: str, tries: int = 4, timeout: int = 20, referer: str | None = None) -> bytes:
+def _fetch(
+    url: str, tries: int = 4, timeout: int = 20, referer: str | None = None
+) -> bytes:
     last = None
     for attempt in range(tries):
         try:
@@ -47,17 +52,19 @@ def _fetch(url: str, tries: int = 4, timeout: int = 20, referer: str | None = No
                 headers["Referer"] = referer
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.read()
+                return resp.read()  # type: ignore[no-any-return]
         except Exception as exc:  # noqa: BLE001
             last = exc
             time.sleep(2.0 * (attempt + 1))
-    raise RuntimeError(f"fetch failed after {tries} tries: {url}: {last}")
+    raise ExternalAPIError(
+        "oddsportal", f"fetch failed after {tries} tries: {url}"
+    ) from last
 
 
 def fetch_tennis_events(
     home_url: str | None = None,
     statuses: set[int] | None = None,
-) -> tuple[list[dict], str | None]:
+) -> tuple[list[dict[str, Any]], str | None]:
     """Fetch the tennis home page and return (initialRows events, page xHash).
 
     ``statuses`` filters the returned events (1=scheduled, 3=finished).
@@ -70,7 +77,7 @@ def fetch_tennis_events(
     return events, xhash
 
 
-def parse_tennis_home(html: str) -> tuple[list[dict], str | None]:
+def parse_tennis_home(html: str) -> tuple[list[dict[str, Any]], str | None]:
     """Parse the RSC payload of the tennis home page.
 
     The ``initialRows`` array lives inside a ``self.__next_f.push([1,"..."])``
@@ -86,10 +93,10 @@ def parse_tennis_home(html: str) -> tuple[list[dict], str | None]:
     end = html.find(end_marker, idx)
     if end < 0:
         return [], None
-    push_text = html[start:end + len(end_marker) + 1].strip()
+    push_text = html[start : end + len(end_marker) + 1].strip()
     if not push_text.startswith("self.__next_f.push("):
         return [], None
-    inner = push_text[len("self.__next_f.push("):]
+    inner = push_text[len("self.__next_f.push(") :]
     inner = inner[: inner.rfind(")")]
     try:
         arr = json.loads(inner)
@@ -106,12 +113,12 @@ def parse_tennis_home(html: str) -> tuple[list[dict], str | None]:
     return rows, xhash
 
 
-def _extract_json_array(text: str, key: str) -> list[dict] | None:
+def _extract_json_array(text: str, key: str) -> list[dict[str, Any]] | None:
     """Return the JSON array that follows ``key`` in ``text`` (bracket aware)."""
     i = text.find(key)
     if i < 0:
         return None
-    sub = text[i + len(key):]
+    sub = text[i + len(key) :]
     depth = 0
     in_str = False
     esc = False
@@ -137,7 +144,7 @@ def _extract_json_array(text: str, key: str) -> list[dict] | None:
     if end is None:
         return None
     try:
-        return json.loads(sub[: end + 1])
+        return json.loads(sub[: end + 1])  # type: ignore[no-any-return]
     except json.JSONDecodeError:
         return None
 
@@ -148,7 +155,7 @@ def fetch_match_event(
     betting_type: int = BETTING_TYPE_MATCH_WINNER,
     scope: int = SCOPE_FULL_TIME,
     use_backend: bool = True,
-) -> dict:
+) -> dict[str, Any]:
     """Fetch + decrypt one match-event payload (live odds for one match)."""
     prefix = _BACKEND if use_backend else _PROXY
     url = (
@@ -159,8 +166,11 @@ def fetch_match_event(
     return decrypt_payload(resp)
 
 
-def extract_market_odds(payload: dict, betting_type: int = BETTING_TYPE_MATCH_WINNER,
-                        scope: int = SCOPE_FULL_TIME) -> dict:
+def extract_market_odds(
+    payload: dict[str, Any],
+    betting_type: int = BETTING_TYPE_MATCH_WINNER,
+    scope: int = SCOPE_FULL_TIME,
+) -> dict[int, dict[str, Any]]:
     """Extract the match-winner market into {bookie_id: {home, away, opening_home, opening_away}}.
 
     Returns an empty dict when the market has no bookmakers with odds.
@@ -173,7 +183,7 @@ def extract_market_odds(payload: dict, betting_type: int = BETTING_TYPE_MATCH_WI
         return {}
     odds = market.get("odds", {}) or {}
     opening = market.get("openingOdd", {}) or {}
-    out: dict[int, dict] = {}
+    out: dict[int, dict[str, Any]] = {}
     for bid, vals in odds.items():
         if not isinstance(vals, list) or len(vals) < 2:
             continue
@@ -186,12 +196,22 @@ def extract_market_odds(payload: dict, betting_type: int = BETTING_TYPE_MATCH_WI
             continue
         open_vals = opening.get(bid, [])
         try:
-            oh = float(open_vals[0]) if isinstance(open_vals, list) and open_vals else float("nan")
-            oa = float(open_vals[1]) if isinstance(open_vals, list) and len(open_vals) > 1 else float("nan")
+            oh = (
+                float(open_vals[0])
+                if isinstance(open_vals, list) and open_vals
+                else float("nan")
+            )
+            oa = (
+                float(open_vals[1])
+                if isinstance(open_vals, list) and len(open_vals) > 1
+                else float("nan")
+            )
         except (TypeError, ValueError, IndexError):
             oh = oa = float("nan")
         out[bid_i] = {
-            "home": h, "away": a,
-            "opening_home": oh, "opening_away": oa,
+            "home": h,
+            "away": a,
+            "opening_home": oh,
+            "opening_away": oa,
         }
     return out

@@ -4,6 +4,7 @@ Collects odds from TheOddsAPI (+ optional dev scrapers), computes best
 odds / implied probabilities / margin, and caches the result in the
 shared module-level cache (features.live_odds_util).
 """
+
 from __future__ import annotations
 
 import math
@@ -24,13 +25,35 @@ logger = get_logger(__name__)
 class MatchOddsMixin:
     """Mixin: get_match_odds with module-level TTL cache."""
 
+    enable_scraping: bool
+
+    def _get_api_key(self) -> str:
+        """Provided by the orchestrating LiveOddsScraper."""
+        raise NotImplementedError
+
+    def _scrape_theoddsapi(self, player1: str, player2: str) -> dict[str, Any]:
+        """Provided by the orchestrating LiveOddsScraper."""
+        raise NotImplementedError
+
+    def _scrape_pinnacle(self, player1: str, player2: str) -> dict[str, Any]:
+        """Provided by the orchestrating LiveOddsScraper."""
+        raise NotImplementedError
+
+    def _scrape_oddsportal(self, player1: str, player2: str) -> dict[str, Any]:
+        """Provided by the orchestrating LiveOddsScraper."""
+        raise NotImplementedError
+
+    def _scrape_tennis_explorer(self, player1: str, player2: str) -> dict[str, Any]:
+        """Provided by the orchestrating LiveOddsScraper."""
+        raise NotImplementedError
+
     def get_match_odds(
         self,
         player1: str,
         player2: str,
         surface: str | None = None,
         force_refresh: bool = False,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Get live odds for a tennis match from TheOddsAPI.
 
         Returns dict with sources, best odds, implied probabilities,
@@ -40,9 +63,9 @@ class MatchOddsMixin:
         if not force_refresh and cache_key in _odds_cache:
             age = time.time() - _odds_cache_timestamp.get(cache_key, 0)
             if age < CACHE_TTL_SECONDS:
-                return _odds_cache[cache_key]
+                return _odds_cache[cache_key]  # type: ignore[no-any-return]
 
-        all_odds: dict = {}
+        all_odds: dict[str, Any] = {}
         api_key = self._get_api_key()
         has_valid_key = bool(api_key) and api_key != "your_api_key_here"
 
@@ -52,17 +75,18 @@ class MatchOddsMixin:
                 if api_odds:
                     all_odds.update(api_odds)
                     logger.info(f" [OK] TheOddsAPI: {len(api_odds)} bookmaker(s)")
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                logger.warning("TheOddsAPI lookup failed: %s", e)
         else:
-            print(
-                " [INFO] ODDS_API_KEY not configured - skipping scraping. "
+            logger.warning(
+                "ODDS_API_KEY not configured - skipping scraping. "
                 "Configure .env for live odds."
             )
 
         # Scraping fallbacks are disabled by default.
         if self.enable_scraping and not all_odds and has_valid_key:
             import concurrent.futures
+
             scraping_tasks = [
                 ("pinnacle", self._scrape_pinnacle, player1, player2),
                 ("oddsportal", self._scrape_oddsportal, player1, player2),
@@ -78,13 +102,17 @@ class MatchOddsMixin:
                         scrape_result = future.result(timeout=10)
                         if scrape_result:
                             all_odds.update(scrape_result)
-                            logger.info(f" [OK] {futures_map[future]}: {len(scrape_result)} source(s)")
-                    except Exception:
-                        pass
+                            logger.info(
+                                f" [OK] {futures_map[future]}: {len(scrape_result)} source(s)"
+                            )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("Scrape %s failed: %s", futures_map[future], e)
 
         if not all_odds:
             if not has_valid_key:
-                logger.info(" [INFO] No odds: set ODDS_API_KEY in .env for live market data")
+                logger.info(
+                    " [INFO] No odds: set ODDS_API_KEY in .env for live market data"
+                )
             else:
                 logger.warning(f" [WARN] No odds found for {player1} vs {player2}")
         result: dict[str, Any] = {
@@ -98,12 +126,18 @@ class MatchOddsMixin:
         }
         if all_odds:
             p1_odds = [
-                v["player1"] for v in all_odds.values()
-                if not (isinstance(v.get("player1"), float) and math.isnan(v.get("player1")))
+                v["player1"]
+                for v in all_odds.values()
+                if not (
+                    isinstance(v.get("player1"), float) and math.isnan(v.get("player1"))
+                )
             ]
             p2_odds = [
-                v["player2"] for v in all_odds.values()
-                if not (isinstance(v.get("player2"), float) and math.isnan(v.get("player2")))
+                v["player2"]
+                for v in all_odds.values()
+                if not (
+                    isinstance(v.get("player2"), float) and math.isnan(v.get("player2"))
+                )
             ]
             if p1_odds:
                 result["best_odds"]["player1"] = max(p1_odds)
@@ -114,7 +148,8 @@ class MatchOddsMixin:
             if (
                 not (isinstance(best_p1, float) and math.isnan(best_p1))
                 and not (isinstance(best_p2, float) and math.isnan(best_p2))
-                and best_p1 > 1 and best_p2 > 1
+                and best_p1 > 1
+                and best_p2 > 1
             ):
                 raw_imp1 = 1.0 / best_p1
                 raw_imp2 = 1.0 / best_p2

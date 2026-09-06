@@ -12,17 +12,29 @@ from pipeline import track
 def temp_reports(tmp_path, monkeypatch):
     """Redirect the track files to a temp reports dir."""
     import config
+
     monkeypatch.setattr(config, "REPORTS_DIR", str(tmp_path))
     return str(tmp_path)
 
 
-def _append_pred_at(ts: str, p1: str, p2: str, predicted: str | None = None, tour: str = "atp") -> str:
+def _append_pred_at(
+    ts: str, p1: str, p2: str, predicted: str | None = None, tour: str = "atp"
+) -> str:
     """Append an immutable prediction with a controlled timestamp (test helper)."""
     import uuid
+
     rec = {
-        "id": uuid.uuid4().hex[:12], "ts": ts, "tour": tour, "model": "m",
-        "player1": p1, "player2": p2, "surface": "Hard", "best_of": 3,
-        "prob1": 0.7, "predicted_winner": predicted or p1, "reliability": "alta",
+        "id": uuid.uuid4().hex[:12],
+        "ts": ts,
+        "tour": tour,
+        "model": "m",
+        "player1": p1,
+        "player2": p2,
+        "surface": "Hard",
+        "best_of": 3,
+        "prob1": 0.7,
+        "predicted_winner": predicted or p1,
+        "reliability": "alta",
     }
     rec["hash"] = track._content_hash(rec)
     track._append(track._pred_path(tour), rec)
@@ -31,8 +43,15 @@ def _append_pred_at(ts: str, p1: str, p2: str, predicted: str | None = None, tou
 
 def test_log_and_read(temp_reports):
     rid = track.log_prediction(
-        "atp", "atp_model.pkl", "A Player", "B Player", "Hard", 3,
-        0.7, "A Player", "alta",
+        "atp",
+        "atp_model.pkl",
+        "A Player",
+        "B Player",
+        "Hard",
+        3,
+        0.7,
+        "A Player",
+        "alta",
     )
     recs = track.read_log("atp")
     assert len(recs) == 1
@@ -49,6 +68,7 @@ def test_integrity_ok_and_tamper_detected(temp_reports):
     # tamper: flip the recorded probability on disk, keep the old hash
     path = track._pred_path("atp")
     import json
+
     line = json.loads(open(path).read().strip())
     line["prob1"] = 0.01
     open(path, "w").write(json.dumps(line) + "\n")
@@ -68,15 +88,32 @@ def test_summary_counts(temp_reports):
     assert s["accuracy"] is None
 
 
-def test_settlement_is_appended_predictions_immutable(temp_reports, tmp_path, monkeypatch):
+def test_settlement_is_appended_predictions_immutable(
+    temp_reports, tmp_path, monkeypatch
+):
     """Settling appends an event; the predictions file is never modified."""
-    df = pd.DataFrame([
-        {"match_id": "1_A", "label": 1, "p1_name": "A Player", "p2_name": "B Player",
-         "surface": "Hard", "match_date_est": pd.Timestamp("2024-05-01")},
-        {"match_id": "1_B", "label": 0, "p1_name": "B Player", "p2_name": "A Player",
-         "surface": "Hard", "match_date_est": pd.Timestamp("2024-05-01")},
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                "match_id": "1_A",
+                "label": 1,
+                "p1_name": "A Player",
+                "p2_name": "B Player",
+                "surface": "Hard",
+                "match_date_est": pd.Timestamp("2024-05-01"),
+            },
+            {
+                "match_id": "1_B",
+                "label": 0,
+                "p1_name": "B Player",
+                "p2_name": "A Player",
+                "surface": "Hard",
+                "match_date_est": pd.Timestamp("2024-05-01"),
+            },
+        ]
+    )
     import config
+
     monkeypatch.setattr(config, "PROCESSED_DIR", str(tmp_path))
     df.to_parquet(os.path.join(str(tmp_path), "atp_features.parquet"))
 
@@ -103,11 +140,20 @@ def test_settlement_is_appended_predictions_immutable(temp_reports, tmp_path, mo
 
 def test_settle_is_idempotent(temp_reports, tmp_path, monkeypatch):
     """Running settle twice must not append duplicate settlement events."""
-    df = pd.DataFrame([
-        {"match_id": "1_A", "label": 1, "p1_name": "A Player", "p2_name": "B Player",
-         "surface": "Hard", "match_date_est": pd.Timestamp("2024-05-01")},
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                "match_id": "1_A",
+                "label": 1,
+                "p1_name": "A Player",
+                "p2_name": "B Player",
+                "surface": "Hard",
+                "match_date_est": pd.Timestamp("2024-05-01"),
+            },
+        ]
+    )
     import config
+
     monkeypatch.setattr(config, "PROCESSED_DIR", str(tmp_path))
     df.to_parquet(os.path.join(str(tmp_path), "atp_features.parquet"))
 

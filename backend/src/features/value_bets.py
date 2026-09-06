@@ -4,10 +4,13 @@ Computes value bets by comparing the model probability to the best live
 market implied probability (from LiveOddsScraper.get_match_odds). Kept
 out of features/live_odds.py to respect the 300-line module budget.
 """
+
 from __future__ import annotations
 
 import math
-import os
+from typing import Any
+
+from config import settings
 
 
 def compute_value_bets(
@@ -16,7 +19,7 @@ def compute_value_bets(
     player2: str,
     surface: str | None = None,
     min_edge: float = 0.05,
-) -> dict:
+) -> dict[str, Any]:
     """Compute value bets by comparing model probability to market odds.
 
     A value bet exists when model_prob > market_implied_prob + min_edge.
@@ -36,9 +39,8 @@ def compute_value_bets(
         or (isinstance(best_p2, (int, float)) and best_p2 <= 1)
     )
     if no_odds:
-        key_missing = not bool(os.environ.get("ODDS_API_KEY", "").strip()) or (
-            os.environ.get("ODDS_API_KEY", "").strip() == "your_api_key_here"
-        )
+        odds_api_key = settings.odds_api_key.strip()
+        key_missing = not bool(odds_api_key) or odds_api_key == "your_api_key_here"
         return {
             "player1": player1,
             "player2": player2,
@@ -69,23 +71,27 @@ def compute_value_bets(
     edge2 = (1.0 - model_prob1) - market_prob2
     value_bets = []
     if edge1 >= min_edge:
-        value_bets.append({
-            "side": player1,
-            "model_prob": model_prob1,
-            "market_prob": market_prob1,
-            "edge": edge1,
-            "best_odds": best_p1,
-            "bookmaker_count": len(odds.get("sources", {})),
-        })
+        value_bets.append(
+            {
+                "side": player1,
+                "model_prob": model_prob1,
+                "market_prob": market_prob1,
+                "edge": edge1,
+                "best_odds": best_p1,
+                "bookmaker_count": len(odds.get("sources", {})),
+            }
+        )
     if edge2 >= min_edge:
-        value_bets.append({
-            "side": player2,
-            "model_prob": 1.0 - model_prob1,
-            "market_prob": market_prob2,
-            "edge": edge2,
-            "best_odds": best_p2,
-            "bookmaker_count": len(odds.get("sources", {})),
-        })
+        value_bets.append(
+            {
+                "side": player2,
+                "model_prob": 1.0 - model_prob1,
+                "market_prob": market_prob2,
+                "edge": edge2,
+                "best_odds": best_p2,
+                "bookmaker_count": len(odds.get("sources", {})),
+            }
+        )
     return {
         "player1": player1,
         "player2": player2,

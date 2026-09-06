@@ -30,12 +30,12 @@ The TheOddsAPI methods are resolved by the regression test via
 ``live_odds.LiveOddsScraper`` (MRO attribute lookup), so the mixin
 split preserves the public contract.
 """
+
 from __future__ import annotations
 
 import os
 import sys
-
-from dotenv import load_dotenv
+from typing import Any
 
 from logging_config import get_logger
 from features.live_odds_matches import TodaysMatchesMixin
@@ -46,7 +46,9 @@ from features.live_odds_scraping import (
     scrape_tennis_explorer,
 )
 from features.live_odds_theoddsapi import TheOddsApiMixin
-from features.live_odds_util import _normalize_player_name  # noqa: F401  (public re-export)
+from features.live_odds_util import (
+    _normalize_player_name,
+)  # noqa: F401  (public re-export)
 from features.value_bets import compute_value_bets  # noqa: F401  (public re-export)
 
 logger = get_logger(__name__)
@@ -54,10 +56,10 @@ logger = get_logger(__name__)
 # .env files live at the repository root (one more level up).
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
-_PROJECT_ROOT = os.path.dirname(_ROOT)
-# .env first, then local.env (personal secrets override)
-load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
-load_dotenv(os.path.join(_PROJECT_ROOT, "local.env"), override=True)
+import config  # noqa: E402
+
+# .env / local.env are loaded centrally by config.Settings (Pydantic
+# BaseSettings); no per-module load_dotenv duplication anymore.
 
 __all__ = ["LiveOddsScraper", "compute_value_bets", "_normalize_player_name"]
 
@@ -78,11 +80,11 @@ class LiveOddsScraper(TheOddsApiMixin, TodaysMatchesMixin, MatchOddsMixin):
     ) -> None:
         self.use_stealth = use_stealth
         self.enable_scraping = enable_scraping
-        self._fetcher = None
-        self._api_key = api_key or os.environ.get("ODDS_API_KEY", "")
-        self._available_sports: list | None = None
+        self._fetcher: Any = None
+        self._api_key = api_key or config.settings.odds_api_key
+        self._available_sports: list[str] | None = None
 
-    def _get_fetcher(self):
+    def _get_fetcher(self) -> Any | None:
         """Lazy-initialize the Scrapling fetcher (only when scraping is on)."""
         if not self.enable_scraping:
             return None
@@ -90,19 +92,20 @@ class LiveOddsScraper(TheOddsApiMixin, TodaysMatchesMixin, MatchOddsMixin):
             return self._fetcher
         try:
             from scrapling import Fetcher, StealthyFetcher
-            self._fetcher = StealthyFetcher() if self.use_stealth else Fetcher()
+
+            self._fetcher = StealthyFetcher() if self.use_stealth else Fetcher()  # type: ignore[no-untyped-call, assignment]
             return self._fetcher
         except ImportError:
             return None
 
     def _get_api_key(self) -> str:
         """Get TheOddsAPI key from instance or environment."""
-        return self._api_key or os.environ.get("ODDS_API_KEY", "")
+        return self._api_key or config.settings.odds_api_key
 
     # -----------------------------------------------------------------
     # DISABLED scraping paths (kept for dev/debug only)
     # -----------------------------------------------------------------
-    def _scrape_oddsportal(self, player1: str, player2: str) -> dict:
+    def _scrape_oddsportal(self, player1: str, player2: str) -> dict[str, Any]:
         """Scrape today's tennis odds from OddsPortal.
 
         Disabled by default. Enable with `enable_scraping=True`.
@@ -114,10 +117,10 @@ class LiveOddsScraper(TheOddsApiMixin, TodaysMatchesMixin, MatchOddsMixin):
             return {}
         return scrape_oddsportal(fetcher, self.use_stealth, player1, player2)
 
-    def _scrape_pinnacle(self, player1: str, player2: str) -> dict:
+    def _scrape_pinnacle(self, player1: str, player2: str) -> dict[str, Any]:
         """DISABLED: Pinnacle geo-blocks Italy. Use TheOddsAPI instead."""
         return scrape_pinnacle(player1, player2)
 
-    def _scrape_tennis_explorer(self, player1: str, player2: str) -> dict:
+    def _scrape_tennis_explorer(self, player1: str, player2: str) -> dict[str, Any]:
         """DISABLED: Tennis Explorer scraper no longer matches the live DOM."""
         return scrape_tennis_explorer(player1, player2)

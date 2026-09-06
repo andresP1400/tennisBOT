@@ -20,9 +20,11 @@ Module layout (each file under the 300-line budget):
 A TTL in-memory cache prevents re-fetching the same endpoint within
 the configured window (default 60 s) to avoid burning TheOddsAPI quota.
 """
+
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from features.odds_betfair import BetfairAdapter
 from features.odds_cache import TtlCache
@@ -57,7 +59,7 @@ class OddsAggregator:
         sofascore: SofaScoreAdapter | None = None,
     ) -> None:
         self.cache = TtlCache(ttl_seconds=cache_ttl)
-        self.adapters: list = []
+        self.adapters: list[Any] = []
         bf = betfair or BetfairAdapter()
         pin = pinnacle or PinnacleAdapter()
         toa = theoddsapi or TheOddsApiAdapter()
@@ -71,7 +73,7 @@ class OddsAggregator:
         if sf.is_configured():
             self.adapters.append(sf)
 
-    def get_today_matches(self, tour: str = "atp") -> list[dict]:
+    def get_today_matches(self, tour: str = "atp") -> list[dict[str, Any]]:
         """Return aggregated odds for today's matches.
 
         tour: "atp" or "wta" (filters by tournament name substring).
@@ -87,7 +89,7 @@ class OddsAggregator:
 
     def get_match_odds(
         self, player1: str, player2: str, tour: str = "atp"
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Return aggregated odds for a specific match.
 
         Returns dict with sources, best_odds, implied_prob, margin.
@@ -95,14 +97,13 @@ class OddsAggregator:
         """
         matches = self.get_today_matches(tour)
         for m in matches:
-            if _player_matches(player1, [m["player1"], m["player2"]]) and \
-               _player_matches(player2, [m["player1"], m["player2"]]):
+            if _player_matches(
+                player1, [m["player1"], m["player2"]]
+            ) and _player_matches(player2, [m["player1"], m["player2"]]):
                 return m
         return {}
 
-    def _aggregate(
-        self, all_odds: list[MatchOdds], tour: str
-    ) -> list[dict]:
+    def _aggregate(self, all_odds: list[MatchOdds], tour: str) -> list[dict[str, Any]]:
         """Group by (player1, player2) and compute best odds across sources."""
         groups: dict[tuple[str, str], list[MatchOdds]] = {}
         for o in all_odds:
@@ -112,14 +113,13 @@ class OddsAggregator:
             )
             groups.setdefault(key, []).append(o)
 
-        out: list[dict] = []
+        out: list[dict[str, Any]] = []
         for (p1n, p2n), items in groups.items():
             if tour:
                 item_tours = {it.tour for it in items if it.tour}
                 item_names = " ".join(it.tournament for it in items).lower()
-                match_by_field = (
-                    item_tours == {tour}
-                    or (not item_tours and tour in item_names)
+                match_by_field = item_tours == {tour} or (
+                    not item_tours and tour in item_names
                 )
                 if not match_by_field:
                     continue
@@ -136,20 +136,22 @@ class OddsAggregator:
                     best_p2 = max(best_p2, it.odds_p2)
             if best_p1 > 0 and best_p2 > 0:
                 imp1, imp2, margin = _compute_implied(best_p1, best_p2)
-                out.append({
-                    "match_id": f"{p1n}_{p2n}",
-                    "player1": items[0].player1,
-                    "player2": items[0].player2,
-                    "tournament": items[0].tournament,
-                    "commence_time": items[0].commence_time,
-                    "is_live": any(it.is_live for it in items),
-                    "sources": sources,
-                    "best_odds": {"player1": best_p1, "player2": best_p2},
-                    "implied_prob1": imp1,
-                    "implied_prob2": imp2,
-                    "margin": margin,
-                    "num_sources": len(sources),
-                })
+                out.append(
+                    {
+                        "match_id": f"{p1n}_{p2n}",
+                        "player1": items[0].player1,
+                        "player2": items[0].player2,
+                        "tournament": items[0].tournament,
+                        "commence_time": items[0].commence_time,
+                        "is_live": any(it.is_live for it in items),
+                        "sources": sources,
+                        "best_odds": {"player1": best_p1, "player2": best_p2},
+                        "implied_prob1": imp1,
+                        "implied_prob2": imp2,
+                        "margin": margin,
+                        "num_sources": len(sources),
+                    }
+                )
         out.sort(key=lambda m: m["commence_time"])
         return out
 

@@ -1,23 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { AutoDailyCard } from "@/components/auto-daily-card"
-import { ApiError, apiFetch } from "@/lib/api"
+import { computeValueBets } from "@/services/odds"
+import { researchPlayerNews } from "@/services/news"
+import { useTodaysMatches } from "@/hooks/useTodaysMatches"
 import { NewsSection } from "./_components/news-section"
 import { TodaysMatchesSection } from "./_components/todays-matches-section"
 import { ValueBetsSection } from "./_components/value-bets-section"
 import type {
   NewsResponse,
-  TodaysMatch,
-  TodaysResponse,
   ValueResponse,
-} from "./_components/live-page.types"
+} from "@/types/api"
 
 export default function LivePage() {
   const [tour, setTour] = useState<"atp" | "wta">("atp")
-  const [matches, setMatches] = useState<TodaysMatch[]>([])
-  const [needsKey, setNeedsKey] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { matches, needsKey, error } = useTodaysMatches(tour)
 
   // value-bets UI
   const [player1, setPlayer1] = useState("Jannik Sinner")
@@ -33,55 +31,16 @@ export default function LivePage() {
   const [newsLoading, setNewsLoading] = useState(false)
   const [newsError, setNewsError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      setError(null)
-      try {
-        try {
-          const st = await apiFetch<{ configured?: boolean; message?: string }>(
-            "/api/odds-api-status",
-            { signal: controller.signal },
-          )
-          setNeedsKey(st.configured === false)
-        } catch {
-          /* ignore */
-        }
-
-        const data = await apiFetch<TodaysResponse>(
-          `/api/todays-matches?tour=${tour}`,
-          { signal: controller.signal },
-        )
-        setMatches(data.matches ?? [])
-        if (data.error) {
-          setError(data.error)
-          if (/ODDS_API_KEY|not set|not configured/i.test(data.error)) setNeedsKey(true)
-        } else {
-          setError(null)
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        setError(err instanceof ApiError ? err.message : "Failed to load matches")
-        setMatches([])
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [tour])
-
   const runValueBet = async () => {
     setValueLoading(true)
     setValueError(null)
     try {
-      const data = await apiFetch<ValueResponse & { error?: string }>("/api/value-bets", {
-        method: "POST",
-        body: {
-          player1,
-          player2,
-          surface,
-          min_edge: minEdge,
-          model: "atp_stacking_model.pkl",
-        },
+      const data = await computeValueBets({
+        player1,
+        player2,
+        surface,
+        minEdge,
+        model: "atp_stacking_model.pkl",
       })
       if (data.error) {
         setValueError(data.error)
@@ -90,7 +49,7 @@ export default function LivePage() {
         setValueResult(data)
       }
     } catch (err) {
-      setValueError(err instanceof ApiError ? err.message : "Failed to compute value bet")
+      setValueError(err instanceof Error ? err.message : "Failed to compute value bet")
       setValueResult(null)
     } finally {
       setValueLoading(false)
@@ -101,18 +60,15 @@ export default function LivePage() {
     setNewsLoading(true)
     setNewsError(null)
     try {
-      const data = await apiFetch<NewsResponse & { error?: string }>("/api/player-news", {
-        method: "POST",
-        body: { player1, player2, surface },
-      })
-      if ((data as { error?: string }).error) {
-        setNewsError((data as { error?: string }).error ?? "Research failed")
+      const data = await researchPlayerNews({ player1, player2, surface })
+      if (data.error) {
+        setNewsError(data.error)
         setNews(null)
       } else {
         setNews(data)
       }
     } catch (err) {
-      setNewsError(err instanceof ApiError ? err.message : "Failed to research players")
+      setNewsError(err instanceof Error ? err.message : "Failed to research players")
       setNews(null)
     } finally {
       setNewsLoading(false)

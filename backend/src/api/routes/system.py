@@ -1,12 +1,13 @@
 """System routes: root landing page, liveness probe, odds API health check."""
+
 from __future__ import annotations
 
-import os
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from config import BASE_DIR
+from config import BASE_DIR, settings
 
 router = APIRouter()
 
@@ -65,15 +66,15 @@ def root_landing() -> str:
 
 @router.get("/health", include_in_schema=False)
 @router.get("/api/health")
-def health() -> dict:
+def health() -> dict[str, Any]:
     """Simple liveness probe for monitors and reverse proxies."""
     return {"status": "ok", "service": "tennisbot-api"}
 
 
 @router.get("/api/odds-api-status")
-def check_odds_api_status() -> dict:
+def check_odds_api_status() -> dict[str, Any]:
     """Check if TheOddsAPI key is configured and working."""
-    api_key = os.environ.get("ODDS_API_KEY", "").strip()
+    api_key = settings.odds_api_key.strip()
     env_path = BASE_DIR / ".env"
     local_path = BASE_DIR / "local.env"
     preferred = str(local_path if local_path.is_file() else env_path)
@@ -81,6 +82,7 @@ def check_odds_api_status() -> dict:
         return _missing_key_payload(env_path, local_path, preferred)
     try:
         import requests
+
         url = "https://api.the-odds-api.com/v4/sports/"
         resp = requests.get(url, params={"apiKey": api_key}, timeout=10)
         if resp.status_code == 200:
@@ -89,7 +91,9 @@ def check_odds_api_status() -> dict:
             return {
                 "configured": True,
                 "status": "OK",
-                "remaining_requests": resp.headers.get("x-requests-remaining", "unknown"),
+                "remaining_requests": resp.headers.get(
+                    "x-requests-remaining", "unknown"
+                ),
                 "tennis_tournaments": len(tennis),
                 "tennis_keys": [s["key"] for s in tennis[:10]],
             }
@@ -102,7 +106,9 @@ def check_odds_api_status() -> dict:
         return {"configured": True, "status": "Error", "message": str(e)}
 
 
-def _missing_key_payload(env_path: Path, local_path: Path, preferred: str) -> dict:
+def _missing_key_payload(
+    env_path: Path, local_path: Path, preferred: str
+) -> dict[str, Any]:
     """Standardised response shown when ODDS_API_KEY is unset or placeholder."""
     return {
         "configured": False,

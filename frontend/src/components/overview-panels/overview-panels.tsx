@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ApiError, apiFetch } from "@/lib/api"
+import {
+  getHealth,
+  getAvailableModels,
+  getTrack,
+} from "@/services/system"
+import { getOddsApiStatus } from "@/services/odds"
+import type {
+  HealthStatus,
+  ModelsResponse,
+  OddsApiStatus,
+  TrackResponse,
+} from "@/types/api"
 
 interface SystemStatus {
   apiOk: boolean
@@ -11,24 +22,6 @@ interface SystemStatus {
   oddsConfigured: boolean | null
   oddsRemaining: string | null
   oddsTournaments: number | null
-}
-
-interface TrackRecord {
-  id: string
-  ts: string
-  player1: string
-  player2: string
-  surface: string
-  prob1: number
-  predicted_winner: string
-  settled: boolean
-  actual_winner: string | null
-  correct: boolean | null
-}
-
-interface TrackResponse {
-  summary?: { total?: number; settled?: number; accuracy?: number | null }
-  records?: TrackRecord[]
 }
 
 export function OverviewPanels() {
@@ -41,13 +34,16 @@ export function OverviewPanels() {
     const load = async () => {
       try {
         const [health, models, odds, trackData] = await Promise.all([
-          apiFetch<{ status?: string }>("/api/health", { signal: controller.signal }).catch(() => null),
-          apiFetch<{ models?: string[] }>("/api/models", { signal: controller.signal }).catch(() => null),
-          apiFetch<{ configured?: boolean; remaining_requests?: string; tennis_tournaments?: number }>(
-            "/api/odds-api-status",
-            { signal: controller.signal },
-          ).catch(() => null),
-          apiFetch<TrackResponse>("/api/track?tour=atp&limit=200", { signal: controller.signal }).catch(() => null),
+          getHealth(controller.signal).catch(() => null as HealthStatus | null),
+          getAvailableModels(controller.signal).catch(
+            () => null as ModelsResponse | null,
+          ),
+          getOddsApiStatus(controller.signal).catch(
+            () => null as OddsApiStatus | null,
+          ),
+          getTrack("atp", 200, controller.signal).catch(
+            () => null as TrackResponse | null,
+          ),
         ])
         setStatus({
           apiOk: health?.status === "ok",
@@ -60,7 +56,7 @@ export function OverviewPanels() {
         setError(null)
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
-        setError(err instanceof ApiError ? err.message : "Backend non raggiungibile")
+        setError(err instanceof Error ? err.message : "Backend non raggiungibile")
       }
     }
     void load()

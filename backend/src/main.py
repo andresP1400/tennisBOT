@@ -11,6 +11,7 @@ Usage:
     python main.py settle --tour both
     python main.py all --tour atp
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,14 +26,16 @@ logger = get_logger(__name__)
 def cmd_download(args: argparse.Namespace) -> None:
     """Download raw CSV data from the ATP/WTA mirror + tennis-data odds."""
     from data.download import download_all
+
     tours = ["atp", "wta"] if args.tour == "both" else [args.tour]
     for tour in tours:
         download_all(tour, args.start, args.end, args.overwrite)
 
 
-def cmd_features(args: argparse.Namespace):
+def cmd_features(args: argparse.Namespace) -> object:
     """Run the full feature engineering pipeline."""
     from features.builder import build_features
+
     return build_features(
         tour=args.tour,
         start_year=args.start,
@@ -42,9 +45,10 @@ def cmd_features(args: argparse.Namespace):
     )
 
 
-def cmd_train(args: argparse.Namespace):
+def cmd_train(args: argparse.Namespace) -> object:
     """Train the stacking ensemble model."""
     from pipeline.training import train_pipeline
+
     return train_pipeline(
         tour=args.tour,
         n_optuna_trials=args.optuna_trials,
@@ -84,8 +88,10 @@ def cmd_refresh(args: argparse.Namespace) -> None:
 
     logger.info("\n" + "#" * 70)
     logger.info("  WEEKLY REFRESH")
-    logger.info(f"  tours={tours}  settle_only={args.settle_only}  "
-                f"skip_train={args.skip_train}  optuna={args.optuna_trials}")
+    logger.info(
+        f"  tours={tours}  settle_only={args.settle_only}  "
+        f"skip_train={args.skip_train}  optuna={args.optuna_trials}"
+    )
     logger.info("#" * 70)
 
     if args.settle_only:
@@ -116,11 +122,17 @@ def cmd_refresh(args: argparse.Namespace) -> None:
             build_features(tour=tour)
 
             if not args.skip_train:
-                logger.info(f"\n>>> [{tour.upper()}] retraining pure-stats + market-aware <<<")
+                logger.info(
+                    f"\n>>> [{tour.upper()}] retraining pure-stats + market-aware <<<"
+                )
                 train_pipeline(tour=tour, n_optuna_trials=args.optuna_trials)
-                train_pipeline(tour=tour, n_optuna_trials=args.optuna_trials, use_odds=True)
+                train_pipeline(
+                    tour=tour, n_optuna_trials=args.optuna_trials, use_odds=True
+                )
             else:
-                logger.info(f"\n>>> [{tour.upper()}] skip-train: keeping existing models <<<")
+                logger.info(
+                    f"\n>>> [{tour.upper()}] skip-train: keeping existing models <<<"
+                )
 
             logger.info(f"\n>>> [{tour.upper()}] settling track record <<<")
             logger.info(str(settle_predictions(tour)))
@@ -185,7 +197,9 @@ Examples:
     p_features.add_argument("--tour", default="atp", choices=["atp", "wta"])
     p_features.add_argument("--start", type=int, default=None)
     p_features.add_argument("--end", type=int, default=None)
-    p_features.add_argument("--odds", type=str, default=None, help="Path to odds CSV file")
+    p_features.add_argument(
+        "--odds", type=str, default=None, help="Path to odds CSV file"
+    )
     p_features.add_argument("--stats-from", type=int, default=None)
     p_features.set_defaults(func=cmd_features)
 
@@ -207,15 +221,19 @@ Examples:
     )
     p_refresh.add_argument("--tour", default="both", choices=["atp", "wta", "both"])
     p_refresh.add_argument(
-        "--optuna-trials", type=int, default=20,
+        "--optuna-trials",
+        type=int,
+        default=20,
         help="Optuna trials per model (default 20 for weekly speed)",
     )
     p_refresh.add_argument(
-        "--settle-only", action="store_true",
+        "--settle-only",
+        action="store_true",
         help="Only settle open track predictions (no download/train)",
     )
     p_refresh.add_argument(
-        "--skip-train", action="store_true",
+        "--skip-train",
+        action="store_true",
         help="Download + features + settle without retraining models",
     )
     p_refresh.set_defaults(func=cmd_refresh)
@@ -236,7 +254,8 @@ Examples:
     p_all.add_argument("--end-year", type=int, default=None)
     p_all.add_argument("--use-odds", action="store_true")
     p_all.add_argument(
-        "--train-odds", action="store_true",
+        "--train-odds",
+        action="store_true",
         help="Also train market-aware model after pure-stats",
     )
     p_all.set_defaults(func=cmd_all)

@@ -23,12 +23,12 @@ import os
 import sys
 import uuid
 import datetime
-from typing import Optional
+from typing import Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 
-from pipeline.track_io import (
+from pipeline.track_io import (  # noqa: E402
     append as _append,
     content_hash as _content_hash,
     pred_path as _pred_path,
@@ -62,7 +62,9 @@ def log_prediction(
     """
     rec = {
         "id": uuid.uuid4().hex[:12],
-        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(
+            timespec="seconds"
+        ),
         "tour": tour,
         "model": model,
         "player1": player1,
@@ -77,10 +79,10 @@ def log_prediction(
     }
     rec["hash"] = _content_hash(rec)
     _append(_pred_path(tour), rec)
-    return rec["id"]
+    return str(rec["id"])
 
 
-def read_log(tour: str = "atp") -> list[dict]:
+def read_log(tour: str = "atp") -> list[dict[str, Any]]:
     """Folded view: each prediction merged with its settlement (if any).
 
     Predictions remain immutable on disk; this join happens in memory.
@@ -106,7 +108,7 @@ def read_log(tour: str = "atp") -> list[dict]:
     return folded
 
 
-def settle_predictions(tour: str = "atp") -> dict:
+def settle_predictions(tour: str = "atp") -> dict[str, Any]:
     """Find unsettled predictions and APPEND settlement events for those whose
     match now appears in the feature dataset. Never rewrites predictions."""
     import pandas as pd
@@ -137,9 +139,8 @@ def settle_predictions(tour: str = "atp") -> dict:
         if pred_day is not None and not pd.isna(pred_day):
             pred_day = pred_day.tz_localize(None) if pred_day.tzinfo else pred_day
 
-        mask = (
-            ((won["_p1"] == a) & (won["_p2"] == b))
-            | ((won["_p1"] == b) & (won["_p2"] == a))
+        mask = ((won["_p1"] == a) & (won["_p2"] == b)) | (
+            (won["_p1"] == b) & (won["_p2"] == a)
         )
         if rec.get("surface"):
             mask &= won["surface"] == rec["surface"]
@@ -158,7 +159,9 @@ def settle_predictions(tour: str = "atp") -> dict:
             "actual_winner": actual_winner,
             "correct": bool(actual_winner.lower() == rec["predicted_winner"].lower()),
             "match_date": str(pd.to_datetime(row[date_col]).date()),
-            "settled_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            "settled_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(
+                timespec="seconds"
+            ),
         }
         _append(_settle_path(tour), event)
         newly += 1
@@ -166,7 +169,7 @@ def settle_predictions(tour: str = "atp") -> dict:
     return summary(tour) | {"newly_settled": newly}
 
 
-def summary(tour: str = "atp") -> dict:
+def summary(tour: str = "atp") -> dict[str, Any]:
     """Aggregate realized accuracy / Brier over settled predictions."""
     records = read_log(tour)
     settled = [r for r in records if r.get("settled")]
@@ -181,7 +184,7 @@ def summary(tour: str = "atp") -> dict:
                 if r["predicted_winner"].lower() == r["player1"].lower()
                 else 1 - r["prob1"]
             )
-            sq += (1.0 - p_pred) ** 2 if r.get("correct") else p_pred ** 2
+            sq += (1.0 - p_pred) ** 2 if r.get("correct") else p_pred**2
         brier = round(sq / n, 4)
     return {
         "total": len(records),
@@ -194,21 +197,29 @@ def summary(tour: str = "atp") -> dict:
     }
 
 
-def _avg_odds_edge(records: list[dict]) -> Optional[float]:
+def _avg_odds_edge(records: list[dict[str, Any]]) -> Optional[float]:
     """Mean expected edge (p_pred * taken_odds - 1) over predictions that
     carry market odds for the predicted winner. Positive = positive-EV at
     the logged price; zero = no odds data."""
     edges = []
     for r in records:
-        odds = r.get("odds1") if r["predicted_winner"].lower() == r["player1"].lower() else r.get("odds2")
+        odds = (
+            r.get("odds1")
+            if r["predicted_winner"].lower() == r["player1"].lower()
+            else r.get("odds2")
+        )
         if not odds or odds <= 1.0:
             continue
-        p = r["prob1"] if r["predicted_winner"].lower() == r["player1"].lower() else 1 - r["prob1"]
+        p = (
+            r["prob1"]
+            if r["predicted_winner"].lower() == r["player1"].lower()
+            else 1 - r["prob1"]
+        )
         edges.append(p * odds - 1.0)
     return round(float(sum(edges) / len(edges)), 4) if edges else None
 
 
-def verify_integrity(tour: str = "atp") -> dict:
+def verify_integrity(tour: str = "atp") -> dict[str, Any]:
     """Recompute every prediction's hash and flag any tampering.
 
     A clean result certifies the log hasn't been altered since each line was

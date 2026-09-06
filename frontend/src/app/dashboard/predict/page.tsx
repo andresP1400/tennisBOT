@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AutoDailyCard } from "@/components/auto-daily-card"
+import { predictMatch } from "@/services/predict"
+import { useAvailableModels } from "@/hooks/useAvailableModels"
+import type { PredictResponse } from "@/types/api"
 
 const TOP_PLAYERS = [
   "Jannik Sinner", "Carlos Alcaraz", "Novak Djokovic", "Daniil Medvedev",
@@ -16,66 +19,27 @@ const TOP_PLAYERS = [
   "Jessica Pegula", "Marketa Vondrousova", "Ons Jabeur", "Maria Sakkari",
 ].sort()
 
-interface PredictResponse {
-  match: string
-  surface: string
-  model_used: string
-  prob1: number
-  prob2: number
-  winner: string
-  info?: string
-  reliability?: string
-  reliability_notes?: string[]
-  h2h?: { p1_win_pct: number | null; total_matches: number }
-  elo?: { p1: number | null; p2: number | null; p1_surface_blend?: number | null; p2_surface_blend?: number | null }
-  data_through?: string
-  error?: string
-}
-
-interface ModelsResponse {
-  models: string[]
-}
-
 export default function PredictPage() {
   const [player1, setPlayer1] = useState("Jannik Sinner")
   const [player2, setPlayer2] = useState("Carlos Alcaraz")
   const [surface, setSurface] = useState("Hard")
   const [model, setModel] = useState("atp_stacking_model.pkl")
-  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const { models: availableModels } = useAvailableModels()
 
   const [result, setResult] = useState<PredictResponse | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      try {
-        const data = await fetch("/api/models", { signal: controller.signal })
-        if (!data.ok) return
-        const json = (await data.json()) as ModelsResponse
-        if (json.models && json.models.length > 0) {
-          setAvailableModels(json.models)
-          setModel(json.models[0])
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        console.error("Impossibile contattare FastAPI", err)
-      }
+    if (availableModels.length > 0) {
+      setModel(availableModels[0])
     }
-    void load()
-    return () => controller.abort()
-  }, [])
+  }, [availableModels])
 
   const handlePredict = async () => {
     setLoading(true)
     setResult(null)
     try {
-      const res = await fetch("/api/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player1, player2, surface, model }),
-      })
-      const data = (await res.json()) as PredictResponse
+      const data = await predictMatch({ player1, player2, surface, model })
       setResult(data)
     } catch {
       alert("Nessun modello backend in esecuzione. Verifica FastAPI.")

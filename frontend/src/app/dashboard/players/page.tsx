@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Card,
   CardContent,
@@ -18,23 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { apiFetch, ApiError } from "@/lib/api"
-
-interface MatchRow {
-  id: string
-  date: string
-  surface: string
-  player1: string
-  player2: string
-  winner: string
-  prob1: number
-  prob2: number
-}
-
-interface HistoryResponse {
-  matches: MatchRow[]
-  error?: string
-}
+import { useHistory } from "@/hooks/useHistory"
+import type { HistoryMatchRow } from "@/types/api"
 
 interface PlayerStats {
   name: string
@@ -47,7 +32,7 @@ interface PlayerStats {
   avgProbWhenFavored: number | null
 }
 
-function buildStats(matches: MatchRow[]): Map<string, PlayerStats> {
+function buildStats(matches: HistoryMatchRow[]): Map<string, PlayerStats> {
   const stats = new Map<string, PlayerStats>()
   const ensure = (name: string): PlayerStats => {
     let s = stats.get(name)
@@ -102,32 +87,8 @@ function buildStats(matches: MatchRow[]): Map<string, PlayerStats> {
 }
 
 export default function PlayersPage() {
-  const [matches, setMatches] = useState<MatchRow[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      try {
-        const data = await apiFetch<HistoryResponse>(
-          "/api/history?limit=100",
-          { signal: controller.signal },
-        )
-        setMatches(data.matches ?? [])
-        setError(data.error ?? null)
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        setError(err instanceof ApiError ? err.message : "Failed to load")
-      } finally {
-        setLoading(false)
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [])
+  const { matches, loading, error } = useHistory(100)
 
   const stats = useMemo(() => buildStats(matches), [matches])
 

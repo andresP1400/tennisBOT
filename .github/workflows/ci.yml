@@ -24,7 +24,9 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
       - name: Lint with ruff
-        run: ruff check . --select E,F,W --ignore E501,E402
+        run: ruff check .
+      - name: Format check with black
+        run: black --check .
       - name: Type check with mypy
         # Run from backend/src so module names stay `features.x` / `pipeline.x`
         # and the per-module sections in mypy.ini keep matching.
@@ -52,5 +54,7 @@ jobs:
         run: npx eslint src
       - working-directory: frontend
         run: npx tsc --noEmit
+      - working-directory: frontend
+        run: npm run test
       - working-directory: frontend
         run: npm run build

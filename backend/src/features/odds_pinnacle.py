@@ -8,6 +8,7 @@ Note: Pinnacle has deprecated this in favor of the official API
 (which requires a real-money account), but the legacy lines endpoint
 is still functional and free.
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,9 +36,10 @@ class PinnacleAdapter:
         """List today's tennis matches from Pinnacle lines."""
         try:
             import requests
+
             url = self.BASE_URL
             cached = cache.get(self.NAME, url)
-            if cached is not None:
+            if cached is not None and isinstance(cached, list):
                 return cached
             headers = {"User-Agent": "Mozilla/5.0 tennisBOT/2.1"}
             resp = requests.get(url, headers=headers, timeout=15)

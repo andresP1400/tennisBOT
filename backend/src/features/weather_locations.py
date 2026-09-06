@@ -1,4 +1,5 @@
 """Tournament city coordinates for weather lookup."""
+
 from __future__ import annotations
 
 TOURNAMENT_COORDS: dict[str, tuple[float, float]] = {

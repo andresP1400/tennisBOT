@@ -1,16 +1,24 @@
 """Open-Meteo HTTP fetching (forecast + historical archive)."""
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 from datetime import date, datetime, timezone
+from typing import Any
+
+from logging_config import get_logger
+
+logger = get_logger(__name__)
 
 FORECAST_URL = "https://api.open-meteo.com/v1/gfs"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 ARCHIVE_LOOKBACK_DAYS = 7  # archive lags ~5 days; safe window is 7
 
 
-def select_endpoint(match_date: pd.Timestamp | datetime | date | str) -> tuple[str, str]:
+def select_endpoint(
+    match_date: pd.Timestamp | datetime | date | str,
+) -> tuple[str, str]:
     """Pick the right Open-Meteo endpoint based on how recent the date is."""
     today = datetime.now(timezone.utc).date()
     if isinstance(match_date, str):
@@ -27,7 +35,7 @@ def select_endpoint(match_date: pd.Timestamp | datetime | date | str) -> tuple[s
     return FORECAST_URL, "forecast"
 
 
-def fetch_weather_batch(requests: list[dict]) -> dict:
+def fetch_weather_batch(requests: list[dict[str, Any]]) -> dict[str, Any]:
     """Fetch weather data from Open-Meteo, automatically picking endpoint per request.
 
     Each request dict: {"lat": float, "lon": float, "date": "YYYY-MM-DD", "key": str}
@@ -37,12 +45,14 @@ def fetch_weather_batch(requests: list[dict]) -> dict:
         import requests as req_lib
     except ImportError:
         return {}
-    results: dict = {}
-    by_query: dict[tuple, list[dict]] = {}
+    results: dict[str, Any] = {}
+    by_query: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for r in requests:
         endpoint, kind = select_endpoint(r["date"])
         query_key = (endpoint, round(r["lat"], 3), round(r["lon"], 3))
-        by_query.setdefault(query_key, []).append({**r, "endpoint": endpoint, "kind": kind})
+        by_query.setdefault(query_key, []).append(
+            {**r, "endpoint": endpoint, "kind": kind}
+        )
 
     for (endpoint, lat, lon), group in by_query.items():
         try:
@@ -67,9 +77,13 @@ def fetch_weather_batch(requests: list[dict]) -> dict:
                 )
             resp = req_lib.get(url, timeout=30)
             if resp.status_code != 200:
+                logger.debug(
+                    "open-meteo %s returned status %s", endpoint, resp.status_code
+                )
                 continue
             data = resp.json()
-        except Exception:
+        except Exception as exc:
+            logger.warning("open-meteo fetch failed (%s): %s", endpoint, exc)
             continue
 
         if group[0]["kind"] == "archive":
@@ -79,7 +93,9 @@ def fetch_weather_batch(requests: list[dict]) -> dict:
     return results
 
 
-def _collect_archive_day(data: dict, group: list[dict], results: dict) -> None:
+def _collect_archive_day(
+    data: dict[str, Any], group: list[dict[str, Any]], results: dict[str, Any]
+) -> None:
     """Parse ERA5 archive daily rows into the results map."""
     daily = data.get("daily", {})
     times = daily.get("time", [])
@@ -109,7 +125,9 @@ def _collect_archive_day(data: dict, group: list[dict], results: dict) -> None:
                 results[r["key"]] = wdd
 
 
-def _collect_forecast_day(data: dict, group: list[dict], results: dict) -> None:
+def _collect_forecast_day(
+    data: dict[str, Any], group: list[dict[str, Any]], results: dict[str, Any]
+) -> None:
     """Parse GFS hourly rows (12:00-17:00 window) into per-day aggregates."""
     hourly = data.get("hourly", {})
     times = hourly.get("time", [])
@@ -118,7 +136,7 @@ def _collect_forecast_day(data: dict, group: list[dict], results: dict) -> None:
     humidity = hourly.get("relative_humidity_2m", [])
     cloud = hourly.get("cloud_cover", [])
     rain_prob = hourly.get("precipitation_probability", [])
-    date_weather: dict = {}
+    date_weather: dict[str, Any] = {}
     for i, t in enumerate(times):
         if i >= len(temp):
             break
@@ -129,7 +147,14 @@ def _collect_forecast_day(data: dict, group: list[dict], results: dict) -> None:
             continue
         if 12 <= hour <= 17:
             bucket = date_weather.setdefault(
-                date_part, {"temps": [], "winds": [], "humidity": [], "cloud": [], "rain_prob": []}
+                date_part,
+                {
+                    "temps": [],
+                    "winds": [],
+                    "humidity": [],
+                    "cloud": [],
+                    "rain_prob": [],
+                },
             )
             _try_append(bucket["temps"], temp, i)
             _try_append(bucket["winds"], wind, i)
@@ -142,19 +167,24 @@ def _collect_forecast_day(data: dict, group: list[dict], results: dict) -> None:
         wdd = {
             "temperature_c": float(np.mean(vals["temps"])),
             "wind_speed_kmh": float(np.mean(vals["winds"])),
-            "rain_probability": float(np.mean(vals["rain_prob"])) / 100.0
-            if vals["rain_prob"] else np.nan,
-            "humidity_pct": float(np.mean(vals["humidity"]))
-            if vals["humidity"] else np.nan,
-            "cloud_cover_pct": float(np.mean(vals["cloud"]))
-            if vals["cloud"] else np.nan,
+            "rain_probability": (
+                float(np.mean(vals["rain_prob"])) / 100.0
+                if vals["rain_prob"]
+                else np.nan
+            ),
+            "humidity_pct": (
+                float(np.mean(vals["humidity"])) if vals["humidity"] else np.nan
+            ),
+            "cloud_cover_pct": (
+                float(np.mean(vals["cloud"])) if vals["cloud"] else np.nan
+            ),
         }
         for r in group:
             if r["date"] == date_part:
                 results[r["key"]] = wdd
 
 
-def _try_append(target: list, source: list, index: int) -> None:
+def _try_append(target: list[float], source: list[Any], index: int) -> None:
     try:
         target.append(float(source[index]))
     except (TypeError, ValueError):

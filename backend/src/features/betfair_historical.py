@@ -9,6 +9,7 @@ CLI::
     python -m features.betfair_historical --snapshot --loop --interval-hours 6
     python -m features.betfair_historical --report
 """
+
 from __future__ import annotations
 
 import json
@@ -23,15 +24,20 @@ from features.betfair_clv import (
     load_snapshots,
 )
 
-
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Betfair exchange CLV historical client")
-    parser.add_argument("--snapshot", action="store_true", help="fetch + append one snapshot")
+    parser = argparse.ArgumentParser(
+        description="Betfair exchange CLV historical client"
+    )
+    parser.add_argument(
+        "--snapshot", action="store_true", help="fetch + append one snapshot"
+    )
     parser.add_argument("--loop", action="store_true", help="loop snapshots")
     parser.add_argument("--interval-hours", type=float, default=6.0)
-    parser.add_argument("--report", action="store_true", help="print CLV coverage report")
+    parser.add_argument(
+        "--report", action="store_true", help="print CLV coverage report"
+    )
     parser.add_argument("--days", type=int, default=14)
     args = parser.parse_args()
 

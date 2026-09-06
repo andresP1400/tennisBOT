@@ -1,0 +1,9 @@
+# Ruff config — AGENT.md: max 120 char/riga, tooling ruff.
+# E402 resta ignorato: il pattern sys.path.insert + import e' consolidato
+# in AGENT.md e i file interessati portano `# noqa: E402` esplicito.
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W"]
+ignore = ["E402"]

@@ -1,11 +1,18 @@
 """Single-match prediction route with live-state + historical fallback."""
+
 from __future__ import annotations
+
+from typing import Any
 
 import joblib
 import numpy as np
 from fastapi import APIRouter, HTTPException
 
-from api.historical_core import build_feature_row, get_h2h_stats, get_player_latest_stats
+from api.historical_core import (
+    build_feature_row,
+    get_h2h_stats,
+    get_player_latest_stats,
+)
 from api.predict_core import (
     autofill_odds,
     maybe_log_prediction,
@@ -21,7 +28,7 @@ router = APIRouter()
 
 
 @router.post("/api/predict")
-def predict_match(req: PredictRequest) -> dict:
+def predict_match(req: PredictRequest) -> dict[str, Any]:
     """Predict with live tracker state; fall back to improved historical rows."""
     try:
         model_path = resolve_model_path(req.model)
@@ -39,12 +46,14 @@ def predict_match(req: PredictRequest) -> dict:
         if state is not None:
             result = predict_with_state(bundle, state, req)
             maybe_log_prediction(req, result)
-            return sanitize_nan(result)
+            return sanitize_nan(result)  # type: ignore[no-any-return]
 
         # Fallback: full parquet (both _A and _B), surface-aware + symmetrized
         dataset = load_dataset(tour)
         if dataset is None:
-            return {"error": "Dataset features non trovato. Esegui `python backend/src/main.py features`."}
+            return {
+                "error": "Dataset features non trovato. Esegui `python backend/src/main.py features`."
+            }
 
         feature_cols = bundle["feature_cols"]
         p1_stats = get_player_latest_stats(req.player1, dataset)
@@ -56,10 +65,24 @@ def predict_match(req: PredictRequest) -> dict:
         best_of = req.best_of if req.best_of in (3, 5) else 3
 
         row_fwd = build_feature_row(
-            feature_cols, p1_stats, p2_stats, p1_surf, p2_surf, h2h_12, req.surface, best_of
+            feature_cols,
+            p1_stats,
+            p2_stats,
+            p1_surf,
+            p2_surf,
+            h2h_12,
+            req.surface,
+            best_of,
         )
         row_rev = build_feature_row(
-            feature_cols, p2_stats, p1_stats, p2_surf, p1_surf, h2h_21, req.surface, best_of
+            feature_cols,
+            p2_stats,
+            p1_stats,
+            p2_surf,
+            p1_surf,
+            h2h_21,
+            req.surface,
+            best_of,
         )
         prob_fwd = predict_proba_from_features(bundle, row_fwd)
         prob_rev = predict_proba_from_features(bundle, row_rev)
@@ -76,12 +99,16 @@ def predict_match(req: PredictRequest) -> dict:
             "winner": req.player1 if prob1 >= 0.5 else req.player2,
             "reliability": "media" if has_history else "bassa",
             "reliability_notes": (
-                [] if has_history
-                else ["cold start: uno o entrambi i giocatori non trovati nello storico"]
+                []
+                if has_history
+                else [
+                    "cold start: uno o entrambi i giocatori non trovati nello storico"
+                ]
             ),
             "h2h": {
                 "p1_win_pct": (
-                    None if np.isnan(h2h_12["h2h_win_pct"])
+                    None
+                    if np.isnan(h2h_12["h2h_win_pct"])
                     else round(float(h2h_12["h2h_win_pct"]), 3)
                 ),
                 "total_matches": int(h2h_12.get("h2h_total_matches", 0)),
@@ -91,11 +118,12 @@ def predict_match(req: PredictRequest) -> dict:
             "info": (
                 "Fallback parquet (simmetrizzato, no bias _A) — "
                 "rigenera features per inference state live"
-                if has_history else "Cold Start - Dati Mediani"
+                if has_history
+                else "Cold Start - Dati Mediani"
             ),
         }
         maybe_log_prediction(req, result)
-        return sanitize_nan(result)
+        return sanitize_nan(result)  # type: ignore[no-any-return]
 
     except HTTPException:
         raise

@@ -3,12 +3,13 @@
 Docs: https://the-odds-api.com/liveapi/guides/v4/
 Free tier: 500 requests/month. Caching is essential.
 """
+
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timezone, timedelta
 
+from config import settings
 from features.odds_cache import TtlCache
 from features.odds_common import MatchOdds, _is_live, _player_matches
 
@@ -22,7 +23,7 @@ class TheOddsApiAdapter:
     NAME = "theoddsapi"
 
     def __init__(self, api_key: str | None = None) -> None:
-        self._api_key = api_key or os.environ.get("ODDS_API_KEY", "")
+        self._api_key = api_key or settings.odds_api_key
         self._available_sports: list[str] | None = None
 
     def is_configured(self) -> bool:
@@ -35,13 +36,16 @@ class TheOddsApiAdapter:
             return []
         try:
             import requests
+
             url = f"{self.BASE_URL}/sports/"
             cached = cache.get(self.NAME, url)
-            if cached is not None:
-                self._available_sports = cached
-                return cached
-            headers = {}
-            resp = requests.get(url, params={"apiKey": self._api_key}, headers=headers, timeout=15)
+            if cached is not None and isinstance(cached, list):
+                self._available_sports = [c for c in cached if isinstance(c, str)]
+                return self._available_sports
+            headers: dict[str, str] = {}
+            resp = requests.get(
+                url, params={"apiKey": self._api_key}, headers=headers, timeout=15
+            )
             if resp.status_code != 200:
                 self._available_sports = []
                 cache.set(self.NAME, url, [])
@@ -66,14 +70,17 @@ class TheOddsApiAdapter:
         out: list[MatchOdds] = []
         try:
             import requests
+
             now = datetime.now(timezone.utc)
             today_start = now.replace(
                 hour=0, minute=0, second=0, microsecond=0
             ).strftime("%Y-%m-%dT%H:%M:%SZ")
-            day_after = (now + timedelta(days=2)).replace(
-                hour=23, minute=59, second=59, microsecond=0
-            ).strftime("%Y-%m-%dT%H:%M:%SZ")
-            headers = {}
+            day_after = (
+                (now + timedelta(days=2))
+                .replace(hour=23, minute=59, second=59, microsecond=0)
+                .strftime("%Y-%m-%dT%H:%M:%SZ")
+            )
+            headers: dict[str, str] = {}
             for sport in sport_keys:
                 url = (
                     f"{self.BASE_URL}/sports/{sport}/odds/"
@@ -85,7 +92,9 @@ class TheOddsApiAdapter:
                     if isinstance(cached, list):
                         out.extend(cached)
                     continue
-                resp = requests.get(url, params={"apiKey": self._api_key}, headers=headers, timeout=15)
+                resp = requests.get(
+                    url, params={"apiKey": self._api_key}, headers=headers, timeout=15
+                )
                 if resp.status_code != 200:
                     cache.set(self.NAME, url, [])
                     continue
@@ -118,8 +127,9 @@ class TheOddsApiAdapter:
                                 player1=home,
                                 player2=away,
                                 tournament=sport.replace("tennis_atp_", "")
-                                                .replace("tennis_wta_", "")
-                                                .replace("_", " ").title(),
+                                .replace("tennis_wta_", "")
+                                .replace("_", " ")
+                                .title(),
                                 commence_time=ev.get("commence_time", ""),
                                 is_live=_is_live(ev.get("commence_time", "")),
                                 odds_p1=best_p1,

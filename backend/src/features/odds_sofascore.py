@@ -14,9 +14,11 @@ Odds are returned as fractional strings ("11/10") and converted to
 decimal. No registration, no API key, no rate-limit weight beyond
 a sensible TTL cache.
 """
+
 from __future__ import annotations
 
 import logging
+from typing import Any
 from datetime import datetime, timezone
 
 from features.odds_cache import TtlCache
@@ -32,13 +34,20 @@ class SofaScoreAdapter:
     NAME = "sofascore"
 
     def __init__(self) -> None:
+        # `_http` can be either curl_cffi.requests or stdlib requests at
+        # runtime; typed as Any because the two modules expose the same
+        # `.get()` surface but mypy cannot unify their unrelated types.
+        self._http: Any = None
+        self._impersonate: str | None = None
         try:
             from curl_cffi import requests as cr
+
             self._http = cr
             self._impersonate = "chrome"
         except ImportError:
             # Fallback: plain requests (may be blocked by Akamai).
             import requests
+
             self._http = requests
             self._impersonate = None
         self._user_agent = (
@@ -49,8 +58,8 @@ class SofaScoreAdapter:
     def is_configured(self) -> bool:
         return True  # always available, no key needed
 
-    def _get(self, url: str, timeout: float = 15.0) -> dict | None:
-        kwargs: dict = {"timeout": timeout}
+    def _get(self, url: str, timeout: float = 15.0) -> dict[str, Any] | None:
+        kwargs: dict[str, Any] = {"timeout": timeout}
         if self._impersonate:
             kwargs["impersonate"] = self._impersonate
         else:
@@ -58,7 +67,8 @@ class SofaScoreAdapter:
         resp = self._http.get(url, **kwargs)
         if resp.status_code != 200:
             return None
-        return resp.json()
+        data: Any = resp.json()
+        return data if isinstance(data, dict) else None
 
     @staticmethod
     def _fractional_to_decimal(value: str) -> float:
@@ -165,13 +175,16 @@ class SofaScoreAdapter:
             return None
         url = f"{self.BASE_URL}/event/{event_id}"
         cached = cache.get(self.NAME, url)
-        if cached is None:
+        if not isinstance(cached, dict):
             data = self._get(url)
             cached = data if isinstance(data, dict) else {}
             cache.set(self.NAME, url, cached)
-        ev = cached.get("event") or cached
-        p1 = (ev.get("homeTeam") or {}).get("name", "")
-        p2 = (ev.get("awayTeam") or {}).get("name", "")
+        event = cached.get("event")
+        ev = event if isinstance(event, dict) else cached
+        home: Any = ev.get("homeTeam")
+        away: Any = ev.get("awayTeam")
+        p1 = home.get("name", "") if isinstance(home, dict) else ""
+        p2 = away.get("name", "") if isinstance(away, dict) else ""
         tournament = self._tournament_label(ev.get("tournament") or {})
         start_epoch = ev.get("startTimestamp") or 0
         if not p1 or not p2:
@@ -180,16 +193,18 @@ class SofaScoreAdapter:
         o1 = o2 = 0.0
         odds_url = f"{self.BASE_URL}/event/{event_id}/odds/1/all"
         cached_odds = cache.get(self.NAME, odds_url)
-        if cached_odds is None:
+        if not isinstance(cached_odds, dict):
             data = self._get(odds_url)
             cached_odds = data if isinstance(data, dict) else {}
             cache.set(self.NAME, odds_url, cached_odds)
         if isinstance(cached_odds, dict):
             for m in cached_odds.get("markets", []):
+                if not isinstance(m, dict):
+                    continue
                 name = m.get("marketName") or m.get("name") or ""
                 if "full time" in name.lower() or not name:
                     choices = m.get("choices", [])
-                    if len(choices) >= 2:
+                    if isinstance(choices, list) and len(choices) >= 2:
                         c1 = self._fractional_to_decimal(
                             (choices[0].get("fractionalValue") or "")
                         )
@@ -202,7 +217,7 @@ class SofaScoreAdapter:
         return p1, p2, tournament, start_epoch, (o1, o2)
 
     @staticmethod
-    def _epoch_to_iso(epoch: object) -> str:
+    def _epoch_to_iso(epoch: Any) -> str:
         try:
             dt = datetime.fromtimestamp(int(epoch), tz=timezone.utc)
             return dt.isoformat()
@@ -210,12 +225,10 @@ class SofaScoreAdapter:
             return datetime.now(timezone.utc).isoformat()
 
     @staticmethod
-    def _tournament_label(tournament: dict) -> str:
+    def _tournament_label(tournament: dict[str, Any]) -> str:
         """'ATP Montreal', 'WTA Toronto', 'Hamburg, Germany' (Challenger)."""
         name = tournament.get("name", "")
-        category = (
-            (tournament.get("category") or {}).get("name", "") or ""
-        )
+        category = (tournament.get("category") or {}).get("name", "") or ""
         if category in ("ATP", "WTA"):
             return f"{category} {name}"
         return name or category or "Tennis"

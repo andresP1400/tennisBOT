@@ -1,19 +1,27 @@
 """Launcher script for tennisBOT (backend + frontend)."""
+
+import logging
 import os
 import subprocess
 import sys
 import time
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+log = logging.getLogger("start_all")
+
 
 def start_servers() -> None:
-    print("====================================")
-    print(" Avvio del TennisBot Ecosystem...")
-    print("====================================")
+    log.info("=" * 36)
+    log.info(" Avvio del TennisBot Ecosystem...")
+    log.info("=" * 36)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     src_dir = os.path.join(base_dir, "backend", "src")
     web_dir = os.path.join(base_dir, "frontend")
     api_port = os.environ.get("TENNISBOT_API_PORT", "9090")
-    print(f"=> Avviando API Server (FastAPI) su porta {api_port}...")
+    log.info("Avviando API Server (FastAPI) su porta %s...", api_port)
     api_env = os.environ.copy()
     api_env["TENNISBOT_API_PORT"] = api_port
     api_process = subprocess.Popen(
@@ -25,7 +33,7 @@ def start_servers() -> None:
     )
     time.sleep(2)
     npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
-    print("=> Avviando Web UI (Next.js) su porta 3000...")
+    log.info("Avviando Web UI (Next.js) su porta 3000...")
     web_env = os.environ.copy()
     web_env["BACKEND_URL"] = f"http://localhost:{api_port}"
     web_env["NEXT_PUBLIC_API_URL"] = f"http://localhost:{api_port}"
@@ -37,15 +45,15 @@ def start_servers() -> None:
         env=web_env,
     )
     try:
-        print("\n Tutto avviato con successo!")
-        print(" Accedi alla Web UI qui: http://localhost:3000")
-        print(f" FastAPI Server gira qui: http://localhost:{api_port}")
-        print(f" API Docs: http://localhost:{api_port}/docs")
-        print("\nPremere Ctrl+C per fermare tutti i server.\n")
+        log.info("Tutto avviato con successo!")
+        log.info("Accedi alla Web UI qui: http://localhost:3000")
+        log.info("FastAPI Server gira qui: http://localhost:%s", api_port)
+        log.info("API Docs: http://localhost:%s/docs", api_port)
+        log.info("Premere Ctrl+C per fermare tutti i server.")
         api_process.wait()
         web_process.wait()
     except KeyboardInterrupt:
-        print("\n Spegnimento servers...")
+        log.info("Spegnimento servers...")
         api_process.terminate()
         web_process.terminate()
         sys.exit(0)

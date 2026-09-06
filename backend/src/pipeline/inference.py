@@ -17,6 +17,8 @@ wrong date, no H2H).
 import os
 import sys
 import unicodedata
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import joblib
@@ -28,7 +30,7 @@ import config  # noqa: E402
 _BASE_KEY_MAP = {"ranking": "rank", "ranking_points": "rank_points"}
 
 
-def load_inference_state(tour: str = "atp"):
+def load_inference_state(tour: str = "atp") -> Any | None:
     """Load the tracker state saved by the feature builder. None if missing."""
     state_path = os.path.join(config.PROCESSED_DIR, f"{tour}_inference_state.pkl")
     if not os.path.exists(state_path):
@@ -40,13 +42,18 @@ def fold_name(name: str) -> str:
     """Lowercase and strip diacritics so 'Kecmanovic' and 'Kecmanović' match."""
     if not isinstance(name, str):
         return ""
-    return "".join(
-        c for c in unicodedata.normalize("NFD", name)
-        if not unicodedata.combining(c)
-    ).strip().lower()
+    return (
+        "".join(
+            c
+            for c in unicodedata.normalize("NFD", name)
+            if not unicodedata.combining(c)
+        )
+        .strip()
+        .lower()
+    )
 
 
-def resolve_player_id(state: dict, player_name: str):
+def resolve_player_id(state: Any, player_name: str) -> Any | None:
     """Map a player name to their Sackmann id (case- and accent-insensitive)."""
     player_name = fold_name(player_name)
     if not player_name:
@@ -61,7 +68,9 @@ def resolve_player_id(state: dict, player_name: str):
     return None
 
 
-def player_snapshot(state: dict, player_id, surface: str, now: pd.Timestamp) -> dict:
+def player_snapshot(
+    state: Any, player_id: Any, surface: str, now: pd.Timestamp
+) -> dict[str, Any]:
     """Current feature values for one player, as of `now`."""
     snap = {}
 
@@ -102,7 +111,7 @@ def player_snapshot(state: dict, player_id, surface: str, now: pd.Timestamp) -> 
     return snap
 
 
-def _diff(snap_a: dict, snap_b: dict, base: str):
+def _diff(snap_a: dict[str, Any], snap_b: dict[str, Any], base: str) -> float:
     key = _BASE_KEY_MAP.get(base, base)
     va, vb = snap_a.get(key, np.nan), snap_b.get(key, np.nan)
     try:
@@ -115,24 +124,31 @@ def _diff(snap_a: dict, snap_b: dict, base: str):
 
 
 def build_match_features(
-    state: dict,
-    feature_cols: list,
-    snap_a: dict,
-    snap_b: dict,
-    id_a,
-    id_b,
+    state: dict[str, Any],
+    feature_cols: list[str],
+    snap_a: dict[str, Any],
+    snap_b: dict[str, Any],
+    id_a: Any,
+    id_b: Any,
     surface: str,
     best_of: int = 3,
     tourney_level_encoded: int = 2,
     round_encoded: int = 3,
-    odds_a: float = None,
-    odds_b: float = None,
-    now: pd.Timestamp = None,
+    odds_a: float | None = None,
+    odds_b: float | None = None,
+    now: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """Build the model input row for player A vs player B."""
     now = now or pd.Timestamp.now()
-    h2h = state["h2h"].get_h2h(id_a, id_b, surface) if (id_a is not None and id_b is not None) \
-        else {"h2h_win_pct": np.nan, "h2h_win_pct_surface": np.nan, "h2h_total_matches": 0}
+    h2h = (
+        state["h2h"].get_h2h(id_a, id_b, surface)
+        if (id_a is not None and id_b is not None)
+        else {
+            "h2h_win_pct": np.nan,
+            "h2h_win_pct_surface": np.nan,
+            "h2h_total_matches": 0,
+        }
+    )
 
     row = pd.DataFrame(np.nan, index=[0], columns=feature_cols)
 
@@ -166,7 +182,9 @@ def build_match_features(
         elif col == "cold_start_flag":
             ca = snap_a.get("match_count", 0) or 0
             cb = snap_b.get("match_count", 0) or 0
-            row[col] = int(ca < config.COLD_START_THRESHOLD or cb < config.COLD_START_THRESHOLD)
+            row[col] = int(
+                ca < config.COLD_START_THRESHOLD or cb < config.COLD_START_THRESHOLD
+            )
         elif col == "log_rank_diff":
             ra, rb = snap_a.get("rank", np.nan), snap_b.get("rank", np.nan)
             try:
@@ -178,7 +196,12 @@ def build_match_features(
         elif col == "elo_diff_x_bo5":
             row[col] = _diff(snap_a, snap_b, "elo") * (1 if best_of == 5 else 0)
         elif col == "opening_odds_diff":
-            if odds_a is not None and odds_b is not None and odds_a > 1.0 and odds_b > 1.0:
+            if (
+                odds_a is not None
+                and odds_b is not None
+                and odds_a > 1.0
+                and odds_b > 1.0
+            ):
                 row[col] = float(odds_a) - float(odds_b)
         elif col.endswith("_diff"):
             row[col] = _diff(snap_a, snap_b, col[: -len("_diff")])
@@ -187,7 +210,13 @@ def build_match_features(
     return row
 
 
-def assess_reliability(snap_a: dict, snap_b: dict, h2h_total: int, found_a: bool, found_b: bool) -> dict:
+def assess_reliability(
+    snap_a: dict[str, Any],
+    snap_b: dict[str, Any],
+    h2h_total: int,
+    found_a: bool,
+    found_b: bool,
+) -> dict[str, Any]:
     """Qualitative confidence flag for the prediction.
 
     A probability built on two unknown players is worth much less than one
@@ -197,13 +226,18 @@ def assess_reliability(snap_a: dict, snap_b: dict, h2h_total: int, found_a: bool
     score = 2  # alta
 
     if not found_a or not found_b:
-        return {"level": "bassa", "reasons": ["giocatore non trovato nello storico (cold start totale)"]}
+        return {
+            "level": "bassa",
+            "reasons": ["giocatore non trovato nello storico (cold start totale)"],
+        }
 
     for label, snap in [("p1", snap_a), ("p2", snap_b)]:
         count = snap.get("match_count", 0) or 0
         if count < config.COLD_START_THRESHOLD:
             score -= 2
-            reasons.append(f"{label}: solo {int(count)} match nello storico (cold start)")
+            reasons.append(
+                f"{label}: solo {int(count)} match nello storico (cold start)"
+            )
         elif count < 30:
             score -= 1
             reasons.append(f"{label}: storico limitato ({int(count)} match)")

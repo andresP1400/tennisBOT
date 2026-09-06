@@ -1,4 +1,5 @@
 """Root pytest config: ensure ``backend/src`` is importable across subdirs."""
+
 from __future__ import annotations
 
 import sys

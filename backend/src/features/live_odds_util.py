@@ -4,15 +4,17 @@ These are module-level functions/state used by LiveOddsScraper in
 features/live_odds.py; they are re-exported from there so tests that
 inspect their source keep working.
 """
+
 from __future__ import annotations
 
 import unicodedata
 from datetime import datetime, timezone
+from typing import Any
 
 CACHE_TTL_SECONDS = 300  # 5 minutes
 
-_odds_cache: dict = {}
-_odds_cache_timestamp: dict = {}
+_odds_cache: dict[str, Any] = {}
+_odds_cache_timestamp: dict[str, Any] = {}
 
 
 def _normalize_player_name(name: str) -> str:
@@ -27,10 +29,15 @@ def _normalize_player_name(name: str) -> str:
     if not parts:
         return ""
     last = parts[-1]
-    return unicodedata.normalize("NFD", last).encode("ascii", "ignore").decode("ascii").lower()
+    return (
+        unicodedata.normalize("NFD", last)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .lower()
+    )
 
 
-def _fuzzy_match_player(query: str, candidates: list) -> str:
+def _fuzzy_match_player(query: str, candidates: list[str]) -> str:
     """Find the best fuzzy match for a player name.
 
     Compares last names and handles common variations.

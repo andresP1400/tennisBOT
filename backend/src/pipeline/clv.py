@@ -3,20 +3,23 @@
 CLV compares the price taken for a bet against the closing line: a positive
 value means the bettor got a better price than the market's final opinion.
 """
+
 from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 
 
 def clv_closing(
-    probs,
-    open_p1,
-    open_p2,
-    close_p1,
-    close_p2,
+    probs: np.ndarray[Any, Any],
+    open_p1: np.ndarray[Any, Any],
+    open_p2: np.ndarray[Any, Any],
+    close_p1: np.ndarray[Any, Any],
+    close_p2: np.ndarray[Any, Any],
     edge: float = 0.0,
     close_source: str = "closing",
-) -> dict:
+) -> dict[str, Any]:
     """True CLV vs the dataset closing line (Avg consensus or Max/Pinnacle).
 
     For each positive-EV bet placed at *opening* price, compare implied
@@ -32,8 +35,14 @@ def clv_closing(
     o1, o2 = np.asarray(open_p1, float), np.asarray(open_p2, float)
     c1, c2 = np.asarray(close_p1, float), np.asarray(close_p2, float)
     valid = (
-        np.isfinite(o1) & np.isfinite(o2) & np.isfinite(c1) & np.isfinite(c2)
-        & (o1 > 1) & (o2 > 1) & (c1 > 1) & (c2 > 1)
+        np.isfinite(o1)
+        & np.isfinite(o2)
+        & np.isfinite(c1)
+        & np.isfinite(c2)
+        & (o1 > 1)
+        & (o2 > 1)
+        & (c1 > 1)
+        & (c2 > 1)
     )
 
     diffs, beats, n = [], 0, 0
@@ -74,14 +83,26 @@ def clv_closing(
     }
 
 
-def clv_proxy(probs, open_p1, open_p2, max_p1, max_p2, edge: float = 0.0) -> dict:
+def clv_proxy(
+    probs: np.ndarray[Any, Any],
+    open_p1: np.ndarray[Any, Any],
+    open_p2: np.ndarray[Any, Any],
+    max_p1: np.ndarray[Any, Any],
+    max_p2: np.ndarray[Any, Any],
+    edge: float = 0.0,
+) -> dict[str, Any]:
     """Backward-compatible alias: opening vs max/close market.
 
     Prefer clv_closing() for new code. Kept so existing tests keep working.
     """
     res = clv_closing(
-        probs, open_p1, open_p2, max_p1, max_p2,
-        edge=edge, close_source="max/close",
+        probs,
+        open_p1,
+        open_p2,
+        max_p1,
+        max_p2,
+        edge=edge,
+        close_source="max/close",
     )
     return {
         "bets": res["bets"],

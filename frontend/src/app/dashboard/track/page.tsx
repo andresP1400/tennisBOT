@@ -4,30 +4,8 @@ import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-
-interface TrackRecord {
-  id: string
-  ts: string
-  player1: string
-  player2: string
-  surface: string
-  prob1: number
-  predicted_winner: string
-  reliability: string | null
-  settled: boolean
-  actual_winner: string | null
-  correct: boolean | null
-  match_date: string | null
-}
-
-interface Summary {
-  total?: number
-  settled?: number
-  open?: number
-  correct?: number
-  accuracy?: number | null
-  brier?: number | null
-}
+import { getTrackRecord, settleTrack } from "@/services/track"
+import type { TrackRecord, TrackSummary } from "@/types/api"
 
 function reliabilityVariant(level: string | null): "default" | "secondary" | "destructive" | "outline" {
   if (level === "alta") return "default"
@@ -37,7 +15,7 @@ function reliabilityVariant(level: string | null): "default" | "secondary" | "de
 }
 
 export default function TrackPage() {
-  const [summary, setSummary] = useState<Summary>({})
+  const [summary, setSummary] = useState<TrackSummary>({})
   const [records, setRecords] = useState<TrackRecord[]>([])
   const [reachable, setReachable] = useState(true)
   const [settling, setSettling] = useState(false)
@@ -48,12 +26,7 @@ export default function TrackPage() {
     setLoading(true)
     setError(null)
     try {
-      const r = await fetch("/api/track?tour=atp&limit=200", { cache: "no-store" })
-      if (!r.ok) {
-        const text = await r.text().catch(() => r.statusText)
-        throw new Error(text || `HTTP ${r.status}`)
-      }
-      const data = await r.json()
+      const data = await getTrackRecord("atp", 200)
       if (data.error) throw new Error(data.error)
       setSummary(data.summary ?? {})
       setRecords(Array.isArray(data.records) ? data.records : [])
@@ -76,11 +49,7 @@ export default function TrackPage() {
     setSettling(true)
     setError(null)
     try {
-      const r = await fetch("/api/track/settle?tour=atp", { method: "POST" })
-      const data = await r.json().catch(() => ({}))
-      if (!r.ok || data.error) {
-        throw new Error(data.error || `Settle failed HTTP ${r.status}`)
-      }
+      await settleTrack("atp")
       await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Settle fallito")

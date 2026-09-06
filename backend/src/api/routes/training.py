@@ -1,8 +1,10 @@
 """Training control routes: status, start, reload."""
+
 from __future__ import annotations
 
 import subprocess
 import sys
+from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
@@ -16,7 +18,9 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int) -> None:
+def run_training_pipeline(
+    tour: str, trials: int, start_year: int, end_year: int
+) -> None:
     """Launch main.py train in background and capture logs."""
     training_status["is_training"] = True
     training_status["error"] = False
@@ -29,11 +33,17 @@ def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int
     try:
         process = subprocess.Popen(
             [
-                sys.executable, "main.py", "train",
-                "--tour", tour,
-                "--optuna-trials", str(trials),
-                "--start-year", str(start_year),
-                "--end-year", str(end_year),
+                sys.executable,
+                "main.py",
+                "train",
+                "--tour",
+                tour,
+                "--optuna-trials",
+                str(trials),
+                "--start-year",
+                str(start_year),
+                "--end-year",
+                str(end_year),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -41,6 +51,7 @@ def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int
             bufsize=1,
             cwd=str(SRC_DIR),
         )
+        assert process.stdout is not None
 
         for line in iter(process.stdout.readline, ""):
             if line:
@@ -56,7 +67,9 @@ def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int
             training_status["success"] = True
             invalidate_caches()
         else:
-            training_status["current_task"] = f"Errore! (Exit code: {process.returncode})"
+            training_status["current_task"] = (
+                f"Errore! (Exit code: {process.returncode})"
+            )
             training_status["error"] = True
 
     except Exception as e:
@@ -67,12 +80,14 @@ def run_training_pipeline(tour: str, trials: int, start_year: int, end_year: int
 
 
 @router.get("/api/status")
-def get_status() -> dict:
+def get_status() -> dict[str, Any]:
     return training_status
 
 
 @router.post("/api/train/start")
-def start_training(req: TrainRequest, background_tasks: BackgroundTasks) -> dict:
+def start_training(
+    req: TrainRequest, background_tasks: BackgroundTasks
+) -> dict[str, Any]:
     if training_status["is_training"]:
         raise HTTPException(status_code=400, detail="Training already running")
     background_tasks.add_task(
@@ -87,6 +102,6 @@ def start_training(req: TrainRequest, background_tasks: BackgroundTasks) -> dict
 
 
 @router.post("/api/reload")
-def reload_dataset() -> dict:
+def reload_dataset() -> dict[str, Any]:
     invalidate_caches()
     return {"message": "Cache dataset e inference state invalidata."}

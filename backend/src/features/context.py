@@ -9,6 +9,7 @@ Encodes the contextual information about a match:
   - Altitude
   - Month (seasonality)
 """
+
 from __future__ import annotations
 
 import os
@@ -17,6 +18,7 @@ import sys
 import pandas as pd
 
 from logging_config import get_logger
+
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
@@ -71,5 +73,7 @@ def compute_context_features(df: pd.DataFrame) -> pd.DataFrame:
         )
     if "month" not in df.columns and "tourney_date" in df.columns:
         df["month"] = pd.to_datetime(df["tourney_date"]).dt.month
-    logger.info("  Context features added: surface one-hot, level, round, best_of, month")
+    logger.info(
+        "  Context features added: surface one-hot, level, round, best_of, month"
+    )
     return df

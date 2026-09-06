@@ -1,4 +1,7 @@
 """Probability calibration module."""
+
+from typing import Any
+
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
@@ -20,7 +23,9 @@ class ProbabilityCalibrator:
         else:
             raise ValueError(f"Unknown calibration method: {method}")
 
-    def fit(self, raw_probs: np.ndarray, y_true: np.ndarray) -> "ProbabilityCalibrator":
+    def fit(
+        self, raw_probs: np.ndarray[Any, Any], y_true: np.ndarray[Any, Any]
+    ) -> "ProbabilityCalibrator":
         """Fit calibrator on validation set probabilities."""
         if self.method == "isotonic":
             self.model.fit(raw_probs, y_true)
@@ -28,18 +33,18 @@ class ProbabilityCalibrator:
             self.model.fit(raw_probs.reshape(-1, 1), y_true)
         return self
 
-    def predict(self, raw_probs: np.ndarray) -> np.ndarray:
+    def predict(self, raw_probs: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """Calibrate probabilities, returning continuous values in [0, 1]."""
         if self.method == "isotonic":
             probs = self.model.predict(raw_probs.ravel())
-            return np.clip(probs, 0.0, 1.0)
-        elif self.method == "platt":
-            return self.model.predict_proba(raw_probs.reshape(-1, 1))[:, 1]
+            return np.clip(probs, 0.0, 1.0)  # type: ignore[no-any-return]
+        probs = self.model.predict_proba(raw_probs.reshape(-1, 1))[:, 1]
+        return np.clip(probs, 0.0, 1.0)  # type: ignore[no-any-return]
 
 
 def calibrate_probabilities(
-    raw_probs: np.ndarray,
-    y_true: np.ndarray,
+    raw_probs: np.ndarray[Any, Any],
+    y_true: np.ndarray[Any, Any],
     method: str = "platt",
 ) -> ProbabilityCalibrator:
     """Fit and return a probability calibrator."""
@@ -48,6 +53,7 @@ def calibrate_probabilities(
     cal.fit(raw_probs, y_true)
     calibrated = cal.predict(raw_probs)
     from sklearn.metrics import brier_score_loss
+
     brier_before = brier_score_loss(y_true, raw_probs)
     brier_after = brier_score_loss(y_true, calibrated)
     logger.info(f"  Brier score BEFORE calibration: {brier_before:.5f}")

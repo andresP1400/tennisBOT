@@ -3,6 +3,7 @@
 Use these instead of bare `raise Exception(...)` so callers can handle
 specific failure modes without catching everything.
 """
+
 from __future__ import annotations
 
 
@@ -33,7 +34,12 @@ class PredictionError(TennisBotError):
 class ExternalAPIError(TennisBotError):
     """Raised when an external API (TheOddsAPI, Open-Meteo) fails."""
 
-    def __init__(self, service: str, message: str, status_code: int | None = None) -> None:
-        super().__init__(f"[{service}] {message}" + (f" (status={status_code})" if status_code else ""))
+    def __init__(
+        self, service: str, message: str, status_code: int | None = None
+    ) -> None:
+        super().__init__(
+            f"[{service}] {message}"
+            + (f" (status={status_code})" if status_code else "")
+        )
         self.service = service
         self.status_code = status_code

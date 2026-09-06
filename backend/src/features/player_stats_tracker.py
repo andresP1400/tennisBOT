@@ -15,20 +15,23 @@ Stats tracked per player:
     win_pct_surface, win_pct_last_10, tiebreak_win_pct, first_set_win_rate,
     sos_last_10
 """
+
 from __future__ import annotations
 
 import os
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+import config  # noqa: E402
 
 
-def exponential_weights(n: int, half_life: int | None = None) -> np.ndarray:
+def exponential_weights(n: int, half_life: int | None = None) -> np.ndarray[Any, Any]:
     """Generate exponential decay weights for the last *n* observations.
 
     Most recent observation gets weight 1.0.
@@ -36,10 +39,10 @@ def exponential_weights(n: int, half_life: int | None = None) -> np.ndarray:
     half_life = half_life or config.DECAY_HALF_LIFE
     decay = np.log(2) / half_life
     weights = np.exp(-decay * np.arange(n)[::-1])
-    return weights
+    return weights  # type: ignore[no-any-return]
 
 
-def weighted_mean(values: list, half_life: int | None = None) -> float:
+def weighted_mean(values: Sequence[float], half_life: int | None = None) -> float:
     """Compute exponentially weighted mean of a list of values."""
     if not values:
         return np.nan
@@ -77,10 +80,10 @@ class PlayerStatsTracker:
         self.first_set_wins: list[float] = []
         self.opponent_ranks: list[float] = []
 
-    def get_rolling_stats(self, surface: str | None = None) -> dict:
+    def get_rolling_stats(self, surface: str | None = None) -> dict[str, float]:
         """Return current rolling stats (BEFORE updating with current match)."""
         w = self.window
-        stats: dict = {}
+        stats: dict[str, float] = {}
         stats["ace_pct"] = weighted_mean(self.ace_pcts[-w:])
         stats["df_pct"] = weighted_mean(self.df_pcts[-w:])
         stats["first_serve_in_pct"] = weighted_mean(self.first_serve_in_pcts[-w:])
@@ -94,9 +97,7 @@ class PlayerStatsTracker:
         stats["second_serve_return_pts_won_pct"] = weighted_mean(
             self.second_serve_return_pts_won_pcts[-w:]
         )
-        stats["return_games_won_pct"] = weighted_mean(
-            self.return_games_won_pcts[-w:]
-        )
+        stats["return_games_won_pct"] = weighted_mean(self.return_games_won_pcts[-w:])
         if surface and surface in self.results_by_surface:
             surf_results = self.results_by_surface[surface][-w:]
             stats["win_pct_surface"] = (
@@ -135,12 +136,21 @@ class PlayerStatsTracker:
         self,
         won: bool,
         surface: str,
-        ace: float, df: float, svpt: float,
-        first_in: float, first_won: float, second_won: float,
-        bp_saved: float, bp_faced: float,
-        opp_bp_saved: float, opp_bp_faced: float,
-        opp_svpt: float, opp_1stIn: float, opp_1stWon: float,
-        opp_2ndWon: float, opp_SvGms: float,
+        ace: float,
+        df: float,
+        svpt: float,
+        first_in: float,
+        first_won: float,
+        second_won: float,
+        bp_saved: float,
+        bp_faced: float,
+        opp_bp_saved: float,
+        opp_bp_faced: float,
+        opp_svpt: float,
+        opp_1stIn: float,
+        opp_1stWon: float,
+        opp_2ndWon: float,
+        opp_SvGms: float,
         score: str,
         opp_rank: float,
     ) -> None:
@@ -182,15 +192,23 @@ class PlayerStatsTracker:
             self.bp_conversion_against.append(np.nan)
 
         # Return stats (derived from opponent's serve data)
-        if (opp_1stIn and opp_1stIn > 0 and not np.isnan(opp_1stIn)
-                and not np.isnan(opp_1stWon)):
+        if (
+            opp_1stIn
+            and opp_1stIn > 0
+            and not np.isnan(opp_1stIn)
+            and not np.isnan(opp_1stWon)
+        ):
             return_1st_won = opp_1stIn - opp_1stWon
             self.first_serve_return_pts_won_pcts.append(return_1st_won / opp_1stIn)
         else:
             self.first_serve_return_pts_won_pcts.append(np.nan)
-        if (opp_svpt and not np.isnan(opp_svpt)
-                and opp_1stIn and not np.isnan(opp_1stIn)
-                and not np.isnan(opp_2ndWon)):
+        if (
+            opp_svpt
+            and not np.isnan(opp_svpt)
+            and opp_1stIn
+            and not np.isnan(opp_1stIn)
+            and not np.isnan(opp_2ndWon)
+        ):
             opp_2nd_attempts = opp_svpt - opp_1stIn
             if opp_2nd_attempts > 0:
                 return_2nd_won = opp_2nd_attempts - opp_2ndWon
@@ -201,11 +219,15 @@ class PlayerStatsTracker:
                 self.second_serve_return_pts_won_pcts.append(np.nan)
         else:
             self.second_serve_return_pts_won_pcts.append(np.nan)
-        if (opp_SvGms and opp_SvGms > 0 and not np.isnan(opp_SvGms)
-                and opp_bp_faced is not None and not np.isnan(opp_bp_faced)):
+        if (
+            opp_SvGms
+            and opp_SvGms > 0
+            and not np.isnan(opp_SvGms)
+            and opp_bp_faced is not None
+            and not np.isnan(opp_bp_faced)
+        ):
             breaks_won = (
-                (opp_bp_faced - opp_bp_saved)
-                if not np.isnan(opp_bp_saved) else 0
+                (opp_bp_faced - opp_bp_saved) if not np.isnan(opp_bp_saved) else 0
             )
             self.return_games_won_pcts.append(breaks_won / opp_SvGms)
         else:

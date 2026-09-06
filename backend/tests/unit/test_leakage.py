@@ -15,7 +15,9 @@ import config
 def test_elo_first_match_is_initial(cleaned_matches):
     """The very first match of each player must use the initial rating."""
     res = compute_elo_features(cleaned_matches)
-    res = res.sort_values(["match_date_est", "tourney_date", "match_num"]).reset_index(drop=True)
+    res = res.sort_values(["match_date_est", "tourney_date", "match_num"]).reset_index(
+        drop=True
+    )
     first = res.iloc[0]
     # Both players appear for the first time -> pre-match ELO == initial
     assert first["winner_elo"] == float(config.ELO_INITIAL)
@@ -41,8 +43,14 @@ def test_elo_pre_match_excludes_current_result():
     # Player 1 beats player 2 ten times; each pre-match value must be the
     # value BEFORE that match (monotonic increasing, never the post value).
     rows = [
-        {"tourney_date": 20230101 + d, "winner_id": 1, "loser_id": 2,
-         "surface": "Hard", "score": "6-0 6-0", "round": "R32"}
+        {
+            "tourney_date": 20230101 + d,
+            "winner_id": 1,
+            "loser_id": 2,
+            "surface": "Hard",
+            "score": "6-0 6-0",
+            "round": "R32",
+        }
         for d in range(10)
     ]
     df = parse_dates(make_matches(rows))
@@ -65,7 +73,11 @@ def test_h2h_first_meeting_is_nan(cleaned_matches):
 
 def test_h2h_accumulates_forward(cleaned_matches):
     """The 2nd meeting of players 1 & 2 must show 1 prior match."""
-    res = compute_h2h_features(cleaned_matches).sort_values("match_date_est").reset_index(drop=True)
+    res = (
+        compute_h2h_features(cleaned_matches)
+        .sort_values("match_date_est")
+        .reset_index(drop=True)
+    )
     # match index 3 is the 1-vs-2 rematch (Clay QF)
     rematch = res[(res["round"] == "QF")].iloc[0]
     assert rematch["h2h_total_matches"] == 1
@@ -75,6 +87,10 @@ def test_h2h_accumulates_forward(cleaned_matches):
 
 def test_rolling_first_match_is_nan(cleaned_matches):
     """Rolling form must be undefined before a player has any history."""
-    res = compute_rolling_features(cleaned_matches).sort_values("match_date_est").reset_index(drop=True)
+    res = (
+        compute_rolling_features(cleaned_matches)
+        .sort_values("match_date_est")
+        .reset_index(drop=True)
+    )
     first = res.iloc[0]
     assert np.isnan(first["winner_win_pct_last_10"])

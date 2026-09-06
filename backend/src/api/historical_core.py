@@ -4,13 +4,19 @@ Used by the /api/predict route when the live tracker state is missing:
 latest player stats, head-to-head stats and the synthetic feature row built
 from historical parquet columns.
 """
+
 from __future__ import annotations
 
 import unicodedata
 from datetime import datetime, timezone
+from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from logging_config import get_logger
+
+logger = get_logger(__name__)
 
 _BASE_COL_MAP = {"ranking": "rank", "ranking_points": "rank_points"}
 _FATIGUE_BASES = {"days_rest", "minutes_on_court_last_10_days", "matches_last_7_days"}
@@ -21,9 +27,15 @@ def fold_player_name(name: str) -> str:
     """Lowercase and strip diacritics for accent-insensitive matching."""
     if not isinstance(name, str):
         return ""
-    return "".join(
-        c for c in unicodedata.normalize("NFD", name) if not unicodedata.combining(c)
-    ).strip().lower()
+    return (
+        "".join(
+            c
+            for c in unicodedata.normalize("NFD", name)
+            if not unicodedata.combining(c)
+        )
+        .strip()
+        .lower()
+    )
 
 
 def get_player_latest_stats(
@@ -43,13 +55,16 @@ def get_player_latest_stats(
 
 def get_h2h_stats(
     player1: str, player2: str, df: pd.DataFrame, surface: str | None = None
-) -> dict:
-    mask = (
-        (df["p1_name"].map(fold_player_name) == fold_player_name(player1))
-        & (df["p2_name"].map(fold_player_name) == fold_player_name(player2))
+) -> dict[str, Any]:
+    mask = (df["p1_name"].map(fold_player_name) == fold_player_name(player1)) & (
+        df["p2_name"].map(fold_player_name) == fold_player_name(player2)
     )
     h_df = df[mask]
-    result = {"h2h_win_pct": np.nan, "h2h_win_pct_surface": np.nan, "h2h_total_matches": 0}
+    result = {
+        "h2h_win_pct": np.nan,
+        "h2h_win_pct_surface": np.nan,
+        "h2h_total_matches": 0,
+    }
     if h_df.empty:
         return result
     result["h2h_win_pct"] = float(h_df["label"].mean())
@@ -61,7 +76,7 @@ def get_h2h_stats(
     return result
 
 
-def stat_value(stats_row, base: str) -> float:
+def stat_value(stats_row: pd.Series | None, base: str) -> float:
     if stats_row is None:
         return np.nan
     col = f"p1_{_BASE_COL_MAP.get(base, base)}"
@@ -73,7 +88,16 @@ def stat_value(stats_row, base: str) -> float:
         return np.nan
 
 
-def build_feature_row(feature_cols, sA, sB, sA_surf, sB_surf, h2h, surface, best_of=3):
+def build_feature_row(
+    feature_cols: list[str],
+    sA: pd.Series | None,
+    sB: pd.Series | None,
+    sA_surf: pd.Series | None,
+    sB_surf: pd.Series | None,
+    h2h: dict[str, Any],
+    surface: str | None,
+    best_of: int = 3,
+) -> pd.DataFrame:
     """Build model input row for fallback historical-row inference."""
     df_fake = pd.DataFrame(np.nan, index=[0], columns=feature_cols)
     for col in feature_cols:
@@ -99,8 +123,11 @@ def build_feature_row(feature_cols, sA, sB, sA_surf, sB_surf, h2h, surface, best
             try:
                 hand_a = str(sA["p1_hand"]) if sA is not None else "U"
                 hand_b = str(sB["p1_hand"]) if sB is not None else "U"
-                df_fake[col] = int(hand_a != hand_b) if "U" not in (hand_a, hand_b) else 0
-            except Exception:
+                df_fake[col] = (
+                    int(hand_a != hand_b) if "U" not in (hand_a, hand_b) else 0
+                )
+            except Exception as exc:
+                logger.debug("hand_matchup fallback to 0: %s", exc)
                 df_fake[col] = 0
         elif col == "home_country_flag":
             df_fake[col] = 0
@@ -110,8 +137,7 @@ def build_feature_row(feature_cols, sA, sB, sA_surf, sB_surf, h2h, surface, best
             count_a = stat_value(sA, "match_count")
             count_b = stat_value(sB, "match_count")
             cold = (
-                np.isnan(count_a) or count_a < 10
-                or np.isnan(count_b) or count_b < 10
+                np.isnan(count_a) or count_a < 10 or np.isnan(count_b) or count_b < 10
             )
             df_fake[col] = int(cold)
         elif col == "log_rank_diff":

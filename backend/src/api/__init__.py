@@ -8,13 +8,17 @@ import of a subpackage runs this ``__init__`` first, we must NOT import
 ``api_server`` eagerly here. PEP 562 ``__getattr__`` resolves ``app`` lazily,
 once ``api_server`` has finished loading.
 """
+
 from __future__ import annotations
+
+from typing import Any
 
 __all__ = ["app"]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name == "app":
         from api_server import app
+
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -8,6 +8,181 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- `ruff.toml` alla radice: `line-length = 120`, lint `E,F,W`, `E402` ignorato
+  (pattern `sys.path.insert` + `# noqa` consolidato in AGENT.md). La CI ora
+  esegue `ruff check .` senza `--ignore` a mano, quindi `E501` (120 char) e
+  la presenza dei `# noqa: E402` sono enforce.
+- Frontend: infrastruttura test con `vitest` + `@testing-library/react` +
+  `jsdom` (`vitest.config.ts`, `vitest.setup.ts`). Script `npm run test` /
+  `npm run test:watch` / `npm run typecheck`; la CI web esegue anche i test.
+- Frontend: test unit per `lib/api`, `services/history`, `services/news`,
+  `hooks/useHistory`, `hooks/useTodaysMatches`, `components/section-cards`
+  (13 test, tutti verdi).
+- Frontend: hook di dominio `useAvailableModels`, `useHistory`,
+  `useTodaysMatches` in `src/hooks/` (regola "uno per dominio", nome che
+  descrive il risultato); consumer refactorati (predict, players, live,
+  data-table).
+- Backend: `config.Settings` (Pydantic `BaseSettings`) per tutte le
+  variabili d'ambiente (API port, TheOddsAPI/Betfair keys, LLM providers,
+  batch-weather toggle). I 19 punti `os.environ.get` sparsi sono migrati al
+  singleton `config.settings`; `pydantic-settings` aggiunto a requirements.
+- Backend: `features/cleaning_loaders.py`, `cleaning_transforms.py`,
+  `cleaning_enrichment.py` (split di `features/cleaning.py`, orchestratore
+  sottile + re-export); `api/card_core.py` (split di `api/routes/card.py`);
+  `features/builder_symmetric.py` (split di `builder_helpers.py`);
+  `pipeline/train_oof.py` (split di `train_helpers.py`). Tutti i moduli
+  sotto il budget di 300 LOC/riga.
+- `AGENT.md` aggiunto nella root del repository (le regole erano referenziate
+  da `docs/architecture.md` ma il file mancava); copia fedele delle regole
+  ingegneristiche di progetto (changelog, struttura, naming, tooling Python,
+  React/TS, server).
+
+### Changed
+- Frontend services: aggiunti `services/history.ts` e `services/news.ts`;
+  `services/system.ts` ora espone anche `getTrack`; `services/odds.ts` e
+  `services/system.ts` non duplicano più `getOddsApiStatus`; rimossa la
+  duplicazione `researchPlayerNews` da `services/odds.ts` (vive in
+  `services/news.ts`). Componenti e pagine migrati dal fetch diretto
+  (`apiFetch`/`fetch`) ai services (`data-table`, `players`, `training`,
+  `live`, `overview-panels`, `section-cards`, `chart-area-interactive`,
+  `match-news-button`, `predict`).
+- Frontend: tipi API deduplicati in `src/types/api.ts` — aggiunti
+  `HistoryMatchRow`, `HistoryResponse`, `SystemStatus`, `PlayerStats`;
+  `CardResponse` allineato al payload reale del backend (`n_value_bets`,
+  `model_used`, `min_edge`, `message`); i tipi duplicati locali
+  (`auto-daily-card/types.ts`, `match-news-button/types.ts`,
+  `live-page.types.ts`) ora re-exportano dal globale.
+- Frontend: componenti root spostati in cartelle proprie con barrel
+  `index.ts` (regola "ogni componente in cartella propria, import sempre
+  dall'index"): `data-table`, `overview-panels`, `section-cards`,
+  `chart-area-interactive`, `nav-main`, `nav-secondary`, `site-header`,
+  `app-sidebar`.
+- Backend: type hints aggiunti alle firme pubbliche senza annotazioni
+  (`betting_metrics`, `eval_charts`, `learners`, `historical_core`,
+  `state`, `inference`, `clv`, `elo`, `fatigue`, `h2h`, `rolling_stats`,
+  `main`, `live_odds_scraping`, `player_context`, `evaluation`,
+  `predict_core`). `Any` eliminato dalle firme pubbliche dove non necessario
+  (rimasto solo per artefatti deserializzati joblib e `sanitize_nan`, come
+  già documentato).
+- Backend: **`mypy --strict` completo e verde su tutto il backend (0 errori)**.
+  Impostato `strict = True` in `mypy.ini` e RIMOSSI tutti i 16 blocchi
+  `ignore_errors` per i moduli legacy. Risolti ~320 errori: generici annotati
+  (`dict[str, Any]`, `list[dict[str, Any]]`, `tuple[Any, ...]`,
+  `ndarray[Any, Any]`, `set[str]`, ecc.), `Optional` impliciti
+  (`start_year: int | None = None`), return `Any` da `json`/numpy/sklearn
+  via `# type: ignore[no-any-return]`, mismatch `dict[int, ...]` vs
+  `dict[str, ...]`, unpacking di union (`type: ignore[assignment]` nei
+  tracker state), import `Any` aggiunti dove mancanti. `Any` è usato
+  esplicitamente solo per artefatti deserializzati/ML/JSON (tensione nota
+  con la regola "mai Any", documentata).
+- Backend: attivati i flag mypy `disallow_untyped_defs` e `warn_return_any`
+  (rafforzamento verso `--strict` senza lo churn dei 198 `type-arg` da
+  `disallow_any_generics`, che confligge con la regola "mai Any" sui dati
+  eterogenei). Annotati 33 siti: artefatti ML/JSON via `Any` esplicito e
+  return di `json.loads`/numpy/`sanitize_nan` via `# type: ignore[no-any-return]`.
+- Backend: `pipeline/eval_charts.py` (307 LOC) splittato in
+  `eval_charts_curves.py` + `eval_charts_explain.py` + `eval_charts_style.py`
+  con facciata sottile di re-export (budget 300 LOC/riga).
+- Backend: `black` aggiunto al tooling (`requirements-dev.txt` + step
+  `black --check .` in CI); 12 file riallineati al formatter.
+- Formattato l'intero backend con `black` (`black backend/src start_all.py`,
+  82 file riformattati) per allinearsi alla regola AGENT.md
+  "black + ruff prima di ogni commit". Nessun cambio di logica;
+  `black --check`, `ruff check`, `mypy --strict` e `pytest` sono tutti verdi.
+- `api_server.py`: `print()` di warmup e del messaggio di ascolto sostituiti
+  con `log = get_logger(__name__)` (logging_config JSON), nessun cambio di
+  comportamento.
+- `start_all.py`: `print()` sostituiti con logging standard (`logging.basicConfig`
+  + `log.info`), senza impatto sui subprocess (continuano a ereditare stdout).
+- `features/live_odds_match_odds.py`: `print()` informativo convertito in
+  `logger.warning`; i due `except Exception: pass` delle fonti quote ora
+  loggano il motivo (regola "errori espliciti mai silenziosi").
+- `api/routes/card.py`: i `except Exception: return None` (weather/context
+  enrich) ora loggano a livello debug.
+- `api/routes/models.py`: `except Exception` ristretto a `OSError` con
+  `logger.warning`.
+- `api/predict_core.py`: la firma di `sanitize_nan` tentata come `object`
+  è stata riportata a `Any` perché il tipo `object` rompeva la compilazione
+  mypy strict nei routes che restituiscono il suo risultato
+  (`dict[Any, Any]`); si preserva il comportamento identico senza aggiungere
+  nuovi errori di tipo.
+
+### Fixed
+- Backend: le eccezioni custom di `exceptions.py` sono ora usate al posto dei
+  builtin generici nei punti di dominio: `DataNotFoundError` in
+  `cleaning_loaders.py` e `training.py` (era `FileNotFoundError`/`ValueError`),
+  `TrainingError` in `train_oof.py` (era `RuntimeError`),
+  `ExternalAPIError` in `oddsportal_parse.py` con `raise ... from last`
+  (era `RuntimeError` senza catena).
+- Backend: rimossi gli swallow silenziosi di eccezioni (regola "errori
+  espliciti mai silenziosi"): `predict_core.py` (odds autofill, `log.debug`),
+  `historical_core.py` (`hand_matchup`, `log.debug`),
+  `live_odds_theoddsapi.py` (3 siti `log.warning`), `player_news.py`
+  (fallback web search, `log.warning`), `weather_fetch.py` (`log.warning`).
+- Backend: `start_year: int = None` -> `int | None = None` in
+  `cleaning.py`/`cleaning_loaders.py` (no_implicit_optional, mypy).
+- `app/dashboard/predict/page.tsx`: `getAvailableModels` era importato da
+  `@/services/predict` ma è esportato da `@/services/system` (errore TS2305
+  che rompeva `tsc --noEmit` e la build).
+- `components/auto-daily-card/auto-daily-card.tsx`: virgolette non escapate
+  nel JSX (2 errori `react/no-unescaped-entities` di ESLint) sostituite con
+  `&quot;`.
+- `components/ui/chart/chart-context.ts` e
+  `components/ui/sidebar/sidebar-parts.tsx`: risolti i 3 warning ESLint
+  `no-unused-vars` (const `THEMES` ridotta a `ChartThemeKey`; import
+  ristretto alla sola costante usata).
+- `pipeline/betting_eval.py`: i 16 `print()` di `full_betting_report`
+  sostituiti con `logger.info` via `get_logger(__name__)` (regola AGENT
+  "vietato print()"); rimosso il workaround `sys.stdout.reconfigure`.
+- `features/elo_system.py`, `features/player_stats_tracker.py` e
+  `pipeline/track.py`: aggiunto `# noqa: E402` sugli import dopo
+  `sys.path.insert` (allineamento al pattern consolidato AGENT.md).
+- `AGENT.md` duplicato in `tennisBOT-main/` rimosso (unica copia fedele
+  nella root).
+- `features/elo_system.py`: corretti gli errori mypy strict (no_implicit_optional
+  + annotazioni di variabili): i parametri con `= None` ora sono
+  `int | None` / `str | None`, e i dict di stato (`ratings_global`,
+  `ratings_surface`, `match_counts`, ecc.) sono annotati esplicitamente.
+  `last_date` è tipato `dict[int, pd.Timestamp]`, mentre `current_date` e
+  `date` sono `pd.Timestamp | None`; `_level_mult`, `_mov_mult` e
+  `_sets_margin` accettano `str | None` (risolti i 4 errori residui di
+  `pd.isna(object)` e degli argomenti `str | None`). `_level_mult` usa
+  `get(level or "", 1.0)` per gestire `str | None` senza errori mypy, e
+  `config.ELO_LEVEL_K_MULT` è annotato esplicitamente come `dict[str, float]`.
+- `api/routes/training.py`: aggiunto `assert process.stdout is not None`
+  dopo `subprocess.Popen` (risolve `Item "None" of "IO[str] | None"`).
+- `features/odds_loading.py`: `frames.append(df)` ora è in `if df is not None`
+  (df è `DataFrame | None` nella rama Excel/html).
+- `features/odds_pinnacle.py` e `features/odds_betfair.py`: aggiunta la
+  guardia `isinstance(cached, list)` prima di ritornare dalla cache tipata
+  `object`.
+- `features/odds_theoddsapi.py`: `_available_sports` viene assegnato solo se
+  la cache è `list` (filtrata a `str`); `headers` annotato `dict[str, str]`.
+- `features/live_odds_theoddsapi.py`: `_available_sports` annotato
+  `list[str] | None` e aggiunto stub `_get_api_key()` (il metodo reale vive in
+  `LiveOddsScraper`); `[s["key"] ...]` forzato a `list[str]`.
+- `features/live_odds_matches.py`: aggiunto stub
+  `_get_todays_matches_api()` e ritorni `cached or []` per evitare `Any | None`.
+- `features/live_odds_match_odds.py`: aggiunti stub per `_get_api_key`,
+  `_scrape_theoddsapi`, `_scrape_pinnacle`, `_scrape_oddsportal`,
+  `_scrape_tennis_explorer` e attributo `enable_scraping: bool`.
+- `features/live_odds.py`: `_available_sports` in `__init__` allineato a
+  `list[str] | None`.
+- `features/odds_sofascore.py`: `_http`/`_impersonate` tipizzati (moduli
+  intercambiabili di requests/curl_cffi); `_get()` ritorna `dict | None`
+  con narrowing; `_event_detail` usa solo `dict`/`isinstance` (estratto
+  `event = cached.get("event")` per il narrowing); `_epoch_to_iso`
+  accetta `Any`.
+- `pipeline/eval_charts.py`: `set_xlim`/`set_ylim` con tuple invece di list;
+  `groupby.apply(...)` con `# type: ignore[call-overload]`.
+- `pipeline/train_helpers.py`: `mirror_probs`, `o1`, `o2` convertiti con
+  `np.asarray(..., dtype=float)` per evitare il tipo pandas `ExtensionArray`.
+- `pipeline/inference.py`: firma di `build_match_features` corretta con
+  `odds_a/odds_b: float | None` e `now: pd.Timestamp | None`.
+- `api/predict_core.py`: `h2h_total` ridotto a int con `isinstance` prima di
+  passarlo a `assess_reliability` e di usarlo nel campo `total_matches`.
+
+### Added
 - `backend/src/features/player_context.py`: contesto giocatore 100% locale
   (zero scraping, zero costi) da CSV Sackmann: ranking e punti (ultima
   data ranking), età da DOB, forma recente (ultimi 5 W/L), flag RET nei

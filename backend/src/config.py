@@ -1,11 +1,59 @@
 """Central configuration for the TennisBot prediction pipeline.
 
-All paths, constants, and hyperparameters are defined here.
+All paths, constants, and hyperparameters are defined here. Environment
+secrets and tunables live in `Settings` (Pydantic BaseSettings) so nothing
+sensitive is hardcoded — AGENT.md: "zero secrets nel codice, tutto da env
+via Pydantic Settings".
 """
+
 from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/src/config.py -> repo root is three levels up.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+class Settings(BaseSettings):
+    """Environment-driven settings (secrets, ports, provider knobs).
+
+    Real environment variables win over .env files; local.env overrides
+    .env (same precedence the previous load_dotenv(override=True) calls
+    implemented in api_server/betfair_clv).
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=(
+            str(_PROJECT_ROOT / ".env"),
+            str(_PROJECT_ROOT / "local.env"),
+        ),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # API server
+    tennisbot_api_port: int = 9090
+
+    # Odds APIs
+    odds_api_key: str = ""
+    betfair_app_key: str = ""
+    betfair_session_token: str = ""
+
+    # Feature-building toggles
+    tennisbot_batch_weather: str = ""
+
+    # LLM / research providers
+    llm_provider: str = "openai"
+    openai_api_key: str = ""
+    # Default matches the NVIDIA NIM endpoint used by player_news (the
+    # code previously defaulted OPENAI_BASE_URL to integrate.api.nvidia.com).
+    openai_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_model: str = "meta/llama-3.1-8b-instruct"
+    tavily_api_key: str = ""
+
+
+settings = Settings()
 
 # Public path constants for callers that need the source or repo root
 # (matches SRC_DIR/BASE_DIR computed inline in api_server, smoke_test, ...).
@@ -43,13 +91,13 @@ DECAY_HALF_LIFE = 10
 
 # --- ELO refinements (ported from rigorous fork) ---
 # K multiplier by tournament level: Slam win moves rating more than Challenger.
-ELO_LEVEL_K_MULT = {
-    "G": 1.2,   # Grand Slam
-    "M": 1.1,   # Masters 1000
-    "F": 1.1,   # Tour Finals
-    "A": 1.0,   # ATP 500/250
+ELO_LEVEL_K_MULT: dict[str, float] = {
+    "G": 1.2,  # Grand Slam
+    "M": 1.1,  # Masters 1000
+    "F": 1.1,  # Tour Finals
+    "A": 1.0,  # ATP 500/250
     "D": 0.85,  # Davis Cup
-    "C": 0.9,   # Challengers
+    "C": 0.9,  # Challengers
 }
 # Margin-of-victory: extra K weight per set of margin beyond the minimum.
 ELO_MOV_BONUS_PER_SET = 0.1
@@ -113,8 +161,14 @@ TOURNEY_LEVEL_MAP = {
 
 # Round ordering (for ordinal encoding)
 ROUND_ORDER = {
-    "R128": 1, "R64": 2, "R32": 3, "R16": 4,
-    "QF": 5, "SF": 6, "F": 7, "RR": 3,
+    "R128": 1,
+    "R64": 2,
+    "R32": 3,
+    "R16": 4,
+    "QF": 5,
+    "SF": 6,
+    "F": 7,
+    "RR": 3,
 }
 
 # Estimated days elapsed from tournament start for each round.
@@ -122,9 +176,16 @@ ROUND_ORDER = {
 # without this offset all matches in an event share one date, which breaks
 # fatigue features and intra-tournament chronological ordering.
 ROUND_DAY_OFFSET = {
-    "R128": 0, "R64": 2, "R32": 4, "R16": 6,
-    "QF": 8, "SF": 10, "F": 12,
-    "RR": 2, "BR": 11, "ER": 0,
+    "R128": 0,
+    "R64": 2,
+    "R32": 4,
+    "R16": 6,
+    "QF": 8,
+    "SF": 10,
+    "F": 12,
+    "RR": 2,
+    "BR": 11,
+    "ER": 0,
 }
 
 # Altitude data (meters above sea level) for key tournament cities

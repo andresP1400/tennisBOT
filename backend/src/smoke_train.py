@@ -13,6 +13,7 @@ It:
 Usage:
     python smoke_train.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,36 +31,62 @@ sys.path.insert(0, str(PROJECT_ROOT))
 def make_synthetic_dataset(n: int = 5000, seed: int = 42) -> pd.DataFrame:
     """Generate a synthetic dataset that mimics the feature shape."""
     rng = np.random.default_rng(seed)
-    df = pd.DataFrame({
-        "match_id": [f"{i}_A" if i % 2 == 0 else f"{i}_B" for i in range(n)],
-        "tourney_date": pd.to_datetime("2020-01-01") + pd.to_timedelta(
-            rng.integers(0, 1500, size=n), unit="D"
-        ),
-        "tourney_name": rng.choice(["Australian Open", "Roland Garros", "Wimbledon"], size=n),
-        "surface": rng.choice(["Hard", "Clay", "Grass"], size=n),
-        "year": 2020 + rng.integers(0, 5, size=n),
-        "p1_name": rng.choice(["Sinner", "Alcaraz", "Djokovic", "Medvedev"], size=n),
-        "p2_name": rng.choice(["Zverev", "Rublev", "Rune", "Ruud"], size=n),
-        "label": rng.integers(0, 2, size=n),
-    })
+    df = pd.DataFrame(
+        {
+            "match_id": [f"{i}_A" if i % 2 == 0 else f"{i}_B" for i in range(n)],
+            "tourney_date": pd.to_datetime("2020-01-01")
+            + pd.to_timedelta(rng.integers(0, 1500, size=n), unit="D"),
+            "tourney_name": rng.choice(
+                ["Australian Open", "Roland Garros", "Wimbledon"], size=n
+            ),
+            "surface": rng.choice(["Hard", "Clay", "Grass"], size=n),
+            "year": 2020 + rng.integers(0, 5, size=n),
+            "p1_name": rng.choice(
+                ["Sinner", "Alcaraz", "Djokovic", "Medvedev"], size=n
+            ),
+            "p2_name": rng.choice(["Zverev", "Rublev", "Rune", "Ruud"], size=n),
+            "label": rng.integers(0, 2, size=n),
+        }
+    )
     # Generate plausible numeric features (37 of them)
     feature_names = [
-        "ranking_diff", "ranking_points_diff", "elo_diff", "elo_surface_diff",
-        "age_diff", "height_diff", "hand_matchup", "home_country_flag",
-        "qualifier_flag_diff", "h2h_win_pct", "h2h_win_pct_surface",
-        "days_rest_diff", "matches_last_7_days_diff",
-        "ace_pct_diff", "df_pct_diff", "first_serve_in_pct_diff",
-        "win_on_1st_serve_pct_diff", "win_on_2nd_serve_pct_diff",
-        "bp_saved_pct_diff", "bp_converted_pct_diff",
+        "ranking_diff",
+        "ranking_points_diff",
+        "elo_diff",
+        "elo_surface_diff",
+        "age_diff",
+        "height_diff",
+        "hand_matchup",
+        "home_country_flag",
+        "qualifier_flag_diff",
+        "h2h_win_pct",
+        "h2h_win_pct_surface",
+        "days_rest_diff",
+        "matches_last_7_days_diff",
+        "ace_pct_diff",
+        "df_pct_diff",
+        "first_serve_in_pct_diff",
+        "win_on_1st_serve_pct_diff",
+        "win_on_2nd_serve_pct_diff",
+        "bp_saved_pct_diff",
+        "bp_converted_pct_diff",
         "first_serve_return_pts_won_pct_diff",
         "second_serve_return_pts_won_pct_diff",
         "return_games_won_pct_diff",
-        "win_pct_surface_diff", "win_pct_last_10_diff",
-        "tiebreak_win_pct_diff", "first_set_win_rate_diff",
-        "sos_last_10_diff", "service_games_won_pct_diff",
-        "surface_Hard", "surface_Clay", "surface_Grass",
-        "tourney_level_encoded", "round_encoded", "best_of",
-        "indoor_outdoor", "month",
+        "win_pct_surface_diff",
+        "win_pct_last_10_diff",
+        "tiebreak_win_pct_diff",
+        "first_set_win_rate_diff",
+        "sos_last_10_diff",
+        "service_games_won_pct_diff",
+        "surface_Hard",
+        "surface_Clay",
+        "surface_Grass",
+        "tourney_level_encoded",
+        "round_encoded",
+        "best_of",
+        "indoor_outdoor",
+        "month",
     ]
     for name in feature_names:
         df[name] = rng.normal(0, 1, size=n).astype(float)
@@ -85,6 +112,7 @@ def main() -> int:
 
         # Patch config paths to point at the temp dir
         import config
+
         config.PROCESSED_DIR = tmp_path
         config.MODELS_DIR = tmp_path
         config.REPORTS_DIR = tmp_path
@@ -107,7 +135,14 @@ def main() -> int:
 
         print("\n[3/4] Validating model bundle ...")
         bundle = joblib.load(actual_model_path)
-        required = ["base_models", "meta_model", "calibrator", "imputer", "scaler", "feature_cols"]
+        required = [
+            "base_models",
+            "meta_model",
+            "calibrator",
+            "imputer",
+            "scaler",
+            "feature_cols",
+        ]
         for key in required:
             if key not in bundle:
                 print(f"  FAIL: bundle missing key '{key}'")
@@ -132,8 +167,12 @@ def main() -> int:
         # Test: probabilities must be CONTINUOUS (not just 0 or 1)
         n_unique = len(np.unique(calibrated))
         n_in_range = np.sum((calibrated >= 0.0) & (calibrated <= 1.0))
-        print(f"  Raw probabilities:     unique={len(np.unique(raw))}, in [0,1]={np.sum((raw>=0)&(raw<=1))}/{len(raw)}")
-        print(f"  Calibrated probs:      unique={n_unique}, in [0,1]={n_in_range}/{len(calibrated)}")
+        print(
+            f"  Raw probabilities:     unique={len(np.unique(raw))}, in [0,1]={np.sum((raw>=0)&(raw<=1))}/{len(raw)}"
+        )
+        print(
+            f"  Calibrated probs:      unique={n_unique}, in [0,1]={n_in_range}/{len(calibrated)}"
+        )
         if n_unique < 5:
             print(f"  FAIL: calibrator output has only {n_unique} unique values")
             print(f"  Sample values: {calibrated[:10]}")

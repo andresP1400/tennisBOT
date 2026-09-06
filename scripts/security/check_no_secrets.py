@@ -3,6 +3,7 @@
 Run in CI or pre-commit. Exits non-zero if a suspected secret is found
 in any file tracked by git or in the local working directory.
 """
+
 from __future__ import annotations
 
 import re
@@ -29,14 +30,23 @@ PATTERNS: list[tuple[str, re.Pattern]] = [
     ),
     (
         "generic api key=value",
-        re.compile(r"(?i)(api[_-]?key|secret|token)\s*=\s*['\"]?([A-Za-z0-9_\-]{32,})['\"]?"),
+        re.compile(
+            r"(?i)(api[_-]?key|secret|token)\s*=\s*['\"]?([A-Za-z0-9_\-]{32,})['\"]?"
+        ),
     ),
 ]
 
 # Files / directories to skip
 SKIP = {
-    ".git", "node_modules", "__pycache__", ".venv", "venv",
-    ".pytest_cache", ".next", "dist", "build",
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    ".next",
+    "dist",
+    "build",
     "docs/SECURITY.md",  # this file mentions patterns by design
     "scripts/security/check_no_secrets.py",
 }
@@ -62,8 +72,16 @@ def iter_python_files() -> list[Path]:
                 if any(rel == s or rel.startswith(s + "/") for s in SKIP):
                     continue
                 if entry.suffix not in {
-                    ".py", ".ts", ".tsx", ".js", ".json",
-                    ".yml", ".yaml", ".md", ".txt", ".env",
+                    ".py",
+                    ".ts",
+                    ".tsx",
+                    ".js",
+                    ".json",
+                    ".yml",
+                    ".yaml",
+                    ".md",
+                    ".txt",
+                    ".env",
                 }:
                     continue
                 files.append(entry)

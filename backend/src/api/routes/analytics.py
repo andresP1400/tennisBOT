@@ -1,7 +1,9 @@
 """Evaluation analytics routes: metrics CSV and chart PNGs."""
+
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Response
 
@@ -34,7 +36,7 @@ def get_metrics(tour: str = "atp") -> Response:
 
 
 @router.get("/api/charts")
-def list_charts(tour: str = "atp") -> dict:
+def list_charts(tour: str = "atp") -> dict[str, Any]:
     """List evaluation chart PNGs for a tour (used by dashboard / reports)."""
     if tour not in _VALID_TOURS:
         raise HTTPException(status_code=400, detail="Invalid tour")
@@ -42,11 +44,13 @@ def list_charts(tour: str = "atp") -> dict:
     charts = []
     for c in _CHART_FILES:
         path = tour_dir / c["file"]
-        charts.append({
-            "name": c["name"],
-            "file": c["file"],
-            "exists": path.is_file(),
-        })
+        charts.append(
+            {
+                "name": c["name"],
+                "file": c["file"],
+                "exists": path.is_file(),
+            }
+        )
     return {"tour": tour, "charts": charts}
 
 

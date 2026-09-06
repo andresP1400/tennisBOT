@@ -15,10 +15,12 @@ This module exposes:
   - compute_weather_features(df)  : enrich a match DataFrame
   - get_live_weather(tourney, date): single-shot lookup for /api/weather
 """
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from typing import Any
 
 from logging_config import get_logger
 from features.weather_fetch import fetch_weather_batch
@@ -30,8 +32,11 @@ logger = get_logger(__name__)
 _get_coords = get_coords
 
 WEATHER_COLS: list[str] = [
-    "temperature_c", "wind_speed_kmh", "rain_probability",
-    "humidity_pct", "cloud_cover_pct",
+    "temperature_c",
+    "wind_speed_kmh",
+    "rain_probability",
+    "humidity_pct",
+    "cloud_cover_pct",
 ]
 
 
@@ -49,17 +54,19 @@ def compute_weather_features(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
     df["_date_str"] = pd.to_datetime(df["tourney_date"]).dt.strftime("%Y-%m-%d")
-    requests: list[dict] = []
+    requests: list[dict[str, Any]] = []
     for _, row in df[["tourney_name", "_date_str"]].drop_duplicates().iterrows():
         coords = get_coords(row["tourney_name"])
         if coords is None:
             continue
-        requests.append({
-            "lat": coords[0],
-            "lon": coords[1],
-            "date": row["_date_str"],
-            "key": f"{row['tourney_name']}|{row['_date_str']}",
-        })
+        requests.append(
+            {
+                "lat": coords[0],
+                "lon": coords[1],
+                "date": row["_date_str"],
+                "key": f"{row['tourney_name']}|{row['_date_str']}",
+            }
+        )
     if not requests:
         logger.info(" No tournament coordinates found. Adding NaN weather columns.")
         for col in WEATHER_COLS:
@@ -72,31 +79,41 @@ def compute_weather_features(df: pd.DataFrame) -> pd.DataFrame:
     for col in WEATHER_COLS:
         df[col] = df.apply(
             lambda row, c=col: weather_data.get(
-                f"{row['tourney_name']}|{row['_date_str']}", {},
+                f"{row['tourney_name']}|{row['_date_str']}",
+                {},
             ).get(c, np.nan),
             axis=1,
         )
     n_with_weather = df["temperature_c"].notna().sum()
     pct = 100 * n_with_weather / len(df) if len(df) > 0 else 0
-    logger.info(f" Weather data available for {n_with_weather:,} / {len(df):,} matches ({pct:.1f}%)")
+    logger.info(
+        f" Weather data available for {n_with_weather:,} / {len(df):,} matches ({pct:.1f}%)"
+    )
     df = df.drop(columns=["_date_str"], errors="ignore")
     return df
 
 
-def get_live_weather(tourney_name: str, match_date: str | None = None) -> dict:
+def get_live_weather(
+    tourney_name: str, match_date: str | None = None
+) -> dict[str, Any]:
     """Get current/recent weather for a tournament location.
 
     Useful for the /api/predict endpoint to add weather context.
     """
     import datetime as dt
+
     coords = get_coords(tourney_name)
     if coords is None:
         return {}
     date = match_date or dt.date.today().strftime("%Y-%m-%d")
-    result = fetch_weather_batch([{
-        "lat": coords[0],
-        "lon": coords[1],
-        "date": date,
-        "key": "live",
-    }])
-    return result.get("live", {})
+    result = fetch_weather_batch(
+        [
+            {
+                "lat": coords[0],
+                "lon": coords[1],
+                "date": date,
+                "key": "live",
+            }
+        ]
+    )
+    return result.get("live", {})  # type: ignore[no-any-return]

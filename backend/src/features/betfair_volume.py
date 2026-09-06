@@ -31,6 +31,7 @@ Limitations (from this network):
 The module never fails hard on a single poll: it returns the last good
 snapshot plus error details, so callers can degrade gracefully.
 """
+
 from __future__ import annotations
 
 import json
@@ -39,6 +40,7 @@ import re
 import sys
 import time
 import urllib.request
+from typing import Any
 
 from logging_config import get_logger
 from features.betfair_chart import get_runner_snapshot
@@ -57,7 +59,7 @@ _USER_AGENT = (
 # --------------------------------------------------------------------------- #
 # Event resolution (betfair.it sportsbook — reachable from IT)
 # --------------------------------------------------------------------------- #
-def find_tennis_events(timeout: int = 30) -> list[dict]:
+def find_tennis_events(timeout: int = 30) -> list[dict[str, Any]]:
     """Scrape the current tennis events from www.betfair.it.
 
     Returns one dict per event::
@@ -74,12 +76,15 @@ def find_tennis_events(timeout: int = 30) -> list[dict]:
     """
     req = urllib.request.Request(
         _BFAIR_IT_TENNIS,
-        headers={"User-Agent": _USER_AGENT, "Accept": "text/html,application/xhtml+xml"},
+        headers={
+            "User-Agent": _USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+        },
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         html = resp.read().decode("utf-8", errors="ignore")
 
-    events: list[dict] = []
+    events: list[dict[str, Any]] = []
     seen: set[str] = set()
     # one block per event card; extract slug + market suffix + runner URNs
     for block in html.split('"typename":"EventMarketCard"'):
@@ -89,8 +94,8 @@ def find_tennis_events(timeout: int = 30) -> list[dict]:
         url, event_id = url_m.group(1), url_m.group(2)
         if event_id in seen:
             continue
-        mk = re.search(r'ppb:sbkMarket:924\.(\d+)', block)
-        rns = re.findall(r'ppb:sbkRunner:924\.\d+/(\d+)', block)
+        mk = re.search(r"ppb:sbkMarket:924\.(\d+)", block)
+        rns = re.findall(r"ppb:sbkRunner:924\.\d+/(\d+)", block)
         if not mk or len(rns) < 2:
             continue
         seen.add(event_id)
@@ -101,15 +106,17 @@ def find_tennis_events(timeout: int = 30) -> list[dict]:
         half = len(tokens) // 2 + (len(tokens) % 2)
         home = " ".join(t.split(".")[0] for t in tokens[:half]).title()
         away = " ".join(t.split(".")[0] for t in tokens[half:]).title()
-        events.append({
-            "event_id": int(event_id),
-            "home": home,
-            "away": away,
-            "selection_home": int(rns[0]),
-            "selection_away": int(rns[1]),
-            "sportsbook_market_id": f"924.{mk.group(1)}",
-            "event_url": url,
-        })
+        events.append(
+            {
+                "event_id": int(event_id),
+                "home": home,
+                "away": away,
+                "selection_home": int(rns[0]),
+                "selection_away": int(rns[1]),
+                "sportsbook_market_id": f"924.{mk.group(1)}",
+                "event_url": url,
+            }
+        )
     return events
 
 
@@ -122,7 +129,7 @@ def get_match_volume(
     selection_away: int,
     handicap: float = 0.0,
     tries: int = 3,
-) -> dict:
+) -> dict[str, Any]:
     """Snapshot the exchange volume for both runners of a match.
 
     Returns per-runner snapshots plus the home share of total volume and a
@@ -131,7 +138,9 @@ def get_match_volume(
     home = get_runner_snapshot(market_id, selection_home, handicap, tries=tries)
     away = get_runner_snapshot(market_id, selection_away, handicap, tries=tries)
     ok = home.get("ok") and away.get("ok")
-    total = (home.get("total_volume", 0.0) or 0.0) + (away.get("total_volume", 0.0) or 0.0)
+    total = (home.get("total_volume", 0.0) or 0.0) + (
+        away.get("total_volume", 0.0) or 0.0
+    )
     home_share = None
     if ok and total > 0:
         home_share = round(home["total_volume"] / total, 4)
@@ -155,13 +164,13 @@ def poll_volume(
     polls: int = 12,
     interval: float = 5.0,
     handicap: float = 0.0,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Poll match volume every ``interval`` seconds, ``polls`` times.
 
     Each snapshot includes per-runner volumes; the caller can compute volume
     velocity by differencing consecutive ``total_volume`` values.
     """
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for i in range(polls):
         snap = get_match_volume(market_id, selection_home, selection_away, handicap)
         snap["poll"] = i + 1
@@ -176,12 +185,14 @@ def poll_volume(
     return out
 
 
-def summarize_polls(polls: list[dict]) -> dict:
+def summarize_polls(polls: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute volume velocity + final state from a poll series."""
     vols = []
     for p in polls:
         if p.get("ok"):
-            vols.append((p["poll"], p["home"]["total_volume"], p["away"]["total_volume"]))
+            vols.append(
+                (p["poll"], p["home"]["total_volume"], p["away"]["total_volume"])
+            )
     if not vols:
         return {"ok": False, "reason": "no successful polls"}
     first = vols[0]
@@ -198,10 +209,13 @@ def summarize_polls(polls: list[dict]) -> dict:
         "home_volume_delta": round(delta_home, 2),
         "away_volume_delta": round(delta_away, 2),
         "steam": (
-            "home" if delta_home > delta_away > 0
-            else "away" if delta_away > delta_home > 0
-            else "flat" if delta_home == delta_away == 0
-            else "mixed"
+            "home"
+            if delta_home > delta_away > 0
+            else (
+                "away"
+                if delta_away > delta_home > 0
+                else "flat" if delta_home == delta_away == 0 else "mixed"
+            )
         ),
     }
 
@@ -209,11 +223,21 @@ def summarize_polls(polls: list[dict]) -> dict:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Betfair exchange live volume (no auth)")
-    parser.add_argument("--market", required=False, help="Betfair marketId, e.g. 1.235476617")
-    parser.add_argument("--home", type=int, required=False, help="home runner selectionId")
-    parser.add_argument("--away", type=int, required=False, help="away runner selectionId")
-    parser.add_argument("--find", action="store_true", help="list current tennis events from betfair.it")
+    parser = argparse.ArgumentParser(
+        description="Betfair exchange live volume (no auth)"
+    )
+    parser.add_argument(
+        "--market", required=False, help="Betfair marketId, e.g. 1.235476617"
+    )
+    parser.add_argument(
+        "--home", type=int, required=False, help="home runner selectionId"
+    )
+    parser.add_argument(
+        "--away", type=int, required=False, help="away runner selectionId"
+    )
+    parser.add_argument(
+        "--find", action="store_true", help="list current tennis events from betfair.it"
+    )
     parser.add_argument("--polls", type=int, default=12)
     parser.add_argument("--interval", type=float, default=5.0)
     args = parser.parse_args()
@@ -225,5 +249,7 @@ if __name__ == "__main__":
     if not args.market or args.home is None or args.away is None:
         parser.error("--market/--home/--away required unless --find is used")
 
-    polls = poll_volume(args.market, args.home, args.away, polls=args.polls, interval=args.interval)
+    polls = poll_volume(
+        args.market, args.home, args.away, polls=args.polls, interval=args.interval
+    )
     print(json.dumps(summarize_polls(polls), indent=2))
