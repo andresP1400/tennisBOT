@@ -13,29 +13,34 @@ tennisBOT-main/
 ├── README.md
 ├── start_all.py              # launcher: backend API + frontend dev server
 ├── requirements.txt / requirements-dev.txt
-├── mypy.ini
+├── ruff.toml                 # Ruff config (line-length 120, E/F/W)
+├── mypy.ini                  # mypy config — strict = True (no per-module relaxations)
 ├── .env.example              # template ONLY - real secrets live in local.env (gitignored)
 │
 ├── backend/
 │   ├── src/                  # import root (python -m / cwd entry points)
 │   │   ├── api_server.py     # FastAPI app (predict, predict-card, value-bets, ...)
 │   │   ├── main.py           # CLI orchestrator (download/features/train/refresh/settle)
-│   │   ├── config.py         # all paths + hyperparameters (_PROJECT_ROOT = repo root)
+│   │   ├── config.py         # paths/hyperparams + Pydantic Settings (env/secrets via config.settings)
 │   │   ├── logging_config.py
 │   │   ├── exceptions.py
 │   │   ├── smoke_test.py / smoke_train.py
-│   │   ├── features/         # feature engineering + external odds/volume services
-│   │   ├── pipeline/         # training, evaluation, inference, tracking
+│   │   ├── api/              # routes/ (routers) + *_core.py (predict, card, historical), schemas, state
+│   │   ├── features/         # feature engineering + external odds/volume services (split files under 300 LOC)
+│   │   ├── pipeline/         # training, evaluation, inference, tracking (split files under 300 LOC)
 │   │   ├── data/             # raw data download (data/download.py)
 │   │   └── utils/            # shared constants
-│   └── tests/                # pytest suite (mirrors src layout expectations)
+│   └── tests/                # pytest suite (51 tests)
 │
 ├── frontend/                 # Next.js 16 dashboard (App Router, TypeScript)
+│   ├── vitest.config.ts / vitest.setup.ts  # Vitest + Testing Library (npm run test)
 │   └── src/
 │       ├── app/              # routes (dashboard pages + /api proxy rewrites)
-│       ├── components/       # UI components (shadcn/ui based)
-│       ├── lib/              # api client, feature catalogue
-│       └── hooks/ (if added) # one hook per domain
+│       ├── components/       # UI components (shadcn/ui) each in own folder + index.ts barrel
+│       ├── hooks/            # one hook per domain (useHistory, useTodaysMatches, useAvailableModels)
+│       ├── services/         # typed API clients (analytics, history, news, odds, predict, system, track, training)
+│       ├── types/            # shared types (src/types/api.ts)
+│       └── lib/              # api client (apiFetch), feature catalogue, cn() util
 │
 ├── docs/                     # architecture.md, SECURITY.md, DATA_SOURCES.md
 ├── scripts/                  # security scan, refresh helper, one-shot utilities
@@ -57,7 +62,8 @@ tennisBOT-main/
   legacy `sys.path.insert(0, dirname(dirname(__file__)))` bootstrap which now
   resolves to `backend/src` - imports like `from features.odds import ...`
   are unchanged.
-- `.env` / `local.env` are loaded from the repository root only.
+- `.env` / `local.env` are loaded from the repository root only, read via
+  Pydantic `BaseSettings` (`config.settings`), not `load_dotenv` per-module.
 
 ## Entry points
 
@@ -67,12 +73,15 @@ tennisBOT-main/
 | API only | `python backend/src/api_server.py` |
 | CLI pipeline | `python backend/src/main.py <download/features/train/refresh/settle/all>` |
 | Tests | `python -m pytest backend/tests -q` |
-| Type check | `cd backend/src && mypy --config-file ../../mypy.ini .` |
+| Format | `black --check .` |
+| Lint | `ruff check .` |
+| Type check | `cd backend/src && mypy --config-file ../../mypy.ini .` (strict, 0 errors) |
 | Frontend dev | `cd frontend && npm run dev` |
+| Frontend test | `cd frontend && npm run test` (Vitest) |
 
 CI (`.github/workflows/ci.yml`) and the scheduled Weekly Refresh use the same
-paths; mypy runs with `working-directory: backend/src` so the per-module
-sections in `mypy.ini` (`[mypy-features.elo]`, ...) keep matching.
+paths; mypy runs with `working-directory: backend/src` (config is `strict = True`,
+no per-module `ignore_errors` sections).
 
 ## Data flow
 
@@ -86,5 +95,7 @@ sections in `mypy.ini` (`[mypy-features.elo]`, ...) keep matching.
    tracker state, live odds via TheOddsAPI/SofaScore aggregation, automatic
    daily card (`/api/predict-card`), value-bet detection.
 5. **Dashboard** (`frontend/`) - Next.js UI proxying `/api/*` to FastAPI.
+   Components call `services/*` (typed clients, no direct fetch); data
+   fetching is centralized in `hooks/*`.
 6. **Weekly Refresh** (GitHub Actions) - re-runs steps 1-3 for both tours
    every Monday and uploads artifacts.

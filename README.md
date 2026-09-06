@@ -117,18 +117,26 @@
 tennisBOT-main/
 ├── start_all.py               # One-shot launcher for API + web
 ├── requirements.txt           # Runtime dependencies
-├── requirements-dev.txt       # Lint/test dependencies
-├── mypy.ini                   # per-module typing relaxations
+├── requirements-dev.txt       # Lint/test/format dependencies (ruff, mypy, black, pytest)
+├── ruff.toml                  # Ruff config (line-length 120, E/F/W)
+├── mypy.ini                   # mypy config — strict = True, zero errors
 ├── .env.example               # Env template (copy → local.env; never commit keys)
 │
 ├── backend/
 │   ├── src/                   # import root — run entry points from here
 │   │   ├── api_server.py      # FastAPI backend (port 9090)
 │   │   ├── main.py            # CLI: download | features | train | predict | all
-│   │   ├── config.py          # Paths (anchored to repo root), hyperparameters, split boundaries
+│   │   ├── config.py          # Paths + hyperparameters + Pydantic Settings (env/secrets)
 │   │   ├── exceptions.py      # Domain exceptions
 │   │   ├── logging_config.py  # Structured JSON logging
 │   │   ├── smoke_test.py      # Import sanity checks
+│   │   │
+│   │   ├── api/
+│   │   │   ├── routes/        # FastAPI routers (predict, card, track, training, ...)
+│   │   │   ├── card_core.py   # Daily-card prediction logic (split from routes/card)
+│   │   │   ├── predict_core.py # shared inference helpers
+│   │   │   ├── historical_core.py
+│   │   │   ├── schemas.py / state.py
 │   │   │
 │   │   ├── data/
 │   │   │   └── download.py    # Jeff-Sackmann-style match data download
@@ -139,27 +147,31 @@ tennisBOT-main/
 │   │   │   ├── h2h.py                 # Head-to-head features
 │   │   │   ├── fatigue.py             # Recent workload/fatigue signals
 │   │   │   ├── weather.py             # Altitude & weather context
-│   │   │   ├── odds.py               # Tennis-data odds: legacy columns, Pinnacle/BFEX/B365, synthetic avg, opening/closing merge
-│   │   │   ├── odds_aggregator.py    # Multi-source odds (SofaScoreAdapter, TheOddsApiAdapter, ...)
-│   │   │   ├── oddsportal_scraper.py # OddsPortal scraper (decryption-based, 13 bookmakers mapped, providers.json)
-│   │   │   ├── betfair_historical.py # Exchange CLV: TheOddsAPI betfair_ex_eu + matchbook + pinnacle, JSONL snapshots, closing_odds
-│   │   │   ├── betfair_volume.py     # graphs.betfair.com loadRunnerChart polling (volume/steam) + betfair.it event resolver
-│   │   │   ├── live_odds.py          # Cached todays-matches (stale-while-revalidate)
-│   │   │   ├── player_news.py        # LLM injury/form/coach research
-│   │   │   └── ...                   # builder, cleaning, context, player
+│   │   │   ├── odds.py                # Tennis-data odds: legacy columns, Pinnacle/BFEX/B365, avg, opening/closing
+│   │   │   ├── odds_aggregator.py     # Multi-source odds (SofaScore, TheOddsAPI, ...)
+│   │   │   ├── oddsportal_scraper.py  # OddsPortal scraper (decryption-based)
+│   │   │   ├── betfair_historical.py  # Exchange CLV JSONL snapshots
+│   │   │   ├── betfair_volume.py      # graphs.betfair.com volume/steam polling
+│   │   │   ├── live_odds.py           # Cached todays-matches (stale-while-revalidate)
+│   │   │   ├── player_news.py         # LLM injury/form/coach research
+│   │   │   ├── cleaning.py            # orchestrator → cleaning_loaders/transforms/enrichment
+│   │   │   ├── builder.py             # orchestrator → builder_helpers + builder_symmetric
+│   │   │   └── ...                    # context, player, news_signals, etc.
 │   │   │
 │   │   ├── pipeline/
 │   │   │   ├── training.py            # Stacking training, Optuna, OOF
-│   │   │   ├── evaluation.py          # ROC/AUC/Brier/LogLoss + 5 charts
+│   │   │   ├── train_oof.py / train_helpers.py  # OOF generation + data prep/meta
+│   │   │   ├── evaluation.py          # ROC/AUC/Brier/LogLoss + charts
+│   │   │   ├── eval_charts.py         # orchestrator → eval_charts_curves/explain/style
 │   │   │   ├── calibration.py         # Platt calibration
 │   │   │   ├── split.py               # Fixed temporal + adaptive walk-forward
-│   │   │   ├── track.py               # Certified track record: odds1/odds2, avg_odds_edge in summary
+│   │   │   ├── track.py / track_io.py # Certified track record
 │   │   │   ├── inference.py           # Live tracker-state inference
 │   │   │   └── betting_eval.py        # ROI/CLV betting backtest
 │   │   │
 │   │   └── utils/             # shared constants/helpers
 │   │
-│   └── tests/                 # pytest suite (46 tests)
+│   └── tests/                 # pytest suite (51 tests)
 │
 ├── data/
 │   └── raw/ · processed/      # (gitignored) CSV → parquet
@@ -171,12 +183,19 @@ tennisBOT-main/
 │   └── assets/                # README preview charts
 │
 ├── .github/workflows/
-│   ├── ci.yml                 # Lint, type check, secret scan, tests, build
+│   ├── ci.yml                 # Lint, format, type check, secret scan, tests, build
 │   └── weekly_refresh.yml     # AUTOMATIC MODEL RETRAINING (weekly + manual)
 │
 └── frontend/                  # Next.js 16 dashboard
     ├── next.config.ts         # /api/* proxy → backend :9090
-    └── src/app/dashboard/     # overview, predict, analytics, training, markets, news
+    ├── vitest.config.ts       # Vitest + Testing Library config (npm run test)
+    └── src/
+        ├── app/dashboard/     # overview, predict, analytics, training, markets, news
+        ├── components/        # UI components (shadcn/ui) in own folders + index.ts
+        ├── hooks/             # one hook per domain (useHistory, useTodaysMatches, ...)
+        ├── services/          # typed API clients (no fetch in components)
+        ├── types/             # shared types (src/types/api.ts)
+        └── lib/               # api client (apiFetch), feature catalogue
 ```
 
 ---
@@ -311,15 +330,19 @@ python start_all.py   # boots both API and web
 
 ```bash
 pip install -r requirements-dev.txt
-ruff check . --select E,F,W --ignore E501,E402
-cd backend/src && mypy --config-file ../../mypy.ini .
+ruff check .                                   # rules in ruff.toml (line-length 120)
+black --check .                                # consistent formatting
+cd backend/src && mypy --config-file ../../mypy.ini .   # mypy --strict, 0 errors
 python scripts/security/check_no_secrets.py   # CI-required secret scan
-pytest backend/tests -q                        # 46 tests
+pytest backend/tests -q                        # 51 tests
 python backend/src/smoke_test.py               # import sanity
-cd frontend && npx eslint src && npx tsc --noEmit && npm run build
+cd frontend && npx eslint src && npx tsc --noEmit && npm run test && npm run build
 ```
 
 All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
+The backend is fully typed: `mypy.ini` enforces `strict = True` (no per-module
+relaxations) and mypy reports **zero errors**. Frontend has a Vitest +
+Testing Library suite (`npm run test`, 13 tests).
 
 ---
 
@@ -347,7 +370,9 @@ All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
 - **Never commit** `.env` / `local.env` — both are gitignored and contain live API keys.
 - The previous `ODDS_API_KEY` (committed historically as `9b49...f83`) is considered **public — rotate it** on the-odds-api.com before relying on it.
 - CI runs a secret scan (`check_no_secrets.py`) that fails the build if credentials are detected.
-- API keys are read at runtime via `load_dotenv(override=True)`: `local.env` overrides `.env`.
+- Env/secret values are read centrally via Pydantic `BaseSettings`
+  (`backend/src/config.py`, singleton `config.settings`) — no `os.environ.get`
+  scattered across modules. `local.env` overrides `.env`.
 
 ---
 
@@ -355,7 +380,7 @@ All gates run automatically in `.github/workflows/ci.yml` on every push/PR.
 
 The repo ships with **two workflows**:
 
-1. **CI** — lint, type-check, secret scan, unit tests, web build (every push / PR).
+1. **CI** — ruff lint, black format check, `mypy --strict`, secret scan, unit tests (pytest + Vitest), web build (every push / PR).
 2. **Weekly Refresh** — full automatic retrain:
    - Runs every **Monday 04:00 UTC** (cron)
    - Manually triggerable: `Actions → Weekly Refresh → Run workflow` with tour / trials / settle-only inputs
@@ -393,11 +418,14 @@ No GPU needed — stacking on LightGBM/XGBoost trains on CPU within the 6h runne
 
 ## 📄 Documentation Mirrors
 
-- `CHANGELOG.md` — version history
-- `PROJECT_STATUS_REPORT.md` — endpoint/wiring status
-- `COMPLETE_REPORT.md` — full technical report
-- `MODEL_AUDIT.md` — leakage-avoidance audit
-- `docs/` — assets and extended docs
+- `AGENT.md` — project engineering rules (structure, naming, tooling, limits)
+- `CHANGELOG.md` — version history (keepachangelog format)
+- `docs/architecture.md` — repository layout, path anchoring, data flow
+- `docs/DATA_SOURCES.md` — data source details
+- `docs/SECURITY.md` / `SECURITY.md` — security policy
+- `PROJECT_STATUS_REPORT.md` — endpoint/wiring status (historical snapshot)
+- `COMPLETE_REPORT.md` — full technical report (historical snapshot)
+- `MODEL_AUDIT.md` — leakage-avoidance audit (historical snapshot)
 
 ---
 
