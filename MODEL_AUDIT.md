@@ -1,5 +1,8 @@
 # TennisBot — Model Audit & Validation Log
 
+> **Nota — snapshot storico.** Log di validazione datato. Lo stato corrente
+> è tracciato in `CHANGELOG.md` e `README.md`.
+
 Questo file documenta tutti i test di validità eseguiti sul modello,
 le anomalie trovate, le correzioni applicate e i risultati ottenuti.
 Va aggiornato ad ogni training significativo.

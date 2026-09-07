@@ -1,5 +1,9 @@
 # REPORT COMPLETO — tennisBOT v2.0
 
+> **Nota — snapshot storico.** Report datato alla release v2.0. Lo stato
+> corrente (tooling, struttura, test, `mypy --strict`) è tracciato in
+> `CHANGELOG.md` e `README.md`.
+
 ## 1. RIEPILOGO GENERALE
 
 | Metrica | Valore |

@@ -1,5 +1,9 @@
 # TennisBOT - Project Status Report
 
+> **Nota — snapshot storico.** Report datato (v2.2, 14 agosto 2026). Lo stato
+> corrente (es. suite passata da 44 a 51 test, `mypy --strict`, frontend
+> Vitest) è tracciato in `CHANGELOG.md` e `README.md`.
+
 **Data:** 14 Agosto 2026
 **Versione:** 2.2 (odds pipeline completa + Betfair exchange CLV/volume)
 
