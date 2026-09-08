@@ -92,6 +92,11 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 - `api_server.py`: `print()` di warmup e del messaggio di ascolto sostituiti
   con `log = get_logger(__name__)` (logging_config JSON), nessun cambio di
   comportamento.
+- `AutoDailyCard`: il fetch diretto (`apiFetch("/api/predict-card")`) nel
+  componente è stato sostituito dalla chiamata al service `getPredictCard`,
+  rendendo attiva la funzione di `services/predict.ts`
+- `settleTrack` (`services/track.ts`): `fetch` raw sostituito con `apiFetch`
+  (coerenza services layer)
 - `start_all.py`: `print()` sostituiti con logging standard (`logging.basicConfig`
   + `log.info`), senza impatto sui subprocess (continuano a ereditare stdout).
 - `features/live_odds_match_odds.py`: `print()` informativo convertito in
@@ -181,6 +186,13 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   `odds_a/odds_b: float | None` e `now: pd.Timestamp | None`.
 - `api/predict_core.py`: `h2h_total` ridotto a int con `isinstance` prima di
   passarlo a `assess_reliability` e di usarlo nel campo `total_matches`.
+
+### Removed
+- `services/system.ts`: rimosso `getTrack` (duplicato di
+  `getTrackRecord` in `services/track.ts`, stesso endpoint `/api/track`).
+  `overview-panels` ora usa `getTrackRecord` (che accetta `AbortSignal`).
+  Cleanup repo: nessun duplicato testuale, nessun file non tracciato da
+  rimuovere.
 
 ### Added
 - `backend/src/features/player_context.py`: contesto giocatore 100% locale

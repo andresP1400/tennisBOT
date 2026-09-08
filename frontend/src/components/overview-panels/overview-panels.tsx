@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import {
   getHealth,
   getAvailableModels,
-  getTrack,
 } from "@/services/system"
+import { getTrackRecord } from "@/services/track"
 import { getOddsApiStatus } from "@/services/odds"
 import type {
   HealthStatus,
@@ -41,7 +41,7 @@ export function OverviewPanels() {
           getOddsApiStatus(controller.signal).catch(
             () => null as OddsApiStatus | null,
           ),
-          getTrack("atp", 200, controller.signal).catch(
+          getTrackRecord("atp", 200, controller.signal).catch(
             () => null as TrackResponse | null,
           ),
         ])

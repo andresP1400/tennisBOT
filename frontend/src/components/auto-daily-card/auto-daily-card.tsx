@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ApiError, apiFetch } from "@/lib/api"
+import { ApiError } from "@/lib/api"
+import { getPredictCard } from "@/services/predict"
 import type { CardResponse } from "./types"
 import { PredictionTable } from "./predictions-table"
 
@@ -18,9 +19,7 @@ export function AutoDailyCard() {
     setCardLoading(true)
     setCardError(null)
     try {
-      const data = await apiFetch<CardResponse>(
-        `/api/predict-card?tour=${t}&min_edge=0.05&log=true`,
-      )
+      const data = await getPredictCard(t)
       if (data.error) {
         setCardError(data.error)
         setCard(null)
