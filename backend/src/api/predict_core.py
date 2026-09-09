@@ -47,7 +47,11 @@ def resolve_model_path(model_name: str) -> Path:
         raise HTTPException(status_code=400, detail="Invalid model name")
     candidate = (MODELS_DIR / model_name).resolve()
     models_root = MODELS_DIR.resolve()
-    if not str(candidate).startswith(str(models_root)):
+    # Robust containment check (avoids the string-prefix pitfall where a
+    # sibling like ``/models_evil`` would satisfy ``startswith('/models')``).
+    try:
+        candidate.relative_to(models_root)
+    except ValueError:
         raise HTTPException(status_code=400, detail="Invalid model path")
     return candidate
 

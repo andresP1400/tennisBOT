@@ -373,6 +373,11 @@ Testing Library suite (`npm run test`, 13 tests).
 - Env/secret values are read centrally via Pydantic `BaseSettings`
   (`backend/src/config.py`, singleton `config.settings`) — no `os.environ.get`
   scattered across modules. `local.env` overrides `.env`.
+- The API binds to `127.0.0.1` only, with restrictive CORS. On top of that, a
+  CSRF guard middleware rejects any state-changing request (`POST/PUT/PATCH/
+  DELETE`) whose browser `Origin` is not on the allow-list, so a malicious
+  local page cannot trigger training/reload. Model filenames are regex-validated
+  and path-anchored under `models/` before any `joblib.load`.
 
 ---
 

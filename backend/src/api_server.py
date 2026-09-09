@@ -11,8 +11,9 @@ Module-level state (training status, caches) lives in api/state.py.
 from __future__ import annotations
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from config import BASE_DIR, SRC_DIR, settings
 from logging_config import get_logger
@@ -62,6 +63,28 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+_ALLOWED_ORIGIN_SET = frozenset(ALLOWED_ORIGINS)
+
+
+@app.middleware("http")
+async def block_cross_site_writes(request: Request, call_next):  # type: ignore[no-untyped-def]
+    """CSRF guard for state-changing requests.
+
+    CORS stops a malicious page from *reading* our responses, but the browser
+    still *sends* the request — enough to trigger side effects (start training,
+    invalidate caches). We reject any mutating request that carries a browser
+    ``Origin`` not on the allow-list. Same-origin browser calls, the Next.js
+    server-side proxy and CLI tools send no cross-origin ``Origin`` and pass.
+    """
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        origin = request.headers.get("origin")
+        if origin is not None and origin not in _ALLOWED_ORIGIN_SET:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Cross-site request blocked"},
+            )
+    return await call_next(request)
 
 # --- Mount route modules on the app instance ---
 for _router in (

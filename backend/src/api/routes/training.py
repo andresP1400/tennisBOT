@@ -51,7 +51,8 @@ def run_training_pipeline(
             bufsize=1,
             cwd=str(SRC_DIR),
         )
-        assert process.stdout is not None
+        if process.stdout is None:
+            raise RuntimeError("Failed to capture training subprocess stdout")
 
         for line in iter(process.stdout.readline, ""):
             if line:

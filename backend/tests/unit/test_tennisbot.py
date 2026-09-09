@@ -267,6 +267,36 @@ def test_resolve_model_path_accepts_known_names() -> None:
 
 
 # ----------------------------------------------------------------------
+# CSRF guard: cross-site mutating requests are blocked, proxy/CLI pass
+# ----------------------------------------------------------------------
+def test_csrf_guard_blocks_cross_site_post() -> None:
+    from fastapi.testclient import TestClient
+
+    from api_server import app
+
+    client = TestClient(app)
+    resp = client.post(
+        "/api/reload", headers={"Origin": "http://evil.example.com"}
+    )
+    assert resp.status_code == 403
+
+
+def test_csrf_guard_allows_no_origin_and_allowed_origin() -> None:
+    from fastapi.testclient import TestClient
+
+    from api_server import app
+
+    client = TestClient(app)
+    # Server-to-server / CLI: no Origin header -> allowed through.
+    assert client.post("/api/reload").status_code == 200
+    # Same-origin browser request from the allowed dev origin -> allowed.
+    resp = client.post(
+        "/api/reload", headers={"Origin": "http://localhost:3000"}
+    )
+    assert resp.status_code == 200
+
+
+# ----------------------------------------------------------------------
 # Logging configuration
 # ----------------------------------------------------------------------
 def test_configure_logging_is_idempotent() -> None:

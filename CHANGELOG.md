@@ -7,6 +7,26 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 
 ## [Unreleased]
 
+### Security
+- CSRF guard sugli endpoint mutanti: nuovo middleware
+  `block_cross_site_writes` in `backend/src/api_server.py` che rifiuta con
+  `403` ogni `POST/PUT/PATCH/DELETE` il cui header `Origin` non è nella
+  allow-list. Il CORS impedisce di *leggere* le risposte cross-origin, ma il
+  browser inviava comunque la richiesta (sufficiente a innescare
+  `/api/train/start` o `/api/reload`); ora è bloccata. Le chiamate
+  server-to-server (proxy Next.js, CLI) non inviano `Origin` cross-site e
+  passano. Coperto da due test in `test_tennisbot.py`.
+- Hardening di `resolve_model_path` (`backend/src/api/predict_core.py`):
+  il controllo di contenimento sotto `MODELS_DIR` usa ora
+  `Path.relative_to` invece del fragile confronto di prefisso di stringa
+  (che avrebbe accettato un sibling tipo `models_evil`). Comportamento
+  invariato per i nomi validi; il regex già impediva il traversal.
+
+### Fixed
+- `run_training_pipeline` (`backend/src/api/routes/training.py`): sostituito
+  `assert process.stdout is not None` con un controllo esplicito che solleva
+  `RuntimeError` (gli `assert` verrebbero rimossi con `python -O`).
+
 ### Added
 - `ruff.toml` alla radice: `line-length = 120`, lint `E,F,W`, `E402` ignorato
   (pattern `sys.path.insert` + `# noqa` consolidato in AGENT.md). La CI ora
