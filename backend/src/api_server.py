@@ -86,6 +86,7 @@ async def block_cross_site_writes(request: Request, call_next):  # type: ignore[
             )
     return await call_next(request)
 
+
 # --- Mount route modules on the app instance ---
 for _router in (
     system_router,
