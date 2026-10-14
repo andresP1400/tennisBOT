@@ -27,6 +27,10 @@
 <hr />
 </div>
 
+## Personal prediction engine
+
+The verified personal-use engine now trains from pinned, licensed historical data and displays recorded upcoming forecasts on the dashboard. It requires no sportsbook keys. See [the personal engine guide](docs/personal-engine.md) for reproducible training, measured chronological backtests, data-age limitations, and private tracking storage. Historical figures elsewhere in this README describe the earlier stacking pipeline, not this engine's measured results.
+
 ## 📌 Preview
 
 | Dashboard Preview | Live Value Bet + Player News |

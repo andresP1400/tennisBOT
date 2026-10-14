@@ -8,6 +8,9 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Personal ATP/WTA prediction engine with global/surface Elo, lightweight model selection on 2022, probability calibration on 2023, and untouched 2024–2025 evaluation.
+- Genuine upcoming singles forecasts on the dashboard, unavailable-match explanations, measured accuracy, and stale-history warnings.
+- Automatic five-minute private pre-match tracking with immutable SQLite events, model versions, probabilities, and observed odds when available.
 - Reproducible ATP/WTA research-data restoration with pinned revisions, SHA-256 verification, original CC BY-NC-SA attribution, and preservation of existing files.
 - Integrity tests for malformed data, corrupt downloads, and repeat downloads that preserve local files.
 
