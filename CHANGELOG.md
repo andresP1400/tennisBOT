@@ -7,6 +7,10 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 
 ## [Unreleased]
 
+### Added
+- Reproducible ATP/WTA research-data restoration with pinned revisions, SHA-256 verification, original CC BY-NC-SA attribution, and preservation of existing files.
+- Integrity tests for malformed data, corrupt downloads, and repeat downloads that preserve local files.
+
 ### Security
 - CSRF guard sugli endpoint mutanti: nuovo middleware
   `block_cross_site_writes` in `backend/src/api_server.py` che rifiuta con
@@ -23,6 +27,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Production dashboard builds use system fonts and no longer download Inter from Google Fonts.
+- Strict Python typing accepts the Betfair JSON request body and normalizes LightGBM probability output before slicing.
 - `run_training_pipeline` (`backend/src/api/routes/training.py`): sostituito
   `assert process.stdout is not None` con un controllo esplicito che solleva
   `RuntimeError` (gli `assert` verrebbero rimossi con `python -O`).
