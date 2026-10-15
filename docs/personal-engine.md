@@ -17,7 +17,7 @@ python -m pipeline.personal_train --tour both
 
 On a fresh machine, create a virtual environment and install `requirements.txt` and `requirements-dev.txt` first. To use the measured model-library versions, run `pip install -r requirements.txt -r requirements-dev.txt -c docs/model-validation/constraints.txt`. The downloader restores exactly the reviewed files and refuses conflicting existing files. See [data provenance and license](data-sources/README.md). The data is licensed **CC BY-NC-SA 4.0**, attributed to Jeff Sackmann / Tennis Abstract, and is used here for personal noncommercial research.
 
-Each training run creates new versioned model and audit files under `models/saved/personal/` and `reports/personal/{tour}/`. Earlier versions are retained. Only the active-version pointer is replaced after saving the new artifact. These files are local and ignored by Git. Re-running training twice produced identical measured accuracy, Brier scores, and log-loss with the installed libraries.
+Each training run creates new versioned model and audit files under `models/saved/personal/` and `reports/personal/{tour}/`. Earlier versions are retained. Artifacts include feature-schema/form flags, source digests, implementation hashes, and runtime library versions. Only the active-version pointer is replaced after saving the new artifact. These files are local and ignored by Git. Re-running training twice produced identical measured accuracy, Brier scores, and log-loss with the installed libraries.
 
 ## What was measured
 
@@ -37,10 +37,12 @@ Source dates identify tournament starts rather than exact match times. Results a
 
 | Tour | Selected ML family | Test matches | Calibrated ML accuracy | Brier | Log-loss | ROC-AUC |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| ATP | Histogram gradient boosting | 5,786 | 65.23% | 0.2137 | 0.6146 | 0.7172 |
-| WTA | Logistic regression | 5,169 | 65.70% | 0.2156 | 0.6203 | 0.7136 |
+| ATP | Histogram gradient boosting | 5,786 | 65.26% | 0.2135 | 0.6141 | 0.7179 |
+| WTA | Logistic regression | 5,169 | 65.31% | 0.2155 | 0.6203 | 0.7143 |
 
-The committed [validation reports](model-validation/) include surface-Elo baselines (ATP 63.48%, WTA 63.38%), uncalibrated results, calibration error, yearly and surface breakdowns, sample counts, and audit metadata. Earlier 65.45%/65.74% reports are archived under `previous-date-batch/` and are superseded because their timing assumption was weaker. The test years had already been inspected before this correctness rerun; these are recomputed retrospective held-out results, not a new blind experiment. No test labels were fitted or used for model-family selection. Calibration is fitted honestly; it is not guaranteed to improve future scores. WTA calibration slightly worsened held-out Brier/log-loss. No betting profitability is claimed.
+Schema 2 adds pre-event opponent-adjusted result, serve, and return residuals. Opponent expectations are frozen before the tournament batch and released with its embargoed results. Surface ratings shrink toward global Elo for small samples. The last-20-match raw and opponent-adjusted form inputs can be disabled with `--no-recent-form`; that choice is saved with the version and used identically at inference. This trains a new version rather than modifying an existing model.
+
+The committed [validation reports](model-validation/) include surface-Elo baselines (ATP 63.48%, WTA 63.38%), uncalibrated results, calibration error, yearly and surface breakdowns, sample counts, and audit metadata. Earlier 65.45%/65.74% reports are archived under `previous-date-batch/` and are superseded because their timing assumption was weaker. The test years had already been inspected before this correctness rerun; these are recomputed retrospective held-out results, not a new blind experiment. No test labels were fitted or used for model-family selection. Calibration is fitted honestly; it is not guaranteed to improve future scores. WTA calibration slightly worsened held-out Brier/log-loss. Schema-1 reports are retained under `previous-schema1/`. The new features slightly improved Brier scores but reduced WTA classification accuracy from 65.70% to 65.31%; this is not evidence of a general accuracy improvement. No betting profitability is claimed.
 
 ## Run and inspect forecasts
 
@@ -81,3 +83,15 @@ Endpoints:
 - `GET /api/personal/live-performance?tour=atp`: current-version observed results; add `scope=all` for per-model and unique-fixture all-version results.
 
 Both services bind to loopback for personal use. No web preview, public deployment, credentials, or outbound messages are created by this setup.
+
+## Market consensus and guarded EV
+
+Optional market adapters preserve each bookmaker's complete two-player price pair, including player order. Each pair is de-vigged separately, then those fair probabilities are averaged; cross-book best prices are used only as potential execution prices. Relays with the same bookmaker identity count once. Missing/nonfinite prices never produce a consensus.
+
+Informational EV is `p * (decimal_odds - 1) * (1 - commission) - (1 - p)`. Positive EV alone is insufficient: admission requires known calibration provenance, historical inputs no older than 30 days, quotes observed within five minutes and not in the future, at least two independent paired bookmakers, valid consensus, at least five percentage points of probability edge, and positive EV after commission. Quarter Kelly is capped at 1% of bankroll; every failed guard forces the suggested fraction to zero. These are conservative data guards, not a measured profitable strategy. There is no bet placement.
+
+The personal schedule currently supplies at most one bookmaker and the historical inputs are stale, so its EV analysis is blocked. Missing quotes show EV unavailable. The dashboard displays reasons and the analysis is retained in each forecast snapshot. The manual legacy probability endpoint has no trusted calibration/freshness provenance and cannot mark a wager eligible. Sportsbook integration remains optional and separate from the core models.
+
+Legacy stacking now also fits transforms inside each chronological outer fold, tunes/stops only on an inner chronological tail, and refits with the selected iteration count before scoring the untouched outer validation fold. All-missing training columns are retained. Adaptive splits preserve whole dates and mirrored matches. Batch evaluation, historical tracking, and live inference use the same symmetrization-then-calibration order. The personal pipeline above is the real-data model serving the dashboard; a synthetic legacy smoke test is not an accuracy measurement.
+
+On 2026-10-15 the upstream ATP and WTA `*_matches_2026.csv` URLs both returned HTTP 404. Fresh 2026 history must come from a permitted source and be reviewed/pinned before extending this snapshot. Current coverage also needs more confirmed tournament surface identities. Neither limitation is solved by a sportsbook key.

@@ -22,6 +22,7 @@ from api.predict_core import (
     sanitize_nan,
 )
 from api.schemas import PredictRequest
+from pipeline.symmetric_calibration import symmetric_calibration
 from api.state import load_dataset, load_state
 
 router = APIRouter()
@@ -84,10 +85,11 @@ def predict_match(req: PredictRequest) -> dict[str, Any]:
             req.surface,
             best_of,
         )
-        prob_fwd = predict_proba_from_features(bundle, row_fwd)
-        prob_rev = predict_proba_from_features(bundle, row_rev)
-        final_prob = (prob_fwd + (1.0 - prob_rev)) / 2.0
-        prob1 = max(0.01, min(0.99, final_prob))
+        prob_fwd = predict_proba_from_features(bundle, row_fwd, calibrated=False)
+        prob_rev = predict_proba_from_features(bundle, row_rev, calibrated=False)
+        raw = np.asarray([(prob_fwd + 1 - prob_rev) / 2], dtype=float)
+        final_prob = float(symmetric_calibration(raw, bundle.get("calibrator"))[0])
+        prob1 = float(np.clip(final_prob, 0, 1))
         has_history = p1_stats is not None and p2_stats is not None
         result = {
             "match": f"{req.player1} vs {req.player2}",

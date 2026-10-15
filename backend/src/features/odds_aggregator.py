@@ -23,6 +23,9 @@ the configured window (default 60 s) to avoid burning TheOddsAPI quota.
 
 from __future__ import annotations
 
+from dataclasses import replace
+from features.market_math import bookmaker_consensus, valid_price
+
 import logging
 from typing import Any
 
@@ -30,7 +33,6 @@ from features.odds_betfair import BetfairAdapter
 from features.odds_cache import TtlCache
 from features.odds_common import (
     MatchOdds,
-    _compute_implied,
     _normalize_player,
     _player_matches,
 )
@@ -97,24 +99,51 @@ class OddsAggregator:
         """
         matches = self.get_today_matches(tour)
         for m in matches:
-            if _player_matches(
-                player1, [m["player1"], m["player2"]]
-            ) and _player_matches(player2, [m["player1"], m["player2"]]):
+            if _player_matches(player1, [m["player1"]]) and _player_matches(
+                player2, [m["player2"]]
+            ):
                 return m
+            if _player_matches(player1, [m["player2"]]) and _player_matches(
+                player2, [m["player1"]]
+            ):
+                return {
+                    **m,
+                    "player1": m["player2"],
+                    "player2": m["player1"],
+                    "implied_prob1": m["implied_prob2"],
+                    "implied_prob2": m["implied_prob1"],
+                    "best_odds": {
+                        "player1": m["best_odds"]["player2"],
+                        "player2": m["best_odds"]["player1"],
+                    },
+                    "sources": {
+                        key: {"player1": pair["player2"], "player2": pair["player1"]}
+                        for key, pair in m["sources"].items()
+                    },
+                }
         return {}
 
     def _aggregate(self, all_odds: list[MatchOdds], tour: str) -> list[dict[str, Any]]:
         """Group by (player1, player2) and compute best odds across sources."""
-        groups: dict[tuple[str, str], list[MatchOdds]] = {}
+        groups: dict[tuple[str, str, str], list[MatchOdds]] = {}
         for o in all_odds:
+            if _normalize_player(o.player1) > _normalize_player(o.player2):
+                o = replace(
+                    o,
+                    player1=o.player2,
+                    player2=o.player1,
+                    odds_p1=o.odds_p2,
+                    odds_p2=o.odds_p1,
+                )
             key = (
                 _normalize_player(o.player1),
                 _normalize_player(o.player2),
+                o.commence_time[:10],
             )
             groups.setdefault(key, []).append(o)
 
         out: list[dict[str, Any]] = []
-        for (p1n, p2n), items in groups.items():
+        for (p1n, p2n, match_day), items in groups.items():
             if tour:
                 item_tours = {it.tour for it in items if it.tour}
                 item_names = " ".join(it.tournament for it in items).lower()
@@ -127,18 +156,25 @@ class OddsAggregator:
             best_p1 = 0.0
             best_p2 = 0.0
             for it in items:
-                if it.odds_p1 > 0 and it.odds_p2 > 0:
-                    sources[it.source] = {
+                if valid_price(it.odds_p1) and valid_price(it.odds_p2):
+                    sources[
+                        f"{it.source}:{it.bookmaker}" if it.bookmaker else it.source
+                    ] = {
                         "player1": it.odds_p1,
                         "player2": it.odds_p2,
                     }
                     best_p1 = max(best_p1, it.odds_p1)
                     best_p2 = max(best_p2, it.odds_p2)
             if best_p1 > 0 and best_p2 > 0:
-                imp1, imp2, margin = _compute_implied(best_p1, best_p2)
+                consensus = bookmaker_consensus(sources)
+                imp1, imp2, margin = (
+                    consensus.prob1,
+                    consensus.prob2,
+                    consensus.mean_margin,
+                )
                 out.append(
                     {
-                        "match_id": f"{p1n}_{p2n}",
+                        "match_id": f"{p1n}_{p2n}_{match_day}",
                         "player1": items[0].player1,
                         "player2": items[0].player2,
                         "tournament": items[0].tournament,

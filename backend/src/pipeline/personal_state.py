@@ -55,6 +55,9 @@ class Player:
     returns: deque[tuple[float, float]] = field(
         default_factory=lambda: deque(maxlen=20)
     )
+    adjusted_results: deque[float] = field(default_factory=lambda: deque(maxlen=20))
+    adjusted_serve: deque[float] = field(default_factory=lambda: deque(maxlen=20))
+    adjusted_return: deque[float] = field(default_factory=lambda: deque(maxlen=20))
 
     def values(self, surface: str) -> list[float]:
         """Return predictors derived entirely from already-observed matches."""
@@ -84,14 +87,32 @@ def ratio(values: deque[tuple[float, float]], default: float) -> float:
 
 
 def match_vector(
-    first: Player, second: Player, surface: str, best_of: int = 3
+    first: Player,
+    second: Player,
+    surface: str,
+    best_of: int = 3,
+    *,
+    feature_schema: int = 1,
+    use_recent_form: bool = True,
 ) -> list[float]:
     """Signed differences invert when player order reverses; context stays fixed."""
-    return (
+    vector = (
         [a - b for a, b in zip(first.values(surface), second.values(surface))]
         + [float(surface == item) for item in SURFACES]
         + [float(best_of == 5)]
     )
+    if not use_recent_form:
+        vector[6] = 0.0
+    if feature_schema >= 2:
+        for key in ("adjusted_results", "adjusted_serve", "adjusted_return"):
+            left, right = getattr(first, key, []), getattr(second, key, [])
+            difference = (float(np.mean(left)) if left else 0) - (
+                float(np.mean(right)) if right else 0
+            )
+            vector.append(
+                difference if key != "adjusted_results" or use_recent_form else 0.0
+            )
+    return vector
 
 
 def elo_probability(first: Player, second: Player, surface: str) -> float:

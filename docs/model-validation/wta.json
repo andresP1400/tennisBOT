@@ -35,8 +35,31 @@
   },
   "data_through": "2025-11-01",
   "family": "logistic",
+  "feature_names": [
+    "elo",
+    "surface_elo",
+    "rank",
+    "points",
+    "age",
+    "height",
+    "form",
+    "serve",
+    "return",
+    "experience",
+    "surface_Hard",
+    "surface_Clay",
+    "surface_Grass",
+    "surface_Carpet",
+    "best_of_5",
+    "opponent_adjusted_form",
+    "opponent_adjusted_serve",
+    "opponent_adjusted_return"
+  ],
+  "feature_schema": 2,
+  "implementation_sha256": "93392841aca3a4f6e8c652a2f0deae4ecad0bc49d42ed4861afb3d8116f41d39",
   "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
-  "model_version": "wta-20261015T182405646990Z-cda5714c91b8",
+  "model_version": "wta-20261015T185715560801Z-cd30304c4dd6",
+  "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
   "result_delay_days": 21,
   "runtime_versions": {
     "joblib": "1.6.0",
@@ -47,19 +70,19 @@
   "selection_2022": {
     "hist_gradient_boosting": {
       "accuracy": 0.648910411622276,
-      "brier": 0.21796179765609655,
-      "ece_10_bins": 0.026038349478304836,
-      "log_loss": 0.6247034271727822,
+      "brier": 0.21836969677145973,
+      "ece_10_bins": 0.02567747139958897,
+      "log_loss": 0.6259065038121147,
       "matches": 2478,
-      "roc_auc": 0.7039633412304802
+      "roc_auc": 0.7033408781427372
     },
     "logistic": {
-      "accuracy": 0.6493139628732849,
-      "brier": 0.21779292288169855,
-      "ece_10_bins": 0.01994361794124247,
-      "log_loss": 0.6243942282741719,
+      "accuracy": 0.6464891041162227,
+      "brier": 0.21748333476841883,
+      "ece_10_bins": 0.022755297691731107,
+      "log_loss": 0.6240333437402509,
       "matches": 2478,
-      "roc_auc": 0.7045629676221323
+      "roc_auc": 0.7059494813133841
     }
   },
   "split_counts": {
@@ -78,46 +101,46 @@
   "test_2024_2025": {
     "by_surface": {
       "Clay": {
-        "accuracy": 0.6566176470588235,
-        "brier": 0.2129796059197026,
-        "ece_10_bins": 0.022295200820952626,
-        "log_loss": 0.6129211864698653,
+        "accuracy": 0.6514705882352941,
+        "brier": 0.21295431385305713,
+        "ece_10_bins": 0.028734599337961166,
+        "log_loss": 0.6135777254470699,
         "matches": 1360,
-        "roc_auc": 0.7198476865310078
+        "roc_auc": 0.7203884188122924
       },
       "Grass": {
-        "accuracy": 0.6500857632933105,
-        "brier": 0.21835165134967627,
-        "ece_10_bins": 0.06376300003353155,
-        "log_loss": 0.6282017949914336,
+        "accuracy": 0.6432246998284734,
+        "brier": 0.2186253624619614,
+        "ece_10_bins": 0.050677806864895675,
+        "log_loss": 0.6288379932327246,
         "matches": 583,
-        "roc_auc": 0.7094475099037918
+        "roc_auc": 0.7073724297302395
       },
       "Hard": {
-        "accuracy": 0.6584004959702418,
-        "brier": 0.21626806275810395,
-        "ece_10_bins": 0.0249065960861194,
-        "log_loss": 0.6220110510853205,
+        "accuracy": 0.6556106633601984,
+        "brier": 0.21607343945431245,
+        "ece_10_bins": 0.026812245778507136,
+        "log_loss": 0.6216669318711757,
         "matches": 3226,
-        "roc_auc": 0.7120829487771112
+        "roc_auc": 0.7130181895093062
       }
     },
     "by_year": {
       "2024": {
-        "accuracy": 0.6561430201597566,
-        "brier": 0.21363114654877532,
-        "ece_10_bins": 0.022950757484398374,
-        "log_loss": 0.614210536482932,
+        "accuracy": 0.6550019018638266,
+        "brier": 0.2139476519533282,
+        "ece_10_bins": 0.029994381768950508,
+        "log_loss": 0.6150602561741622,
         "matches": 2629,
-        "roc_auc": 0.7171038148799552
+        "roc_auc": 0.7166038693352057
       },
       "2025": {
-        "accuracy": 0.6578740157480315,
-        "brier": 0.21771486731046064,
-        "ece_10_bins": 0.03392900512414163,
-        "log_loss": 0.6266388230183616,
+        "accuracy": 0.6511811023622047,
+        "brier": 0.21718936686999735,
+        "ece_10_bins": 0.03220708070769535,
+        "log_loss": 0.6258198288965489,
         "matches": 2540,
-        "roc_auc": 0.7099992310764187
+        "roc_auc": 0.7117919392004683
       }
     },
     "constant_50_percent": {
@@ -145,21 +168,22 @@
       "roc_auc": 0.6987728594764733
     },
     "ml_calibrated": {
-      "accuracy": 0.656993615786419,
-      "brier": 0.2156378501151674,
-      "ece_10_bins": 0.019649394850611946,
-      "log_loss": 0.6203176844419166,
+      "accuracy": 0.65312439543432,
+      "brier": 0.21554060143840073,
+      "ece_10_bins": 0.021921564748817287,
+      "log_loss": 0.6203474132093454,
       "matches": 5169,
-      "roc_auc": 0.713612889948286
+      "roc_auc": 0.7142705862229182
     },
     "ml_uncalibrated": {
-      "accuracy": 0.656993615786419,
-      "brier": 0.21555965264309873,
-      "ece_10_bins": 0.017664230518517635,
-      "log_loss": 0.6200458281483073,
+      "accuracy": 0.6537047784871348,
+      "brier": 0.21537256576314925,
+      "ece_10_bins": 0.021192415293868647,
+      "log_loss": 0.6197629656523371,
       "matches": 5169,
-      "roc_auc": 0.713612889948286
+      "roc_auc": 0.7142681148067188
     }
   },
-  "tour": "wta"
+  "tour": "wta",
+  "use_recent_form": true
 }

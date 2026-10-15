@@ -1,4 +1,5 @@
 import type { PersonalPrediction } from "@/types/personal"
+import { PersonalEV } from "@/components/personal-ev"
 
 export function PersonalRows({ predictions }: { predictions: PersonalPrediction[] }) {
   if (!predictions.length) return null
@@ -21,7 +22,8 @@ export function PersonalRows({ predictions }: { predictions: PersonalPrediction[
         <td className="py-3 pr-4 font-medium">{prediction.winner}</td>
         <td className="py-3 pr-4">{(probability * 100).toFixed(1)}%</td>
         <td className="py-3">{fixture.odds1 != null && fixture.odds2 != null
-          ? `${fixture.odds1.toFixed(2)} / ${fixture.odds2.toFixed(2)}` : "Not available"}</td>
+          ? `${fixture.odds1.toFixed(2)} / ${fixture.odds2.toFixed(2)}` : "Not available"}
+          <PersonalEV prediction={prediction} /></td>
       </tr>
     })}</tbody>
   </table></div>

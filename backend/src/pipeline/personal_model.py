@@ -30,12 +30,15 @@ class PersonalBundle:
     names: dict[str, int]
     data_through: str
     report: dict[str, object]
+    feature_schema: int = 1
+    use_recent_form: bool = True
 
 
 def reversed_features(features: NDArray[np.float64]) -> NDArray[np.float64]:
     """Invert player differences while preserving surface and match format."""
     reverse = features.copy()
     reverse[:, :10] *= -1
+    reverse[:, 15:] *= -1
     return reverse
 
 

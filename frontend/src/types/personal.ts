@@ -21,6 +21,15 @@ export interface PersonalPrediction {
   data_through: string
   warning: string | null
   tracking_id: string
+  betting_analysis?: { player1: PersonalBettingAnalysis; player2: PersonalBettingAnalysis } | null
+}
+
+export interface PersonalBettingAnalysis {
+  eligible: boolean
+  expected_value: number | null
+  edge: number | null
+  stake_fraction: number
+  reasons: string[]
 }
 
 export interface MeasuredMetrics {

@@ -29,6 +29,7 @@ class Prediction(BaseModel):
     history_age_days: int
     warning: str | None = None
     tracking_id: str | None = None
+    betting_analysis: dict[str, object] | None = None
 
     @model_validator(mode="after")
     def validate_forecast(self) -> Prediction:

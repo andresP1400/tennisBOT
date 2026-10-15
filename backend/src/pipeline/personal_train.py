@@ -30,6 +30,7 @@ from pipeline.personal_model import (
     reversed_features,
 )
 from pipeline.personal_state import Player
+from pipeline.personal_metadata import runtime_metadata
 
 logger = get_logger(__name__)
 
@@ -167,10 +168,12 @@ def chronological_partitions(
     return training, validation, calibration, testing
 
 
-def train(tour: str) -> dict[str, object]:
+def train(tour: str, use_recent_form: bool = True) -> dict[str, object]:
     """Build real-data artifacts and save every version without replacing earlier ones."""
     history, audit = load_history(tour)
-    frame, players = build_dataset(history)
+    frame, players = build_dataset(
+        history, feature_schema=2, use_recent_form=use_recent_form
+    )
     training, validation, calibration, testing = chronological_partitions(frame)
     estimator, family, selection = fit_candidates(training, validation)
     features, labels = arrays(calibration)
@@ -182,10 +185,14 @@ def train(tour: str) -> dict[str, object]:
         "audit": audit,
         "selection_2022": selection,
         "test_2024_2025": test_report(testing, estimator, calibrator, elo_calibrator),
+        "feature_schema": 2,
+        "use_recent_form": use_recent_form,
+        "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
     }
     report.update(
         partition_metadata(history, (training, validation, calibration, testing))
     )
+    report.update(runtime_metadata())
     return save_artifacts(
         tour, family, estimator, calibrator, elo_calibrator, players, report
     )
@@ -242,6 +249,8 @@ def save_artifacts(
         player_index(players),
         str(report["data_through"]),
         report,
+        feature_schema=int(str(report.get("feature_schema", 1))),
+        use_recent_form=bool(report.get("use_recent_form", True)),
     )
     joblib.dump(bundle, directory / f"{version}.joblib", compress=3)
     report_directory = REPORTS_DIR / "personal" / tour
@@ -260,9 +269,10 @@ def main() -> None:
     """Train both personal-use tours from verified local historical results."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tour", choices=["atp", "wta", "both"], default="both")
+    parser.add_argument("--no-recent-form", action="store_true")
     args = parser.parse_args()
     for tour in (["atp", "wta"] if args.tour == "both" else [args.tour]):
-        train(tour)
+        train(tour, use_recent_form=not args.no_recent_form)
 
 
 if __name__ == "__main__":

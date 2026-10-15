@@ -16,6 +16,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
+from pipeline.symmetric_calibration import symmetric_calibration
 
 from logging_config import get_logger
 
@@ -129,7 +130,7 @@ def predict_stacking(
     X_meta = np.column_stack([p_lgbm, p_xgb, p_lr])
     raw_probs = meta_model.predict_proba(X_meta)[:, 1]
     if calibrator is not None:
-        return calibrator.predict(raw_probs.reshape(-1, 1))  # type: ignore[no-any-return]
+        return symmetric_calibration(symmetrize_probs(df, raw_probs), calibrator)
     return raw_probs  # type: ignore[no-any-return]
 
 

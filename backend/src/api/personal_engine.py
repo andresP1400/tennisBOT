@@ -8,6 +8,7 @@ import threading
 import time
 from datetime import date, datetime, timezone
 from functools import lru_cache
+from dataclasses import asdict
 
 import joblib
 import numpy as np
@@ -15,6 +16,8 @@ from pydantic import BaseModel, Field
 
 from config import MODELS_DIR
 from features.personal_schedule import Fixture, fetch_fixtures
+from features.guarded_ev import guarded_ev
+from features.market_math import bookmaker_consensus
 from pipeline.personal_model import PersonalBundle, calibrate, elo_raw, raw_probability
 from pipeline.personal_state import match_vector, normalize_name
 from pipeline.personal_tracking import Prediction, record_prediction
@@ -72,7 +75,18 @@ def predict_fixture(bundle: PersonalBundle, fixture: Fixture) -> Prediction:
     first, second = bundle.players[first_id], bundle.players[second_id]
     if min(first.count, second.count) < 10:
         raise ValueError("Insufficient completed historical matches for this matchup")
-    features = np.asarray([match_vector(first, second, fixture.surface)], dtype=float)
+    features = np.asarray(
+        [
+            match_vector(
+                first,
+                second,
+                fixture.surface,
+                feature_schema=getattr(bundle, "feature_schema", 1),
+                use_recent_form=getattr(bundle, "use_recent_form", True),
+            )
+        ],
+        dtype=float,
+    )
     prob1 = float(
         calibrate(bundle.calibrator, raw_probability(bundle.estimator, features))[0]
     )
@@ -96,8 +110,45 @@ def predict_fixture(bundle: PersonalBundle, fixture: Fixture) -> Prediction:
             if age > 30
             else None
         ),
+        betting_analysis=analyze_fixture(prob1, fixture, age),
     )
     return record_prediction(prediction)
+
+
+def analyze_fixture(prob1: float, fixture: Fixture, age: int) -> dict[str, object]:
+    """Use actual paired prices only; stale histories never produce actionable EV."""
+    first = second = None
+    books = 0
+    if fixture.odds1 is not None and fixture.odds2 is not None:
+        consensus = bookmaker_consensus(
+            {
+                fixture.odds_source
+                or "provider": {"player1": fixture.odds1, "player2": fixture.odds2}
+            }
+        )
+        first, second, books = consensus.prob1, consensus.prob2, consensus.books
+    quote_age = (
+        (datetime.now(timezone.utc) - fixture.odds_observed_at).total_seconds()
+        if fixture.odds_observed_at
+        else None
+    )
+    return {
+        side: asdict(
+            guarded_ev(
+                probability,
+                price,
+                market,
+                calibrated=True,
+                model_age_days=age,
+                quote_age_seconds=quote_age,
+                independent_books=books,
+            )
+        )
+        for side, probability, price, market in [
+            ("player1", prob1, fixture.odds1, first),
+            ("player2", 1 - prob1, fixture.odds2, second),
+        ]
+    }
 
 
 def generate_card(tour: str) -> PredictionCard:

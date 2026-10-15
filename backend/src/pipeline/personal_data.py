@@ -17,6 +17,8 @@ from pipeline.personal_state import (
     match_vector,
     normalize_name,
     update_ratings,
+    elo_probability,
+    ratio,
 )
 
 
@@ -91,11 +93,23 @@ def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
         other_total = finite_number(row, f"{opposite}_svpt", 0)
         if 0 <= won <= total and total > 0:
             player.serve.append((won, total))
+            baseline = finite_number(row, f"{prefix}_expected_serve", 0.6)
+            player.adjusted_serve.append(won / total - baseline)
         if 0 <= other_won <= other_total and other_total > 0:
             player.returns.append((other_total - other_won, other_total))
+            baseline = finite_number(row, f"{prefix}_expected_return", 0.4)
+            player.adjusted_return.append(
+                (other_total - other_won) / other_total - baseline
+            )
+        expected = finite_number(row, "winner_expected", 0.5)
+        player.adjusted_results.append(
+            (1 - expected) if prefix == "winner" else -(1 - expected)
+        )
 
 
-def build_dataset(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[int, Player]]:
+def build_dataset(
+    frame: pd.DataFrame, *, feature_schema: int = 1, use_recent_form: bool = True
+) -> tuple[pd.DataFrame, dict[int, Player]]:
     """Embargo results 21 days because tournament starts are not completion dates."""
     players: dict[int, Player] = {}
     records: list[dict[str, object]] = []
@@ -106,7 +120,10 @@ def build_dataset(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[int, Player]]
             for _, row in completed.iterrows():
                 observe_match(row, players)
         for _, row in batch.iterrows():
-            records.append(feature_record(row, players, day))
+            records.append(
+                feature_record(row, players, day, feature_schema, use_recent_form)
+            )
+        batch = freeze_opponent_expectations(batch, players)
         pending.append((day + pd.Timedelta(days=21), batch))
     for available_at, batch in pending:
         if available_at > pd.Timestamp.today():
@@ -117,7 +134,11 @@ def build_dataset(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[int, Player]]
 
 
 def feature_record(
-    row: pd.Series, players: dict[int, Player], day: pd.Timestamp
+    row: pd.Series,
+    players: dict[int, Player],
+    day: pd.Timestamp,
+    feature_schema: int = 1,
+    use_recent_form: bool = True,
 ) -> dict[str, object]:
     """Read known pre-event state without applying the current match's outcome."""
     winner, loser = int(row["winner_id"]), int(row["loser_id"])
@@ -126,7 +147,12 @@ def feature_record(
             players[player_id] = Player(name=str(row[f"{prefix}_name"]))
     first, second = sorted([winner, loser])
     vector = match_vector(
-        players[first], players[second], str(row["surface"]), int(row["best_of"])
+        players[first],
+        players[second],
+        str(row["surface"]),
+        int(row["best_of"]),
+        feature_schema=feature_schema,
+        use_recent_form=use_recent_form,
     )
     return {
         "date": day,
@@ -138,6 +164,26 @@ def feature_record(
         "player1": players[first].name,
         "player2": players[second].name,
     }
+
+
+def freeze_opponent_expectations(
+    batch: pd.DataFrame, players: dict[int, Player]
+) -> pd.DataFrame:
+    """Store opponent baselines at feature time, before either outcome is available."""
+    frozen = batch.copy()
+    for index, row in frozen.iterrows():
+        winner, loser = players[int(row.winner_id)], players[int(row.loser_id)]
+        frozen.at[index, "winner_expected"] = elo_probability(
+            winner, loser, str(row.surface)
+        )
+        for prefix, opponent in [("winner", loser), ("loser", winner)]:
+            frozen.at[index, f"{prefix}_expected_serve"] = 1 - ratio(
+                opponent.returns, 0.4
+            )
+            frozen.at[index, f"{prefix}_expected_return"] = 1 - ratio(
+                opponent.serve, 0.6
+            )
+    return frozen
 
 
 def player_index(players: dict[int, Player]) -> dict[str, int]:

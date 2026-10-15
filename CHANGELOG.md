@@ -8,8 +8,11 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Opponent-adjusted result/serve/return residuals using frozen pre-event baselines, optional recent-form ablation, and auditable feature-schema/runtime metadata in versioned ATP/WTA models.
+- Regression tests for fold-local preprocessing, chronological mirrors, consistent live calibration, paired bookmaker consensus, bounded EV admission, and artifact reload/preservation.
+- Dashboard details for informational EV, missing quotes, zero-stake guard failures, and their reasons.
 - Append-only live outcome settlement, void handling for retirements/defaults, and separate current-model/all-version live performance on the dashboard.
-- Personal ATP/WTA prediction engine with global/surface Elo, lightweight model selection on 2022, probability calibration on 2023, and untouched 2024–2025 evaluation.
+- Personal ATP/WTA prediction engine with global/surface Elo, lightweight model selection on 2022, probability calibration on 2023, and chronological held-out 2024–2025 evaluation.
 - Genuine upcoming singles forecasts on the dashboard, unavailable-match explanations, measured accuracy, and stale-history warnings.
 - Automatic five-minute private pre-match tracking with immutable SQLite events, model versions, probabilities, and observed odds when available.
 - Reproducible ATP/WTA research-data restoration with pinned revisions, SHA-256 verification, original CC BY-NC-SA attribution, and preservation of existing files.
@@ -31,6 +34,10 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Legacy stacking now tunes and stops inside each outer training fold, refits transforms per fold, and shares symmetrization/calibration order across evaluation, history, and inference.
+- Adaptive temporal splits keep full dates and match mirrors together; fully missing training columns are retained.
+- Bookmaker consensus now de-vigs paired quotes per book, deduplicates relays, and preserves player orientation; TheOddsAPI no longer creates fictitious cross-book price pairs.
+- Guarded betting analysis requires calibration/freshness provenance, recent quotes, independent paired books, edge/positive net EV, and caps quarter Kelly at 1% with zero stake on failure.
 - Historical features now wait 21 days after tournament start before using outcomes; unavailable year-end labels are excluded from fitting, selection, and calibration.
 - Future forecast timestamps are rejected; repeated odds snapshots cannot inflate live accuracy or erase earlier model performance.
 - Production dashboard builds use system fonts and no longer download Inter from Google Fonts.

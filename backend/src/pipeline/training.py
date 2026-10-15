@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 from exceptions import DataNotFoundError  # noqa: E402
 from pipeline.calibration import calibrate_probabilities  # noqa: E402
+from pipeline.symmetric_calibration import symmetric_calibration  # noqa: E402
 from pipeline.split import fixed_temporal_split  # noqa: E402
 from pipeline.train_helpers import (  # noqa: E402
     benchmark_vs_market,
@@ -101,17 +102,11 @@ def train_pipeline(
     df_val = splits["val"]
     df_test = splits["test"]
 
-    logger.info("\n  Fitting imputer + scaler on TRAIN set only ...")
-    X_train_raw = df_train[feature_cols].values.astype(float)
-    imputer = SimpleImputer(strategy="median")
-    imputer.fit(X_train_raw)
-    scaler = StandardScaler()
-    scaler.fit(imputer.transform(X_train_raw))
-
     oof_result = generate_oof_predictions(
-        df_train, feature_cols, imputer, scaler, n_optuna_trials
+        df_train, feature_cols, SimpleImputer(), StandardScaler(), n_optuna_trials
     )
 
+    imputer, scaler = oof_result["imputer"], oof_result["scaler"]
     meta_model = train_meta_learner(
         oof_result["oof_lgbm"],
         oof_result["oof_xgb"],
@@ -126,14 +121,14 @@ def train_pipeline(
     val_probs_all = symmetrize_probs(df_val, val_probs_raw)
     y_val_all = df_val["label"].values
     calibrator = calibrate_probabilities(val_probs_all, y_val_all)
-    val_probs_all = calibrator.predict(val_probs_all.reshape(-1, 1))
+    val_probs_all = symmetric_calibration(val_probs_all, calibrator)
 
     logger.info("\n  Predicting on TEST set (one-time evaluation) ...")
     test_probs_raw = predict_stacking(
         df_test, feature_cols, imputer, scaler, oof_result["models"], meta_model
     )
-    test_probs_all = calibrator.predict(
-        symmetrize_probs(df_test, test_probs_raw).reshape(-1, 1)
+    test_probs_all = symmetric_calibration(
+        symmetrize_probs(df_test, test_probs_raw), calibrator
     )
     y_test_all = df_test["label"].values
 
