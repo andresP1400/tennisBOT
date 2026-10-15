@@ -130,7 +130,15 @@
       "url": "https://raw.githubusercontent.com/Kadantte/tennis_atp/712be0c5ade693cdab9e69c23a71a0edf5a23c44/atp_matches_2025.csv",
       "rows": 2944,
       "sha256": "78c356ef9328b89ae58a17564d61c02cdad2a3a007f6b8af5cfc17992b11bb2d"
+    },
+    {
+      "file": "atp_matches_2026.csv",
+      "url": "https://raw.githubusercontent.com/Kadantte/tennis_atp/712be0c5ade693cdab9e69c23a71a0edf5a23c44/atp_matches_2026.csv",
+      "rows": 1449,
+      "sha256": "ceb157ae698f79f4148f7bb6253bbcf6a8c8eb9ff94670dd83aa0428802cfd59"
     }
   ],
-  "readme_sha256": "80fd5a50ba020fd306890d31142187bb737627ba468d3e36faabe92d48ab5083"
+  "readme_sha256": "80fd5a50ba020fd306890d31142187bb737627ba468d3e36faabe92d48ab5083",
+  "extended_at": "2026-10-15T20:47:57.517908+00:00",
+  "coverage_note": "2026 files are partial seasons; tournament dates do not establish exact completion times or complete current coverage."
 }

@@ -8,6 +8,7 @@ export interface PersonalFixture {
   surface: string | null
   odds1: number | null
   odds2: number | null
+  tournament_level?: string | null
 }
 
 export interface PersonalPrediction {
@@ -46,7 +47,10 @@ export interface PersonalCard {
   predictions: PersonalPrediction[]
   unavailable: { fixture: PersonalFixture; reason: string }[]
   message: string | null
-  backtest: { test_2024_2025?: { ml_calibrated: MeasuredMetrics } }
+  backtest: {
+    test_2024_2025?: { ml_calibrated: MeasuredMetrics }
+    evaluation?: { period: string; metrics: MeasuredMetrics }
+  }
   live_performance?: {
     completed: number
     pending: number

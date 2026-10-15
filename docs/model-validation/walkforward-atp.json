@@ -1,0 +1,795 @@
+{
+  "aggregate": {
+    "elo_calibrated": {
+      "accuracy": 0.6404293381037567,
+      "brier": 0.21929629459099326,
+      "ece_10_bins": 0.027820697677693594,
+      "log_loss": 0.6275964743477725,
+      "matches": 12857,
+      "roc_auc": 0.7009274082786677
+    },
+    "history_coverage": {
+      "eligible_matches": 10784,
+      "metrics": {
+        "accuracy": 0.6528189910979229,
+        "brier": 0.2142645375457508,
+        "ece_10_bins": 0.01572127367983452,
+        "log_loss": 0.6161395294837358,
+        "matches": 10784,
+        "roc_auc": 0.7140605247172295
+      },
+      "minimum_prior_matches_each": 10,
+      "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+      "unavailable_matches": 2073
+    },
+    "ml_calibrated": {
+      "accuracy": 0.6578517539083768,
+      "brier": 0.21290520638587804,
+      "ece_10_bins": 0.013658962042236105,
+      "log_loss": 0.6132673592001954,
+      "matches": 12857,
+      "roc_auc": 0.7203998359126271
+    },
+    "uncertainty": {
+      "date_blocks": 230,
+      "elo": {
+        "accuracy": {
+          "estimate": 0.6404293381037567,
+          "lower_95": 0.6294401660173131,
+          "upper_95": 0.6508663568597588
+        },
+        "brier": {
+          "estimate": 0.21929629459099356,
+          "lower_95": 0.2155614509510688,
+          "upper_95": 0.22317155628240998
+        },
+        "log_loss": {
+          "estimate": 0.6275964743477734,
+          "lower_95": 0.6191067451082714,
+          "upper_95": 0.6363093438087405
+        }
+      },
+      "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+      "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+      "ml": {
+        "accuracy": {
+          "estimate": 0.6578517539083768,
+          "lower_95": 0.6464169614963428,
+          "upper_95": 0.6694218113790534
+        },
+        "brier": {
+          "estimate": 0.212905206385877,
+          "lower_95": 0.20890024797136078,
+          "upper_95": 0.2170344036105695
+        },
+        "log_loss": {
+          "estimate": 0.6132673592001966,
+          "lower_95": 0.6040332492301698,
+          "upper_95": 0.6226490139395034
+        }
+      },
+      "ml_minus_elo": {
+        "accuracy": {
+          "estimate": 0.017422415804620117,
+          "lower_95": 0.010838436697148198,
+          "upper_95": 0.024169773814397267
+        },
+        "brier": {
+          "estimate": -0.006391088205116552,
+          "lower_95": -0.007763346846738863,
+          "upper_95": -0.004841847672799393
+        },
+        "log_loss": {
+          "estimate": -0.014329115147576843,
+          "lower_95": -0.01729765659106493,
+          "upper_95": -0.010778160664164748
+        }
+      },
+      "resamples": 1000,
+      "seed": 42
+    }
+  },
+  "audit": {
+    "duplicates": 0,
+    "excluded_total": 2320,
+    "incomplete_matches": 2269,
+    "invalid_dates": 0,
+    "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "missing_surface": 53,
+    "raw_rows": 62895,
+    "rows_by_year": {
+      "2005": 3264,
+      "2006": 3267,
+      "2007": 3285,
+      "2008": 3030,
+      "2009": 3085,
+      "2010": 3030,
+      "2011": 3015,
+      "2012": 3094,
+      "2013": 2944,
+      "2014": 2816,
+      "2015": 2943,
+      "2016": 2941,
+      "2017": 2911,
+      "2018": 2982,
+      "2019": 2721,
+      "2020": 1462,
+      "2021": 2733,
+      "2022": 2917,
+      "2023": 2986,
+      "2024": 3158,
+      "2025": 2862,
+      "2026": 1449
+    },
+    "source_digest": "967f98619603227f91ccd984145a9af22408f6898e63d8b67186cb5ea0f731ae",
+    "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
+  },
+  "created_at": "20261015T205539683664Z",
+  "data_through": "2026-05-25",
+  "evaluation_implementation_sha256": "26e04ac68039a0c7e57b8af251cc53e127555c57535219ee6890adb2a2dc0701",
+  "feature_names": [
+    "elo",
+    "surface_elo",
+    "rank",
+    "points",
+    "age",
+    "height",
+    "form",
+    "serve",
+    "return",
+    "experience",
+    "surface_Hard",
+    "surface_Clay",
+    "surface_Grass",
+    "surface_Carpet",
+    "best_of_5",
+    "opponent_adjusted_form",
+    "opponent_adjusted_serve",
+    "opponent_adjusted_return"
+  ],
+  "feature_schema": 2,
+  "folds": [
+    {
+      "elo_calibrated": {
+        "accuracy": 0.6481612446958982,
+        "brier": 0.215213970975779,
+        "ece_10_bins": 0.03528938046296422,
+        "log_loss": 0.6190633343920489,
+        "matches": 2828,
+        "roc_auc": 0.7166092378373943
+      },
+      "elo_uncalibrated": {
+        "accuracy": 0.6481612446958982,
+        "brier": 0.2148344978868203,
+        "ece_10_bins": 0.030001945679523453,
+        "log_loss": 0.6182918124560839,
+        "matches": 2828,
+        "roc_auc": 0.7166092378373943
+      },
+      "family": "hist_gradient_boosting",
+      "history_coverage": {
+        "eligible_matches": 2424,
+        "metrics": {
+          "accuracy": 0.6584158415841584,
+          "brier": 0.21201665754490015,
+          "ece_10_bins": 0.025363855987936397,
+          "log_loss": 0.6107848240887545,
+          "matches": 2424,
+          "roc_auc": 0.7209662522056768
+        },
+        "minimum_prior_matches_each": 10,
+        "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+        "unavailable_matches": 404
+      },
+      "ml_calibrated": {
+        "accuracy": 0.6676096181046676,
+        "brier": 0.20890516190833885,
+        "ece_10_bins": 0.01956102126670872,
+        "log_loss": 0.6040472483133128,
+        "matches": 2828,
+        "roc_auc": 0.7327675993348661
+      },
+      "ml_uncalibrated": {
+        "accuracy": 0.6676096181046676,
+        "brier": 0.20892052544600256,
+        "ece_10_bins": 0.02404574922816745,
+        "log_loss": 0.6039470524970011,
+        "matches": 2828,
+        "roc_auc": 0.7327675993348661
+      },
+      "selection_scores": {
+        "hist_gradient_boosting": {
+          "accuracy": 0.6643356643356644,
+          "brier": 0.21187567901414125,
+          "ece_10_bins": 0.04509932937250746,
+          "log_loss": 0.6104687502652527,
+          "matches": 1430,
+          "roc_auc": 0.7279949139280124
+        },
+        "logistic": {
+          "accuracy": 0.6552447552447552,
+          "brier": 0.2147871459401658,
+          "ece_10_bins": 0.05198831916085342,
+          "log_loss": 0.6178703528183677,
+          "matches": 1430,
+          "roc_auc": 0.7214925665101721
+        }
+      },
+      "stages": {
+        "calibration": {
+          "end": "2021-12-05",
+          "labels_available_through": "2021-12-26",
+          "matches": 2650,
+          "start": "2021-01-04"
+        },
+        "selection": {
+          "end": "2020-11-16",
+          "labels_available_through": "2020-12-07",
+          "matches": 1430,
+          "start": "2020-01-06"
+        },
+        "test": {
+          "end": "2022-11-27",
+          "labels_available_through": "2022-12-18",
+          "matches": 2828,
+          "start": "2022-01-03"
+        },
+        "train": {
+          "end": "2019-11-24",
+          "labels_available_through": "2019-12-15",
+          "matches": 34148,
+          "start": "2008-01-07"
+        }
+      },
+      "test_year": 2022
+    },
+    {
+      "elo_calibrated": {
+        "accuracy": 0.637645400070497,
+        "brier": 0.22187453677709087,
+        "ece_10_bins": 0.025924120494106414,
+        "log_loss": 0.6339028354630211,
+        "matches": 2837,
+        "roc_auc": 0.6935829767354018
+      },
+      "elo_uncalibrated": {
+        "accuracy": 0.637645400070497,
+        "brier": 0.22207853511926923,
+        "ece_10_bins": 0.02667009433362094,
+        "log_loss": 0.634534417996609,
+        "matches": 2837,
+        "roc_auc": 0.6935829767354018
+      },
+      "family": "hist_gradient_boosting",
+      "history_coverage": {
+        "eligible_matches": 2362,
+        "metrics": {
+          "accuracy": 0.6452159187129551,
+          "brier": 0.2187126609831289,
+          "ece_10_bins": 0.024957923514391845,
+          "log_loss": 0.6276356338525512,
+          "matches": 2362,
+          "roc_auc": 0.7020573142357802
+        },
+        "minimum_prior_matches_each": 10,
+        "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+        "unavailable_matches": 475
+      },
+      "ml_calibrated": {
+        "accuracy": 0.6538597109622841,
+        "brier": 0.21610908545132484,
+        "ece_10_bins": 0.024950383364788255,
+        "log_loss": 0.6213808209647399,
+        "matches": 2837,
+        "roc_auc": 0.7122187597846992
+      },
+      "ml_uncalibrated": {
+        "accuracy": 0.6538597109622841,
+        "brier": 0.21655314728541653,
+        "ece_10_bins": 0.033108538730060776,
+        "log_loss": 0.6227867631834452,
+        "matches": 2837,
+        "roc_auc": 0.7122192567853007
+      },
+      "selection_scores": {
+        "hist_gradient_boosting": {
+          "accuracy": 0.6516981132075472,
+          "brier": 0.21441370000381488,
+          "ece_10_bins": 0.05270117906708003,
+          "log_loss": 0.6155859133440951,
+          "matches": 2650,
+          "roc_auc": 0.7179748571428571
+        },
+        "logistic": {
+          "accuracy": 0.6483018867924528,
+          "brier": 0.21510024722292234,
+          "ece_10_bins": 0.04865642035366425,
+          "log_loss": 0.6204100677698154,
+          "matches": 2650,
+          "roc_auc": 0.7181914285714286
+        }
+      },
+      "stages": {
+        "calibration": {
+          "end": "2022-11-27",
+          "labels_available_through": "2022-12-18",
+          "matches": 2828,
+          "start": "2022-01-03"
+        },
+        "selection": {
+          "end": "2021-12-05",
+          "labels_available_through": "2021-12-26",
+          "matches": 2650,
+          "start": "2021-01-04"
+        },
+        "test": {
+          "end": "2023-11-27",
+          "labels_available_through": "2023-12-18",
+          "matches": 2837,
+          "start": "2023-01-02"
+        },
+        "train": {
+          "end": "2020-11-16",
+          "labels_available_through": "2020-12-07",
+          "matches": 35578,
+          "start": "2008-01-07"
+        }
+      },
+      "test_year": 2023
+    },
+    {
+      "elo_calibrated": {
+        "accuracy": 0.638360655737705,
+        "brier": 0.2193683920622269,
+        "ece_10_bins": 0.02785709379334695,
+        "log_loss": 0.627241738660634,
+        "matches": 3050,
+        "roc_auc": 0.6976018396846254
+      },
+      "elo_uncalibrated": {
+        "accuracy": 0.638360655737705,
+        "brier": 0.21965305770838647,
+        "ece_10_bins": 0.02844072863894012,
+        "log_loss": 0.6279849331025608,
+        "matches": 3050,
+        "roc_auc": 0.6976018396846254
+      },
+      "family": "hist_gradient_boosting",
+      "history_coverage": {
+        "eligible_matches": 2533,
+        "metrics": {
+          "accuracy": 0.6521910777733912,
+          "brier": 0.21204640263001875,
+          "ece_10_bins": 0.025109305944182463,
+          "log_loss": 0.6101170934499751,
+          "matches": 2533,
+          "roc_auc": 0.7192474105152747
+        },
+        "minimum_prior_matches_each": 10,
+        "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+        "unavailable_matches": 517
+      },
+      "ml_calibrated": {
+        "accuracy": 0.6544262295081967,
+        "brier": 0.2120576155314839,
+        "ece_10_bins": 0.01838268000404392,
+        "log_loss": 0.6104481083338598,
+        "matches": 3050,
+        "roc_auc": 0.721000156517671
+      },
+      "ml_uncalibrated": {
+        "accuracy": 0.6544262295081967,
+        "brier": 0.21254468712096733,
+        "ece_10_bins": 0.02596014087559055,
+        "log_loss": 0.6110291749372747,
+        "matches": 3050,
+        "roc_auc": 0.721000156517671
+      },
+      "selection_scores": {
+        "hist_gradient_boosting": {
+          "accuracy": 0.6704384724186704,
+          "brier": 0.20824455065167258,
+          "ece_10_bins": 0.011529415205541578,
+          "log_loss": 0.6024672503189701,
+          "matches": 2828,
+          "roc_auc": 0.7343679026871489
+        },
+        "logistic": {
+          "accuracy": 0.6714992927864215,
+          "brier": 0.20842508610579485,
+          "ece_10_bins": 0.012851996012339514,
+          "log_loss": 0.604670916117435,
+          "matches": 2828,
+          "roc_auc": 0.7348351372388939
+        }
+      },
+      "stages": {
+        "calibration": {
+          "end": "2023-11-27",
+          "labels_available_through": "2023-12-18",
+          "matches": 2837,
+          "start": "2023-01-02"
+        },
+        "selection": {
+          "end": "2022-11-27",
+          "labels_available_through": "2022-12-18",
+          "matches": 2828,
+          "start": "2022-01-03"
+        },
+        "test": {
+          "end": "2024-12-30",
+          "labels_available_through": "2025-01-20",
+          "matches": 3050,
+          "start": "2024-01-01"
+        },
+        "train": {
+          "end": "2021-12-05",
+          "labels_available_through": "2021-12-26",
+          "matches": 38228,
+          "start": "2008-01-07"
+        }
+      },
+      "test_year": 2024
+    },
+    {
+      "elo_calibrated": {
+        "accuracy": 0.6308479532163743,
+        "brier": 0.22113303063098758,
+        "ece_10_bins": 0.03269102942754996,
+        "log_loss": 0.630969630774475,
+        "matches": 2736,
+        "roc_auc": 0.6933744254834066
+      },
+      "elo_uncalibrated": {
+        "accuracy": 0.6308479532163743,
+        "brier": 0.22156237275060095,
+        "ece_10_bins": 0.03330783040841419,
+        "log_loss": 0.632114021461056,
+        "matches": 2736,
+        "roc_auc": 0.6933744254834066
+      },
+      "family": "logistic",
+      "history_coverage": {
+        "eligible_matches": 2288,
+        "metrics": {
+          "accuracy": 0.6520979020979021,
+          "brier": 0.21575214495890396,
+          "ece_10_bins": 0.018712956289767456,
+          "log_loss": 0.619170272563754,
+          "matches": 2288,
+          "roc_auc": 0.7099311542792663
+        },
+        "minimum_prior_matches_each": 10,
+        "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+        "unavailable_matches": 448
+      },
+      "ml_calibrated": {
+        "accuracy": 0.653874269005848,
+        "brier": 0.21577215169339636,
+        "ece_10_bins": 0.02098600311592394,
+        "log_loss": 0.6198517553429905,
+        "matches": 2736,
+        "roc_auc": 0.7125949329187047
+      },
+      "ml_uncalibrated": {
+        "accuracy": 0.653874269005848,
+        "brier": 0.216589002767752,
+        "ece_10_bins": 0.03717589731685879,
+        "log_loss": 0.6223989830980595,
+        "matches": 2736,
+        "roc_auc": 0.7125949329187047
+      },
+      "selection_scores": {
+        "hist_gradient_boosting": {
+          "accuracy": 0.6549171660204441,
+          "brier": 0.2162638773965324,
+          "ece_10_bins": 0.025554312948125775,
+          "log_loss": 0.6220671256514512,
+          "matches": 2837,
+          "roc_auc": 0.7127157603860701
+        },
+        "logistic": {
+          "accuracy": 0.6464575255551639,
+          "brier": 0.2161335314296641,
+          "ece_10_bins": 0.03551809973643539,
+          "log_loss": 0.6212656500294766,
+          "matches": 2837,
+          "roc_auc": 0.7130494962898906
+        }
+      },
+      "stages": {
+        "calibration": {
+          "end": "2024-11-24",
+          "labels_available_through": "2024-12-15",
+          "matches": 2959,
+          "start": "2024-01-01"
+        },
+        "selection": {
+          "end": "2023-11-27",
+          "labels_available_through": "2023-12-18",
+          "matches": 2837,
+          "start": "2023-01-02"
+        },
+        "test": {
+          "end": "2025-12-17",
+          "labels_available_through": "2026-01-07",
+          "matches": 2736,
+          "start": "2025-01-06"
+        },
+        "train": {
+          "end": "2022-11-27",
+          "labels_available_through": "2022-12-18",
+          "matches": 41056,
+          "start": "2008-01-07"
+        }
+      },
+      "test_year": 2025
+    },
+    {
+      "elo_calibrated": {
+        "accuracy": 0.6536273115220483,
+        "brier": 0.21857448165299884,
+        "ece_10_bins": 0.06047372564391841,
+        "log_loss": 0.6262405434609599,
+        "matches": 1406,
+        "roc_auc": 0.7077633198879008
+      },
+      "elo_uncalibrated": {
+        "accuracy": 0.6536273115220483,
+        "brier": 0.2185374301870464,
+        "ece_10_bins": 0.0514282111385254,
+        "log_loss": 0.626580630145768,
+        "matches": 1406,
+        "roc_auc": 0.7077633198879008
+      },
+      "family": "hist_gradient_boosting",
+      "history_coverage": {
+        "eligible_matches": 1177,
+        "metrics": {
+          "accuracy": 0.659303313508921,
+          "brier": 0.21184931540745855,
+          "ece_10_bins": 0.04544992821696976,
+          "log_loss": 0.611166290456317,
+          "matches": 1177,
+          "roc_auc": 0.7263526081447123
+        },
+        "minimum_prior_matches_each": 10,
+        "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+        "unavailable_matches": 229
+      },
+      "ml_calibrated": {
+        "accuracy": 0.6614509246088194,
+        "brier": 0.2107458256023366,
+        "ece_10_bins": 0.029602441695869,
+        "log_loss": 0.6087441656423914,
+        "matches": 1406,
+        "roc_auc": 0.7292922113686803
+      },
+      "ml_uncalibrated": {
+        "accuracy": 0.6607396870554765,
+        "brier": 0.21067801325466398,
+        "ece_10_bins": 0.032712056176825766,
+        "log_loss": 0.6085217717314853,
+        "matches": 1406,
+        "roc_auc": 0.7292922113686803
+      },
+      "selection_scores": {
+        "hist_gradient_boosting": {
+          "accuracy": 0.658668469077391,
+          "brier": 0.21080021104207894,
+          "ece_10_bins": 0.01970620528483891,
+          "log_loss": 0.606798369088654,
+          "matches": 2959,
+          "roc_auc": 0.7250753113187636
+        },
+        "logistic": {
+          "accuracy": 0.654275092936803,
+          "brier": 0.21178691020130794,
+          "ece_10_bins": 0.023725920175326848,
+          "log_loss": 0.6097726406319599,
+          "matches": 2959,
+          "roc_auc": 0.7231586074190215
+        }
+      },
+      "stages": {
+        "calibration": {
+          "end": "2025-11-23",
+          "labels_available_through": "2025-12-14",
+          "matches": 2721,
+          "start": "2025-01-06"
+        },
+        "selection": {
+          "end": "2024-11-24",
+          "labels_available_through": "2024-12-15",
+          "matches": 2959,
+          "start": "2024-01-01"
+        },
+        "test": {
+          "end": "2026-05-25",
+          "labels_available_through": "2026-06-15",
+          "matches": 1406,
+          "start": "2026-01-04"
+        },
+        "train": {
+          "end": "2023-11-27",
+          "labels_available_through": "2023-12-18",
+          "matches": 43893,
+          "start": "2008-01-07"
+        }
+      },
+      "test_year": 2026
+    }
+  ],
+  "implementation_sha256": "7cca70f8c513b4a36a1eef7ea8400e5efc13d8bd751b64ea1be6976d26f99c39",
+  "latest_year_frozen_reference": {
+    "elo_calibrated": {
+      "accuracy": 0.6536273115220483,
+      "brier": 0.21870960715424873,
+      "ece_10_bins": 0.05918088983555082,
+      "log_loss": 0.6265282697923419,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
+    },
+    "elo_uncalibrated": {
+      "accuracy": 0.6536273115220483,
+      "brier": 0.2185374301870464,
+      "ece_10_bins": 0.0514282111385254,
+      "log_loss": 0.626580630145768,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
+    },
+    "family": "hist_gradient_boosting",
+    "history_coverage": {
+      "eligible_matches": 1177,
+      "metrics": {
+        "accuracy": 0.6644010195412065,
+        "brier": 0.21193763647497563,
+        "ece_10_bins": 0.04539593490601316,
+        "log_loss": 0.6115999500595719,
+        "matches": 1177,
+        "roc_auc": 0.7271925388576942
+      },
+      "minimum_prior_matches_each": 10,
+      "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+      "unavailable_matches": 229
+    },
+    "ml_calibrated": {
+      "accuracy": 0.6657183499288762,
+      "brier": 0.21088844015241817,
+      "ece_10_bins": 0.028822046200478863,
+      "log_loss": 0.609196303439813,
+      "matches": 1406,
+      "roc_auc": 0.729565574832742
+    },
+    "ml_uncalibrated": {
+      "accuracy": 0.6657183499288762,
+      "brier": 0.2108668001382251,
+      "ece_10_bins": 0.031321777193319224,
+      "log_loss": 0.6091547731501576,
+      "matches": 1406,
+      "roc_auc": 0.729565574832742
+    },
+    "protocol": "Original frozen estimator on the same newer holdout matches",
+    "selection_scores": {
+      "hist_gradient_boosting": {
+        "accuracy": 0.6704384724186704,
+        "brier": 0.20824455065167258,
+        "ece_10_bins": 0.011529415205541578,
+        "log_loss": 0.6024672503189701,
+        "matches": 2828,
+        "roc_auc": 0.7343679026871489
+      },
+      "logistic": {
+        "accuracy": 0.6714992927864215,
+        "brier": 0.20842508610579485,
+        "ece_10_bins": 0.012851996012339514,
+        "log_loss": 0.604670916117435,
+        "matches": 2828,
+        "roc_auc": 0.7348351372388939
+      }
+    },
+    "stages": {
+      "calibration": {
+        "end": "2023-11-27",
+        "labels_available_through": "2023-12-18",
+        "matches": 2837,
+        "start": "2023-01-02"
+      },
+      "selection": {
+        "end": "2022-11-27",
+        "labels_available_through": "2022-12-18",
+        "matches": 2828,
+        "start": "2022-01-03"
+      },
+      "test": {
+        "end": "2026-05-25",
+        "labels_available_through": "2026-06-15",
+        "matches": 1406,
+        "start": "2026-01-04"
+      },
+      "train": {
+        "end": "2021-12-05",
+        "labels_available_through": "2021-12-26",
+        "matches": 38228,
+        "start": "2008-01-07"
+      }
+    },
+    "test_year": 2026
+  },
+  "latest_year_paired_comparison": {
+    "date_blocks": 20,
+    "frozen_ml": {
+      "accuracy": {
+        "estimate": 0.6657183499288762,
+        "lower_95": 0.637049488114031,
+        "upper_95": 0.6941483552013833
+      },
+      "brier": {
+        "estimate": 0.21088844015241792,
+        "lower_95": 0.2002567512934428,
+        "upper_95": 0.22114442597818101
+      },
+      "log_loss": {
+        "estimate": 0.6091963034398131,
+        "lower_95": 0.5859930993384042,
+        "upper_95": 0.6318474594419803
+      }
+    },
+    "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+    "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+    "ml": {
+      "accuracy": {
+        "estimate": 0.6614509246088194,
+        "lower_95": 0.6307847841620263,
+        "upper_95": 0.6900287549605001
+      },
+      "brier": {
+        "estimate": 0.2107458256023372,
+        "lower_95": 0.20021451778548052,
+        "upper_95": 0.22118294870179317
+      },
+      "log_loss": {
+        "estimate": 0.6087441656423906,
+        "lower_95": 0.5851738271295479,
+        "upper_95": 0.6318148391779683
+      }
+    },
+    "ml_minus_frozen_ml": {
+      "accuracy": {
+        "estimate": -0.004267425320056861,
+        "lower_95": -0.016107693077230836,
+        "upper_95": 0.006338813133578532
+      },
+      "brier": {
+        "estimate": -0.00014261455008071633,
+        "lower_95": -0.0008095517421701371,
+        "upper_95": 0.0006470646216944875
+      },
+      "log_loss": {
+        "estimate": -0.0004521377974224805,
+        "lower_95": -0.002041033169415568,
+        "upper_95": 0.001395731674826997
+      }
+    },
+    "resamples": 1000,
+    "seed": 42
+  },
+  "limitations": "Retrospective chronological validation, not a new prospective trial. Source seasons may be partial. No profitability measured.",
+  "protocol": "Each test year: train through year-3; select year-2; calibrate year-1; freeze throughout test",
+  "result_delay_days": 21,
+  "runtime_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1"
+  },
+  "test_years": [
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "tour": "atp",
+  "use_recent_form": true
+}

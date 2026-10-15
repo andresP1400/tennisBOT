@@ -12,6 +12,9 @@ export function PersonalRows({ predictions }: { predictions: PersonalPrediction[
         <td className="py-3 pr-4 whitespace-nowrap">{new Date(fixture.commence_time).toLocaleString()}</td>
         <td className="py-3 pr-4">{fixture.player1} vs {fixture.player2}
           <div className="text-xs text-muted-foreground">{fixture.tournament} · {fixture.surface}</div>
+          {fixture.tournament_level === "WTA 125" && <p className="text-xs text-amber-500">
+            WTA 125: accuracy has not been validated at this level.
+          </p>}
           <details className="text-xs text-muted-foreground"><summary>Recorded forecast</summary>
             <div>Recorded: {new Date(prediction.predicted_at).toLocaleString()}</div>
             <div>Model: {prediction.model_version}</div>

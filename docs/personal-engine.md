@@ -12,7 +12,7 @@ export PYTHONPATH=backend/src
 export OMP_NUM_THREADS=2
 export OPENBLAS_NUM_THREADS=2
 python -m data.licensed_history --tour both
-python -m pipeline.personal_train --tour both
+python -m pipeline.personal_train --tour both --test-year 2026
 ```
 
 On a fresh machine, create a virtual environment and install `requirements.txt` and `requirements-dev.txt` first. To use the measured model-library versions, run `pip install -r requirements.txt -r requirements-dev.txt -c docs/model-validation/constraints.txt`. The downloader restores exactly the reviewed files and refuses conflicting existing files. See [data provenance and license](data-sources/README.md). The data is licensed **CC BY-NC-SA 4.0**, attributed to Jeff Sackmann / Tennis Abstract, and is used here for personal noncommercial research.
@@ -21,30 +21,49 @@ Each training run creates new versioned model and audit files under `models/save
 
 ## What was measured
 
-All 117,996 raw rows were verified against committed SHA-256 checksums. The audit excluded 2,277 ATP and 2,107 WTA rows for incomplete/retired/walkover/defaulted matches, unknown surfaces, or invalid/duplicate metadata (exclusion categories can overlap). No duplicate match identities were found. The usable totals are 59,169 ATP and 54,443 WTA matches.
+The current reviewed snapshot contains **120,460 raw matches in 44 annual files (2005–partial 2026)**: ATP 62,895 and WTA 57,565. The original 117,996 rows and 2005–2025 manifests remain preserved; the extension adds 1,449 ATP and 1,015 WTA records. All file bytes, row counts, and source README license hashes are verified. The [new suitability audit](data-sources/history-quality-with2026-20261015.json) excludes 2,320 ATP and 2,165 WTA rows, leaving 60,575 and 55,400 eligible completed matches. No duplicate identities, missing player IDs, identical opponents, or invalid dates were found.
 
-The [completeness/suitability audit](data-sources/history-quality-20261015.json) separately reports raw and eligible statistics. Among eligible matches, valid serve-point counts for both players exist for 54,857 ATP matches (92.7%) and 44,463 WTA matches (81.7%). Missing or contradictory point statistics are skipped rather than converted into zero wins; their match outcomes still contribute to Elo and results history. Missing demographics affect 2,298 ATP and 9,361 WTA eligible rows. No missing or identical player IDs were found. Reproduce this audit without overwriting an earlier report using `python -m data.history_quality` (it creates a timestamped local report).
+Valid serve-point counts for both players exist in 56,017 eligible ATP and 45,395 eligible WTA matches. Missing, partial, negative, nonfinite, or contradictory point statistics are skipped, never converted to zero wins. Their valid match outcomes still contribute to Elo/form. Missing demographics affect 2,416 ATP and 9,986 WTA eligible rows. `python -m data.history_quality` creates a timestamped audit without replacing earlier reports. Completeness is relative to the pinned files, not every match played worldwide.
 
-The source contains all 42 expected annual files. This establishes completeness against the pinned snapshot, not coverage of every match played worldwide. In particular it does not contain 2026 results. Each version's audit records annual counts and source revisions.
+The licensed mirrors already contained the 2026 files at the pinned revisions. Earlier 404 checks against the unavailable original repositories did not establish that these mirror files were missing. Their source README hashes match the original license snapshots. ATP tournament-start dates reach **2026-05-25** and WTA dates reach **2026-04-21**; these are partial seasons and do not supply current October results. New files use the existing filenames only when absent; conflicts still fail without replacement. Each extended acquisition review gets a separate immutable manifest snapshot, while the original local manifest survives.
 
-Chronological protocol:
+The deployed annual protocol was fixed before scoring the new 2026 holdout:
 
 - 2005–2007: rating/history warmup.
-- 2008–2021: estimator fitting and training-only scaling.
-- 2022: select logistic regression or histogram gradient boosting by log-loss.
-- 2023: fit symmetric Platt calibration; never fit calibration on the test years.
-- 2024–2025: held-out evaluation, one row per match. Estimators and calibration stay frozen, while player summaries update forward only as historical results become available.
+- 2008–2023: estimator fitting and training-only scaling.
+- 2024: select logistic regression or histogram gradient boosting by log-loss.
+- 2025: fit symmetric Platt calibration.
+- Available 2026 completed matches: out-of-sample test with frozen estimators and calibration. No 2026 labels enter any fitting stage; player summaries update forward as earlier results become available.
 
-Source dates identify tournament starts rather than exact match times. Results are therefore embargoed for 21 days before they may influence another fixture's Elo, form, ranking summaries, or serving statistics. Labels whose embargo extends past a partition boundary are excluded from that earlier fitting/selection/calibration stage. This addresses overlapping-tournament leakage missed by the earlier date-batch implementation. The delay is a conservative availability assumption, not a verified match completion timestamp; exact completion times would allow more precise evaluation. Player-order augmentation is used only for training; mirror rows are not counted as independent test matches. Prediction probabilities are symmetric when players are reversed.
+Source dates are tournament starts, so results remain embargoed for 21 days before updating Elo, form, ranking, serve/return, or opponent-adjusted statistics. Fitting-stage labels whose embargo crosses the next stage are excluded. The delay is a conservative availability assumption, not a verified completion timestamp. Player-order augmentation is training-only; mirror rows never inflate test counts. Source coverage and supported fixture coverage are separate.
 
-| Tour | Selected ML family | Test matches | Calibrated ML accuracy | Brier | Log-loss | ROC-AUC |
+| Tour | Selected model | 2026 test matches | Calibrated ML accuracy | Brier | Log-loss | ROC-AUC |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| ATP | Histogram gradient boosting | 5,786 | 65.26% | 0.2135 | 0.6141 | 0.7179 |
-| WTA | Logistic regression | 5,169 | 65.31% | 0.2155 | 0.6203 | 0.7143 |
+| ATP | Histogram gradient boosting | 1,406 | 66.15% | 0.2107 | 0.6087 | 0.7293 |
+| WTA | Logistic regression | 957 | 66.25% | 0.2101 | 0.6064 | 0.7289 |
 
-Schema 2 adds pre-event opponent-adjusted result, serve, and return residuals. Opponent expectations are frozen before the tournament batch and released with its embargoed results. Surface ratings shrink toward global Elo for small samples. The last-20-match raw and opponent-adjusted form inputs can be disabled with `--no-recent-form`; that choice is saved with the version and used identically at inference. This trains a new version rather than modifying an existing model.
+The same historical minimum-coverage policy used by live inference (at least ten mature prior matches per player) covers 1,177 ATP matches at 65.93% and 862 WTA matches at 66.24%. Full reports retain both populations; provider identity/surface availability imposes additional live restrictions. WTA 125 performance is not established by these main-tour reports.
 
-The committed [validation reports](model-validation/) include surface-Elo baselines (ATP 63.48%, WTA 63.38%), uncalibrated results, calibration error, yearly and surface breakdowns, sample counts, and audit metadata. Earlier 65.45%/65.74% reports are archived under `previous-date-batch/` and are superseded because their timing assumption was weaker. The test years had already been inspected before this correctness rerun; these are recomputed retrospective held-out results, not a new blind experiment. No test labels were fitted or used for model-family selection. Calibration is fitted honestly; it is not guaranteed to improve future scores. WTA calibration slightly worsened held-out Brier/log-loss. Schema-1 reports are retained under `previous-schema1/`. The new features slightly improved Brier scores but reduced WTA classification accuracy from 65.70% to 65.31%; this is not evidence of a general accuracy improvement. No betting profitability is claimed.
+The original frozen protocol fitted through 2021, selected on 2022, and calibrated on 2023. On the **same 2026 test matches**, it scored 66.57% ATP and 66.14% WTA. The annual models' paired accuracy differences are −0.43 percentage points (approximate 95% interval −1.61 to +0.63) and +0.10 points (−0.38 to +0.77). Intervals include zero; a clear improvement over the original model has not been established. Different test periods/populations must not be compared as evidence of improvement.
+
+## Annual walk-forward validation
+
+```bash
+python -m pipeline.personal_walkforward --tour both --start-year 2022 --end-year 2026
+```
+
+Each year independently fits through year−3, selects on year−2, calibrates on year−1, and freezes the model throughout the test year. This command writes separate timestamped reports and never changes a deployed model pointer. Five annual tests pool to:
+
+| Tour | Unique test matches | ML accuracy | Approximate 95% date-block interval | Brier | Log-loss |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ATP | 12,857 | 65.79% | 64.64%–66.94% | 0.2129 | 0.6133 |
+| WTA | 11,314 | 65.49% | 64.50%–66.43% | 0.2145 | 0.6175 |
+
+The [ATP](model-validation/walkforward-atp.json) and [WTA](model-validation/walkforward-wta.json) reports retain every year's scores, selected family, exact stage dates/counts, calibration comparison, coverage, Elo baselines, and paired date-block bootstrap intervals (1,000 resamples, seed 42). Matches sharing a tournament-start date are resampled together; player dependence across date blocks remains. These are approximate retrospective intervals, not independent-match guarantees or a new prospective trial. No betting profitability is measured.
+
+The [current model reports](model-validation/) correspond to the actually deployed 2026-test models. Previous 2024–2025 reports (65.26% ATP / 65.31% WTA) are retained under `previous-2024-2025/`; earlier schema-1 and weaker date-batch reports remain archived. Newer parameters are deployed under the declared annual protocol, not selected by choosing the best 2026 accuracy. Every previous model and live forecast survives retraining.
+
+Schema 2 includes global/surface Elo with small-sample shrinkage, last-20-match form, and opponent-adjusted result/serve/return residuals with frozen pre-event baselines. `--no-recent-form` trains a new version with raw/adjusted result-form fields disabled and records that flag for inference. Calibration is fitted honestly but can worsen held-out scores; single-class AUC is unavailable rather than reported as a fabricated 0.5.
 
 ## Run and inspect forecasts
 
@@ -63,7 +82,7 @@ The API polls ESPN's public ATP/WTA scoreboards every five minutes, records pred
 
 Surface verification currently covers 2026 Shanghai ATP and Wuhan WTA plus Mallorca, Rovereto, and Lisbon WTA 125 events. The [reviewed WTA calendar metadata](data-sources/tournament-surfaces-2026.json) verifies Mallorca/Lisbon clay and Rovereto hard courts. ESPN and WTA use different event IDs, so the registry requires the reviewed tour, provider ID, season, event name, and fixture year to agree. Unknown names/seasons/surfaces remain unavailable. WTA 125 forecasts explicitly warn that historical main-tour accuracy does not establish performance at that level, and fail calibration-provenance admission for EV. Extend the reviewed registry as new tournaments become relevant. Providers may omit fixtures or change their schemas; public endpoint access is not a blanket redistribution license. This is a local personal-use workflow, not a comprehensive licensed commercial fixture feed.
 
-The latest history ends in 2025. Current forecasts therefore omit 2026 results/rankings and carry explicit data-age warnings. They demonstrate functioning inference but cannot be assumed to match the historical backtest's quality. Licensed fresh match data and additional verified surfaces are the main remaining coverage improvements. No credential is currently required for the supported workflow.
+History now includes partial 2026 results, but current forecasts still omit matches/rankings after the reviewed May ATP / April WTA cutoffs and carry explicit data-age warnings. They demonstrate functioning inference but cannot be assumed to match the historical backtest's quality. Licensed fresh match data and additional verified surfaces are the main remaining coverage improvements. No credential is currently required for the supported workflow.
 
 ## Private pre-match tracking
 
@@ -92,8 +111,8 @@ Optional market adapters preserve each bookmaker's complete two-player price pai
 
 Informational EV is `p * (decimal_odds - 1) * (1 - commission) - (1 - p)`. Positive EV alone is insufficient: admission requires known calibration provenance, historical inputs no older than 30 days, quotes observed within five minutes and not in the future, at least two independent paired bookmakers, valid consensus, at least five percentage points of probability edge, and positive EV after commission. Quarter Kelly is capped at 1% of bankroll; every failed guard forces the suggested fraction to zero. These are conservative data guards, not a measured profitable strategy. There is no bet placement.
 
-The personal schedule currently supplies at most one bookmaker and the historical inputs are stale, so its EV analysis is blocked. Missing quotes show EV unavailable. The dashboard displays reasons and the analysis is retained in each forecast snapshot. The manual legacy probability endpoint has no trusted calibration/freshness provenance and cannot mark a wager eligible. Sportsbook integration remains optional and separate from the core models.
+The personal schedule currently supplies at most one bookmaker and the historical inputs remain stale, so its EV analysis is blocked. Missing quotes show EV unavailable. The dashboard displays reasons and the analysis is retained in each forecast snapshot. The manual legacy probability endpoint has no trusted calibration/freshness provenance and cannot mark a wager eligible. Sportsbook integration remains optional and separate from the core models.
 
 Legacy stacking now also fits transforms inside each chronological outer fold, tunes/stops only on an inner chronological tail, and refits with the selected iteration count before scoring the untouched outer validation fold. Missing raw ages/heights remain missing through feature construction; full-dataset demographic averages have been removed so those future values cannot enter earlier features. All-missing training columns are retained. Adaptive splits preserve whole dates and mirrored matches. Batch evaluation, historical tracking, and live inference use the same symmetrization-then-calibration order. The personal pipeline above is the real-data model serving the dashboard; a synthetic legacy smoke test is not an accuracy measurement.
 
-On 2026-10-15 the upstream ATP and WTA `*_matches_2026.csv` URLs both returned HTTP 404. Fresh 2026 history must come from a permitted source and be reviewed/pinned before extending this snapshot. Current coverage also needs more confirmed tournament surface identities. Neither limitation is solved by a sportsbook key.
+Later 2026 results still require a permitted, verified source. The most recently reviewed mirrors stop in May/April; recent fork searches did not provide a reviewed later file. Current coverage also needs more confirmed tournament surface identities. Neither limitation is solved by a sportsbook key.

@@ -8,6 +8,9 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Reviewed partial-2026 ATP/WTA data extension with 2,464 additional licensed records, original manifest snapshots, and hash-named local acquisition reviews.
+- Annual train/selection/calibration/test protocols, five-year chronological walk-forward reports, paired date-block uncertainty intervals, and historical minimum-player-coverage metrics.
+- Explicit 2026 evaluation labels for deployed models and visible per-row WTA 125 validation warnings.
 - Reproducible raw/eligible history suitability reports for serving-count completeness, missing demographics, and player identities; existing audit files are never overwritten.
 - Reviewed 2026 WTA surface coverage for Mallorca, Rovereto, and Lisbon with explicit cross-provider IDs, name/season checks, and WTA 125 accuracy/EV safeguards.
 - Forecast snapshots retain changed surface provenance and tournament level without overwriting earlier records.
@@ -37,6 +40,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Historical restoration follows only reviewed manifest years instead of stopping unconditionally at 2025; unsupported years still fail without overwriting source files.
+- Single-class evaluation now reports undefined AUC and computes valid binary log-loss instead of inventing an AUC score.
 - Serving/returning summaries skip partial, nonfinite, negative, or contradictory point counts instead of treating missing points won as zero.
 - Legacy raw cleaning no longer fills missing ages/heights with full-dataset means; demographic imputation is deferred to training folds.
 - Legacy stacking now tunes and stops inside each outer training fold, refits transforms per fold, and shares symmetrization/calibration order across evaluation, history, and inference.

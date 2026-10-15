@@ -172,6 +172,8 @@ def feature_record(
         "features": vector,
         "player1": players[first].name,
         "player2": players[second].name,
+        "player1_matches": players[first].count,
+        "player2_matches": players[second].count,
     }
 
 

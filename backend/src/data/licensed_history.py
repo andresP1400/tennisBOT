@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import io
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -77,12 +78,44 @@ def preserve_download(url: str, destination: Path, checksum: str) -> bytes:
     return content
 
 
-def download_history(tour: str, start: int = 2005, end: int = 2025) -> None:
+def reviewed_files(manifest: SourceManifest, tour: str) -> dict[int, HistoricalFile]:
+    """Only explicitly reviewed annual files may extend the historical horizon."""
+    files: dict[int, HistoricalFile] = {}
+    for entry in manifest.files:
+        match = re.fullmatch(rf"{tour}_matches_(\d{{4}})\.csv", entry.file)
+        if match is None or int(match[1]) in files:
+            raise ValueError("Manifest contains an invalid or duplicate annual file")
+        files[int(match[1])] = entry
+    if not files:
+        raise ValueError("No reviewed historical files")
+    return files
+
+
+def retain_manifest(directory: Path, content: bytes) -> None:
+    """Extended reviews get new snapshots; the original local manifest survives."""
+    digest = hashlib.sha256(content).hexdigest()
+    for target in (
+        directory / f"source_manifest-{digest}.json",
+        directory / "source_manifest.json",
+    ):
+        if target.exists():
+            if target.name != "source_manifest.json" and target.read_bytes() != content:
+                raise ValueError("Conflicting versioned acquisition manifest")
+            continue
+        with target.open("xb") as output:
+            output.write(content)
+
+
+def download_history(tour: str, start: int = 2005, end: int | None = None) -> None:
     """Restore singles results only; odds and paid APIs are independent."""
-    if tour not in ("atp", "wta") or not 2005 <= start <= end <= 2025:
-        raise ValueError("Expected ATP/WTA and a year range within 2005–2025")
+    if tour not in ("atp", "wta"):
+        raise ValueError("Expected ATP/WTA")
     manifest_path = MANIFEST_DIR / f"{tour}-manifest.json"
     manifest = SourceManifest.model_validate_json(manifest_path.read_text())
+    files = reviewed_files(manifest, tour)
+    end = max(files) if end is None else end
+    if start > end or any(year not in files for year in range(start, end + 1)):
+        raise ValueError("Requested years must all be present in the reviewed manifest")
     directory = RAW_DIR / tour
     directory.mkdir(parents=True, exist_ok=True)
     base_url = (
@@ -91,19 +124,15 @@ def download_history(tour: str, start: int = 2005, end: int = 2025) -> None:
     preserve_download(
         f"{base_url}/README.md", directory / "SOURCE_README.md", manifest.readme_sha256
     )
-    files = {entry.file: entry for entry in manifest.files}
     for year in range(start, end + 1):
-        entry = files[f"{tour}_matches_{year}.csv"]
+        entry = files[year]
         if entry.url != f"{base_url}/{entry.file}":
             raise ValueError("Manifest URL does not match its pinned revision")
         content = preserve_download(entry.url, directory / entry.file, entry.sha256)
         if validate_match_csv(content) != entry.rows:
             raise ValueError(f"Unexpected row count in {entry.file}")
         logger.info("Verified %s: %s matches", entry.file, entry.rows)
-    local_manifest = directory / "source_manifest.json"
-    if not local_manifest.exists():
-        with local_manifest.open("x") as output:
-            output.write(manifest_path.read_text())
+    retain_manifest(directory, manifest_path.read_bytes())
 
 
 def main() -> None:
@@ -111,7 +140,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tour", choices=["atp", "wta", "both"], default="both")
     parser.add_argument("--start", type=int, default=2005)
-    parser.add_argument("--end", type=int, default=2025)
+    parser.add_argument("--end", type=int)
     args = parser.parse_args()
     for tour in (["atp", "wta"] if args.tour == "both" else [args.tour]):
         download_history(tour, args.start, args.end)

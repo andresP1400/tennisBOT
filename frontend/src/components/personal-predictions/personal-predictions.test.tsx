@@ -38,3 +38,17 @@ describe("PersonalPredictions", () => {
     expect(screen.getByText(/All recorded model versions, first forecast per match: 33.33% accuracy/)).toBeInTheDocument()
   })
 })
+
+it("labels the deployed model's actual 2026 holdout instead of reusing older model scores", () => {
+  vi.mocked(usePersonalPredictions).mockReturnValue({ card: {
+    tour: "atp", model_version: "new-unit-version", fetched_at: "2026-10-15", predictions: [], unavailable: [], message: null,
+    backtest: {
+      test_2024_2025: { ml_calibrated: { accuracy: 0.65, matches: 1000, brier: 0.21, log_loss: 0.61 } },
+      evaluation: { period: "2026 (available source matches)",
+        metrics: { accuracy: 0.61, matches: 123, brier: 0.22, log_loss: 0.62 } },
+    },
+  }, loading: false, error: null, refresh: vi.fn() })
+  render(<PersonalPredictions />)
+  expect(screen.getByText(/Historical test \(2026 \(available source matches\)\): 61.00% accuracy across 123 matches/)).toBeInTheDocument()
+  expect(screen.queryByText(/65.00% accuracy/)).not.toBeInTheDocument()
+})

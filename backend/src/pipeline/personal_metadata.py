@@ -8,14 +8,22 @@ from pathlib import Path
 
 from pipeline.personal_state import FEATURES, SURFACES
 
+MODEL_SOURCE_FILES = (
+    "data",
+    "state",
+    "model",
+    "train",
+    "metadata",
+    "protocol",
+    "scores",
+    "fitting",
+)
+
 
 def runtime_metadata() -> dict[str, object]:
     """Keep library versions, feature order, and implementation identity auditable."""
     directory = Path(__file__).parent
-    sources = [
-        directory / f"personal_{name}.py"
-        for name in ("data", "state", "model", "train", "metadata")
-    ]
+    sources = [directory / f"personal_{name}.py" for name in MODEL_SOURCE_FILES]
     return {
         "runtime_versions": {
             name: package_version(name)

@@ -10,12 +10,7 @@ from datetime import datetime, timezone
 import joblib
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_score
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 
 from config import MODELS_DIR, REPORTS_DIR
 from logging_config import get_logger
@@ -25,92 +20,15 @@ from pipeline.personal_model import (
     PersonalBundle,
     calibrate,
     elo_raw,
-    logits,
     raw_probability,
-    reversed_features,
 )
 from pipeline.personal_state import Player
 from pipeline.personal_metadata import runtime_metadata
+from pipeline.personal_protocol import annual_partitions, evaluation_metadata
+from pipeline.personal_scores import arrays, metrics, coverage_metrics
+from pipeline.personal_fitting import fit_candidates, fit_calibrator
 
 logger = get_logger(__name__)
-
-
-def metrics(
-    labels: NDArray[np.int64], probabilities: NDArray[np.float64]
-) -> dict[str, float | int]:
-    """Evaluate one row per real match; mirrored training rows are never counted."""
-    result: dict[str, float | int] = {
-        "matches": len(labels),
-        "accuracy": float(accuracy_score(labels, probabilities >= 0.5)),
-        "brier": float(brier_score_loss(labels, probabilities)),
-        "log_loss": float(log_loss(labels, probabilities)),
-        "roc_auc": (
-            float(roc_auc_score(labels, probabilities)) if len(set(labels)) > 1 else 0.5
-        ),
-    }
-    bins = np.minimum((probabilities * 10).astype(int), 9)
-    result["ece_10_bins"] = float(
-        sum(
-            abs(
-                float(np.mean(labels[bins == index]))
-                - float(np.mean(probabilities[bins == index]))
-            )
-            * float(np.mean(bins == index))
-            for index in range(10)
-            if np.any(bins == index)
-        )
-    )
-    return result
-
-
-def arrays(frame: pd.DataFrame) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
-    """Extract real canonical player orientation for evaluation."""
-    return np.asarray(frame["features"].tolist(), dtype=float), np.asarray(
-        frame["label"], dtype=np.int64
-    )
-
-
-def fit_candidates(
-    train: pd.DataFrame, validation: pd.DataFrame
-) -> tuple[Estimator, str, dict[str, object]]:
-    """Choose model family on 2022 only, without inspecting calibration/test data."""
-    features, labels = arrays(train)
-    augmented = np.concatenate([features, reversed_features(features)])
-    outcomes = np.concatenate([labels, 1 - labels])
-    candidates: dict[str, Estimator] = {
-        "logistic": make_pipeline(
-            StandardScaler(), LogisticRegression(C=0.1, max_iter=500, random_state=42)
-        ),
-        "hist_gradient_boosting": HistGradientBoostingClassifier(
-            max_iter=180,
-            max_leaf_nodes=15,
-            learning_rate=0.05,
-            l2_regularization=10.0,
-            min_samples_leaf=60,
-            early_stopping=False,
-            random_state=42,
-        ),
-    }
-    val_features, val_labels = arrays(validation)
-    scores = {}
-    for name, estimator in candidates.items():
-        estimator.fit(augmented, outcomes)
-        scores[name] = metrics(val_labels, raw_probability(estimator, val_features))
-        logger.info("2022 selection %s: %s", name, scores[name])
-    chosen = min(scores, key=lambda name: float(scores[name]["log_loss"]))
-    return candidates[chosen], chosen, dict(scores)
-
-
-def fit_calibrator(
-    probabilities: NDArray[np.float64], labels: NDArray[np.int64]
-) -> LogisticRegression:
-    """Platt scaling fitted on a later, disjoint full year; preserve symmetry."""
-    calibrator = LogisticRegression(C=1.0, fit_intercept=False, random_state=42)
-    calibrator.fit(
-        logits(np.concatenate([probabilities, 1 - probabilities])),
-        np.concatenate([labels, 1 - labels]),
-    )
-    return calibrator
 
 
 def test_report(
@@ -144,13 +62,17 @@ def test_report(
         "constant_50_percent": metrics(labels, np.full(len(labels), 0.5)),
         "by_year": by_year,
         "by_surface": by_surface,
+        "history_coverage": coverage_metrics(frame, ml),
     }
 
 
 def chronological_partitions(
     frame: pd.DataFrame,
+    test_year: int | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Labels must have become available before the next chronological stage."""
+    if test_year is not None:
+        return annual_partitions(frame, test_year)
     training = frame[
         (frame.year >= 2008)
         & (frame.year <= 2021)
@@ -168,13 +90,17 @@ def chronological_partitions(
     return training, validation, calibration, testing
 
 
-def train(tour: str, use_recent_form: bool = True) -> dict[str, object]:
+def train(
+    tour: str, use_recent_form: bool = True, test_year: int | None = None
+) -> dict[str, object]:
     """Build real-data artifacts and save every version without replacing earlier ones."""
     history, audit = load_history(tour)
     frame, players = build_dataset(
         history, feature_schema=2, use_recent_form=use_recent_form
     )
-    training, validation, calibration, testing = chronological_partitions(frame)
+    training, validation, calibration, testing = chronological_partitions(
+        frame, test_year
+    )
     estimator, family, selection = fit_candidates(training, validation)
     features, labels = arrays(calibration)
     calibrator = fit_calibrator(raw_probability(estimator, features), labels)
@@ -183,14 +109,20 @@ def train(tour: str, use_recent_form: bool = True) -> dict[str, object]:
         "tour": tour,
         "family": family,
         "audit": audit,
-        "selection_2022": selection,
-        "test_2024_2025": test_report(testing, estimator, calibrator, elo_calibrator),
+        f"selection_{test_year - 2}" if test_year else "selection_2022": selection,
         "feature_schema": 2,
         "use_recent_form": use_recent_form,
         "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
     }
+    scores = test_report(testing, estimator, calibrator, elo_calibrator)
+    report[f"test_{test_year}" if test_year else "test_2024_2025"] = scores
+    report["evaluation"] = evaluation_metadata(testing, test_year) | {
+        "metrics": scores["ml_calibrated"]
+    }
     report.update(
-        partition_metadata(history, (training, validation, calibration, testing))
+        partition_metadata(
+            history, (training, validation, calibration, testing), test_year
+        )
     )
     report.update(runtime_metadata())
     return save_artifacts(
@@ -201,15 +133,16 @@ def train(tour: str, use_recent_form: bool = True) -> dict[str, object]:
 def partition_metadata(
     history: pd.DataFrame,
     parts: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame],
+    test_year: int | None = None,
 ) -> dict[str, object]:
     """Keep the timing protocol and eligible sample counts with every artifact."""
     return {
         "splits": {
             "warmup": "2005–2007",
-            "train": "2008–2021",
-            "selection": "2022",
-            "calibration": "2023",
-            "test": "2024–2025",
+            "train": f"2008–{test_year - 3}" if test_year else "2008–2021",
+            "selection": str(test_year - 2) if test_year else "2022",
+            "calibration": str(test_year - 1) if test_year else "2023",
+            "test": str(test_year) if test_year else "2024–2025",
         },
         "split_counts": {
             name: len(part)
@@ -261,7 +194,11 @@ def save_artifacts(
     pointer = directory / f"{tour}-latest.json.tmp"
     pointer.write_text(json.dumps({"version": version}))
     pointer.replace(directory / f"{tour}-latest.json")
-    logger.info("Trained %s: %s", version, report["test_2024_2025"])
+    logger.info(
+        "Trained %s: %s",
+        version,
+        report.get("evaluation", report.get("test_2024_2025")),
+    )
     return report
 
 
@@ -270,9 +207,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tour", choices=["atp", "wta", "both"], default="both")
     parser.add_argument("--no-recent-form", action="store_true")
+    parser.add_argument(
+        "--test-year",
+        type=int,
+        help="Annual protocol: fit through year-3, select year-2, calibrate year-1, test year",
+    )
     args = parser.parse_args()
     for tour in (["atp", "wta"] if args.tour == "both" else [args.tour]):
-        train(tour, use_recent_form=not args.no_recent_form)
+        train(tour, use_recent_form=not args.no_recent_form, test_year=args.test_year)
 
 
 if __name__ == "__main__":

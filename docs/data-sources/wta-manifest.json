@@ -130,7 +130,15 @@
       "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2025.csv",
       "rows": 2795,
       "sha256": "e4eb002bc6d828b0bd21e04ed286e68722ddc8ccbbb27ea980bf62e938377f96"
+    },
+    {
+      "file": "wta_matches_2026.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2026.csv",
+      "rows": 1015,
+      "sha256": "48662a94e1ef4151867d88d3532dfabf333a5dfce6c65c155b9830dd9b3263db"
     }
   ],
-  "readme_sha256": "f34402380f3c84f7c7d9f6156225603ef917bb2b2d6d18676a234fb5323b13c9"
+  "readme_sha256": "f34402380f3c84f7c7d9f6156225603ef917bb2b2d6d18676a234fb5323b13c9",
+  "extended_at": "2026-10-15T20:47:57.528701+00:00",
+  "coverage_note": "2026 files are partial seasons; tournament dates do not establish exact completion times or complete current coverage."
 }

@@ -1,12 +1,12 @@
 {
   "audit": {
     "duplicates": 0,
-    "excluded_total": 2277,
-    "incomplete_matches": 2226,
+    "excluded_total": 2320,
+    "incomplete_matches": 2269,
     "invalid_dates": 0,
     "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
     "missing_surface": 53,
-    "raw_rows": 61446,
+    "raw_rows": 62895,
     "rows_by_year": {
       "2005": 3264,
       "2006": 3267,
@@ -28,12 +28,28 @@
       "2022": 2917,
       "2023": 2986,
       "2024": 3158,
-      "2025": 2862
+      "2025": 2862,
+      "2026": 1449
     },
-    "source_digest": "b128cf03d89e5b583301e43f261a5af73f6cfc2fb9f451ce817227e0a2397b57",
+    "source_digest": "967f98619603227f91ccd984145a9af22408f6898e63d8b67186cb5ea0f731ae",
     "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
   },
-  "data_through": "2025-12-17",
+  "data_through": "2026-05-25",
+  "evaluation": {
+    "coverage_note": "Source coverage is partial and does not establish every match in the period",
+    "metrics": {
+      "accuracy": 0.6614509246088194,
+      "brier": 0.2107458256023366,
+      "ece_10_bins": 0.029602441695869,
+      "log_loss": 0.6087441656423914,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
+    },
+    "period": "2026 (available source matches)",
+    "protocol": "Frozen estimators; chronological stages; 21-day result availability embargo",
+    "test_end": "2026-05-25",
+    "test_start": "2026-01-04"
+  },
   "family": "hist_gradient_boosting",
   "feature_names": [
     "elo",
@@ -56,9 +72,9 @@
     "opponent_adjusted_return"
   ],
   "feature_schema": 2,
-  "implementation_sha256": "d458a3d7876925a8edb6d7c56ff707fae98d85c460aaf9de587c1a7b19bd873d",
+  "implementation_sha256": "7cca70f8c513b4a36a1eef7ea8400e5efc13d8bd751b64ea1be6976d26f99c39",
   "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
-  "model_version": "atp-20261015T191349767101Z-88d62a199716",
+  "model_version": "atp-20261015T205532980659Z-04c7c14f1679",
   "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
   "result_delay_days": 21,
   "runtime_versions": {
@@ -67,121 +83,127 @@
     "pandas": "3.0.6",
     "scikit-learn": "1.9.1"
   },
-  "selection_2022": {
+  "selection_2024": {
     "hist_gradient_boosting": {
-      "accuracy": 0.6704384724186704,
-      "brier": 0.20824455065167258,
-      "ece_10_bins": 0.011529415205541578,
-      "log_loss": 0.6024672503189701,
-      "matches": 2828,
-      "roc_auc": 0.7343679026871489
+      "accuracy": 0.658668469077391,
+      "brier": 0.21080021104207894,
+      "ece_10_bins": 0.01970620528483891,
+      "log_loss": 0.606798369088654,
+      "matches": 2959,
+      "roc_auc": 0.7250753113187636
     },
     "logistic": {
-      "accuracy": 0.6714992927864215,
-      "brier": 0.20842508610579485,
-      "ece_10_bins": 0.012851996012339514,
-      "log_loss": 0.604670916117435,
-      "matches": 2828,
-      "roc_auc": 0.7348351372388939
+      "accuracy": 0.654275092936803,
+      "brier": 0.21178691020130794,
+      "ece_10_bins": 0.023725920175326848,
+      "log_loss": 0.6097726406319599,
+      "matches": 2959,
+      "roc_auc": 0.7231586074190215
     }
   },
   "split_counts": {
-    "calibration": 2837,
-    "selection": 2828,
-    "test": 5786,
-    "train": 38228
+    "calibration": 2721,
+    "selection": 2959,
+    "test": 1406,
+    "train": 43893
   },
   "splits": {
-    "calibration": "2023",
-    "selection": "2022",
-    "test": "2024\u20132025",
-    "train": "2008\u20132021",
+    "calibration": "2025",
+    "selection": "2024",
+    "test": "2026",
+    "train": "2008\u20132023",
     "warmup": "2005\u20132007"
   },
-  "test_2024_2025": {
+  "test_2026": {
     "by_surface": {
       "Clay": {
-        "accuracy": 0.6432681242807825,
-        "brier": 0.21681580394718034,
-        "ece_10_bins": 0.030320875203356922,
-        "log_loss": 0.6212619378609274,
-        "matches": 1738,
-        "roc_auc": 0.706028814959278
+        "accuracy": 0.6600609756097561,
+        "brier": 0.2152769386295343,
+        "ece_10_bins": 0.04662558668219443,
+        "log_loss": 0.6189348629052144,
+        "matches": 656,
+        "roc_auc": 0.7180637092483877
       },
       "Grass": {
-        "accuracy": 0.6943521594684385,
-        "brier": 0.20476249944036726,
-        "ece_10_bins": 0.04711274894814435,
-        "log_loss": 0.596157679254126,
-        "matches": 602,
-        "roc_auc": 0.7494950386861072
+        "accuracy": 0.0,
+        "brier": 0.31374581557435083,
+        "ece_10_bins": 0.5599201346831529,
+        "log_loss": 0.8214012100374443,
+        "matches": 4,
+        "roc_auc": 0.0
       },
       "Hard": {
-        "accuracy": 0.6500290191526408,
-        "brier": 0.21330279051431597,
-        "ece_10_bins": 0.020911840506012476,
-        "log_loss": 0.6135936513591045,
-        "matches": 3446,
-        "roc_auc": 0.7182825439043254
+        "accuracy": 0.6662198391420912,
+        "brier": 0.2062090828332618,
+        "ece_10_bins": 0.04299051804815225,
+        "log_loss": 0.5986426568193456,
+        "matches": 746,
+        "roc_auc": 0.7408681214421253
       }
     },
     "by_year": {
-      "2024": {
-        "accuracy": 0.6544262295081967,
-        "brier": 0.2120576155314839,
-        "ece_10_bins": 0.01838268000404392,
-        "log_loss": 0.6104481083338598,
-        "matches": 3050,
-        "roc_auc": 0.721000156517671
-      },
-      "2025": {
-        "accuracy": 0.6505847953216374,
-        "brier": 0.215043340886187,
-        "ece_10_bins": 0.021551990912087347,
-        "log_loss": 0.6181349280257593,
-        "matches": 2736,
-        "roc_auc": 0.7145152459433622
+      "2026": {
+        "accuracy": 0.6614509246088194,
+        "brier": 0.2107458256023366,
+        "ece_10_bins": 0.029602441695869,
+        "log_loss": 0.6087441656423914,
+        "matches": 1406,
+        "roc_auc": 0.7292922113686803
       }
     },
     "constant_50_percent": {
-      "accuracy": 0.49464223988938816,
+      "accuracy": 0.4864864864864865,
       "brier": 0.25,
-      "ece_10_bins": 0.005357760110611842,
+      "ece_10_bins": 0.013513513513513487,
       "log_loss": 0.6931471805599453,
-      "matches": 5786,
+      "matches": 1406,
       "roc_auc": 0.5
     },
     "elo_calibrated": {
-      "accuracy": 0.6348081576218458,
-      "brier": 0.22019220293052677,
-      "ece_10_bins": 0.027019404884067694,
-      "log_loss": 0.6290105790136655,
-      "matches": 5786,
-      "roc_auc": 0.6957579433704153
+      "accuracy": 0.6536273115220483,
+      "brier": 0.21857448165299884,
+      "ece_10_bins": 0.06047372564391841,
+      "log_loss": 0.6262405434609599,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
     },
     "elo_uncalibrated": {
-      "accuracy": 0.6348081576218458,
-      "brier": 0.2205559069920883,
-      "ece_10_bins": 0.029685452513058035,
-      "log_loss": 0.6299374366886035,
-      "matches": 5786,
-      "roc_auc": 0.6957579433704153
+      "accuracy": 0.6536273115220483,
+      "brier": 0.2185374301870464,
+      "ece_10_bins": 0.0514282111385254,
+      "log_loss": 0.626580630145768,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
+    },
+    "history_coverage": {
+      "eligible_matches": 1177,
+      "metrics": {
+        "accuracy": 0.659303313508921,
+        "brier": 0.21184931540745855,
+        "ece_10_bins": 0.04544992821696976,
+        "log_loss": 0.611166290456317,
+        "matches": 1177,
+        "roc_auc": 0.7263526081447123
+      },
+      "minimum_prior_matches_each": 10,
+      "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+      "unavailable_matches": 229
     },
     "ml_calibrated": {
-      "accuracy": 0.6526097476667819,
-      "brier": 0.21346946215617585,
-      "ece_10_bins": 0.01603399620423981,
-      "log_loss": 0.6140829404591687,
-      "matches": 5786,
-      "roc_auc": 0.7178704803065978
+      "accuracy": 0.6614509246088194,
+      "brier": 0.2107458256023366,
+      "ece_10_bins": 0.029602441695869,
+      "log_loss": 0.6087441656423914,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
     },
     "ml_uncalibrated": {
-      "accuracy": 0.6526097476667819,
-      "brier": 0.21415518148353968,
-      "ece_10_bins": 0.02864562829721875,
-      "log_loss": 0.6156656759398031,
-      "matches": 5786,
-      "roc_auc": 0.7178704803065978
+      "accuracy": 0.6607396870554765,
+      "brier": 0.21067801325466398,
+      "ece_10_bins": 0.032712056176825766,
+      "log_loss": 0.6085217717314853,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
     }
   },
   "tour": "atp",

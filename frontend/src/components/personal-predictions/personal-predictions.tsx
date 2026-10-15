@@ -9,7 +9,8 @@ import { PersonalRows } from "./personal-rows"
 export function PersonalPredictions() {
   const [tour, setTour] = useState<"atp" | "wta">("atp")
   const { card, error, loading, refresh } = usePersonalPredictions(tour)
-  const measured = card?.backtest.test_2024_2025?.ml_calibrated
+  const measured = card?.backtest.evaluation?.metrics ?? card?.backtest.test_2024_2025?.ml_calibrated
+  const testPeriod = card?.backtest.evaluation?.period ?? "2024–2025"
   const warning = card?.predictions.find(prediction => prediction.warning)?.warning
   const live = card?.live_performance
   const overall = card?.overall_live_performance
@@ -32,7 +33,7 @@ export function PersonalPredictions() {
         {error && <p role="alert">{error}</p>}
         {warning && <p className="text-sm text-amber-500">{warning}</p>}
         {measured && <p className="text-sm text-muted-foreground">
-          Historical test (2024–2025): {(measured.accuracy * 100).toFixed(2)}% accuracy across {measured.matches.toLocaleString()} matches.
+          Historical test ({testPeriod}): {(measured.accuracy * 100).toFixed(2)}% accuracy across {measured.matches.toLocaleString()} matches.
           {" "}Brier {measured.brier.toFixed(4)}. This is held-out historical performance, not live accuracy.
         </p>}
         {live && <p className="text-sm text-muted-foreground">
