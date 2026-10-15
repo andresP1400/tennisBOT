@@ -33,14 +33,14 @@ Chronological protocol:
 - 2023: fit symmetric Platt calibration; never fit calibration on the test years.
 - 2024–2025: held-out evaluation, one row per match. Estimators and calibration stay frozen, while player summaries update forward only as historical results become available.
 
-Because source dates identify tournament starts rather than exact match times, every date batch freezes all features before any result in that batch is applied. This deliberately avoids optimistic within-week ordering assumptions. Player-order augmentation is used only for training; mirror rows are not counted as independent test matches. Prediction probabilities are symmetric when players are reversed.
+Source dates identify tournament starts rather than exact match times. Results are therefore embargoed for 21 days before they may influence another fixture's Elo, form, ranking summaries, or serving statistics. Labels whose embargo extends past a partition boundary are excluded from that earlier fitting/selection/calibration stage. This addresses overlapping-tournament leakage missed by the earlier date-batch implementation. The delay is a conservative availability assumption, not a verified match completion timestamp; exact completion times would allow more precise evaluation. Player-order augmentation is used only for training; mirror rows are not counted as independent test matches. Prediction probabilities are symmetric when players are reversed.
 
 | Tour | Selected ML family | Test matches | Calibrated ML accuracy | Brier | Log-loss | ROC-AUC |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| ATP | Histogram gradient boosting | 5,786 | 65.45% | 0.2129 | 0.6126 | 0.7195 |
-| WTA | Logistic regression | 5,169 | 65.74% | 0.2150 | 0.6191 | 0.7160 |
+| ATP | Histogram gradient boosting | 5,786 | 65.23% | 0.2137 | 0.6146 | 0.7172 |
+| WTA | Logistic regression | 5,169 | 65.70% | 0.2156 | 0.6203 | 0.7136 |
 
-The committed [validation reports](model-validation/) include surface-Elo baselines, uncalibrated results, calibration error, yearly and surface breakdowns, sample counts, and audit metadata. Calibration is fitted honestly; it is not guaranteed to improve future scores. In this evaluation WTA calibration slightly worsened held-out Brier/log-loss. No betting profitability or live accuracy is claimed. No test-driven model optimization was performed after observing these results.
+The committed [validation reports](model-validation/) include surface-Elo baselines (ATP 63.48%, WTA 63.38%), uncalibrated results, calibration error, yearly and surface breakdowns, sample counts, and audit metadata. Earlier 65.45%/65.74% reports are archived under `previous-date-batch/` and are superseded because their timing assumption was weaker. The test years had already been inspected before this correctness rerun; these are recomputed retrospective held-out results, not a new blind experiment. No test labels were fitted or used for model-family selection. Calibration is fitted honestly; it is not guaranteed to improve future scores. WTA calibration slightly worsened held-out Brier/log-loss. No betting profitability is claimed.
 
 ## Run and inspect forecasts
 
@@ -67,6 +67,10 @@ Every forecast is committed before being returned to the dashboard. `reports/per
 
 Snapshots are append-only: database triggers reject updates and deletions. Changed model versions, prices, probabilities, or scheduled starts create new records. Identical snapshots reuse the first record and timestamp. Writes are transactionally committed with SQLite FULL synchronous mode; the file is readable only by its owner. Old snapshots remain available after restart or retraining. The API never logs forecasts after a match's scheduled start.
 
+The background worker also revisits unresolved fixture start dates and appends provider-confirmed outcomes to a separate immutable table. Exact fixture IDs, both player identities, observation times, and a bounded reschedule window must agree. Only confirmed completed singles with a named winner are scored; retirement/default/walkover outcomes are void. Provider failures leave predictions pending. Polling limits rotate through unresolved dates so old missing events cannot permanently starve later dates.
+
+Live accuracy is displayed separately from the historical backtest. Current-model statistics use the first pre-match snapshot per fixture/model, so changing odds does not inflate the sample. The dashboard also displays the first-ever recorded forecast per unique fixture across all model versions, preventing retraining from hiding poor earlier results. A new model with no resolved forecasts reports no live accuracy. Early live samples can be much worse than the retrospective backtest and should not be interpreted as stable performance. Outcomes come from the cited provider and are not independently notarized.
+
 This is private local persistence, not an external notarization or a guarantee against deletion of the machine. Back up the database using SQLite's backup API and retain the versioned model directory if moving environments. Do not commit the database, datasets, or model artifacts to a public repository. Live processes and periodic polling must restart after restoring an environment snapshot.
 
 Endpoints:
@@ -74,5 +78,6 @@ Endpoints:
 - `GET /api/personal/predictions?tour=atp` (or `wta`): recorded upcoming forecasts and honest availability reasons.
 - `GET /api/personal/backtest?tour=atp`: measured results for the deployed model.
 - `GET /api/personal/history?limit=100`: exact historical prediction snapshots.
+- `GET /api/personal/live-performance?tour=atp`: current-version observed results; add `scope=all` for per-model and unique-fixture all-version results.
 
 Both services bind to loopback for personal use. No web preview, public deployment, credentials, or outbound messages are created by this setup.

@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI
 
 from api.personal_engine import get_card
+from pipeline.personal_settlement import settle_pending
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +23,10 @@ async def refresh_predictions() -> None:
                 await asyncio.to_thread(get_card, tour, True)
             except Exception:
                 logger.exception("Personal prediction refresh failed for %s", tour)
+            try:
+                await asyncio.to_thread(settle_pending, tour)
+            except Exception:
+                logger.exception("Personal result settlement failed for %s", tour)
         await asyncio.sleep(300)
 
 

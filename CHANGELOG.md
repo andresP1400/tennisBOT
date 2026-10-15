@@ -8,6 +8,7 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Append-only live outcome settlement, void handling for retirements/defaults, and separate current-model/all-version live performance on the dashboard.
 - Personal ATP/WTA prediction engine with global/surface Elo, lightweight model selection on 2022, probability calibration on 2023, and untouched 2024–2025 evaluation.
 - Genuine upcoming singles forecasts on the dashboard, unavailable-match explanations, measured accuracy, and stale-history warnings.
 - Automatic five-minute private pre-match tracking with immutable SQLite events, model versions, probabilities, and observed odds when available.
@@ -30,6 +31,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Historical features now wait 21 days after tournament start before using outcomes; unavailable year-end labels are excluded from fitting, selection, and calibration.
+- Future forecast timestamps are rejected; repeated odds snapshots cannot inflate live accuracy or erase earlier model performance.
 - Production dashboard builds use system fonts and no longer download Inter from Google Fonts.
 - Strict Python typing accepts the Betfair JSON request body and normalizes LightGBM probability output before slicing.
 - `run_training_pipeline` (`backend/src/api/routes/training.py`): sostituito

@@ -35,6 +35,9 @@ class Prediction(BaseModel):
         """Stored snapshots must represent normalized pre-match probabilities."""
         if abs(self.prob1 + self.prob2 - 1) > 1e-8:
             raise ValueError("Win probabilities must sum to one")
+        expected = self.fixture.player1 if self.prob1 >= 0.5 else self.fixture.player2
+        if self.winner != expected:
+            raise ValueError("Predicted winner must agree with the winning probability")
         if (
             self.predicted_at.tzinfo is None
             or self.predicted_at >= self.fixture.commence_time
@@ -66,6 +69,8 @@ def record_prediction(prediction: Prediction, path: Path | None = None) -> Predi
     now = datetime.now(timezone.utc)
     if prediction.fixture.commence_time <= now:
         raise ValueError("Refusing to record a post-start prediction")
+    if prediction.predicted_at > now:
+        raise ValueError("Refusing to record a future prediction timestamp")
     payload = prediction.model_dump(mode="json", exclude={"tracking_id"})
     identity = {
         "fixture": prediction.fixture.id,

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import math
+import threading
+import time
 
 import requests
 from pydantic import BaseModel, Field
@@ -16,6 +18,7 @@ class Athlete(BaseModel):
 class Competitor(BaseModel):
     athlete: Athlete = Field(default_factory=Athlete)
     homeAway: str = ""
+    winner: bool = False
 
 
 class MoneyLine(BaseModel):
@@ -35,6 +38,7 @@ class MarketOdds(BaseModel):
 class StatusType(BaseModel):
     state: str = ""
     name: str = ""
+    completed: bool = False
 
 
 class Status(BaseModel):
@@ -87,6 +91,29 @@ class Fixture(BaseModel):
 
 # Only confirmed tournament identities are used; unknown surfaces remain unavailable.
 TOURNAMENT_SURFACES = {("atp", "315"): "Hard", ("wta", "381"): "Hard"}
+
+_scoreboards: dict[tuple[str, str], tuple[float, Scoreboard, datetime]] = {}
+_scoreboard_lock = threading.Lock()
+
+
+def fetch_scoreboard(tour: str, day: str) -> tuple[Scoreboard, datetime]:
+    """Share short-lived schedule/result responses without falsifying fetch times."""
+    if tour not in ("atp", "wta"):
+        raise ValueError("Expected ATP or WTA")
+    with _scoreboard_lock:
+        cached = _scoreboards.get((tour, day))
+        if cached and time.monotonic() - cached[0] < 240:
+            return cached[1], cached[2]
+        url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard"
+        response = requests.get(url, params={"dates": day}, timeout=15)
+        response.raise_for_status()
+        board = Scoreboard.model_validate_json(response.content)
+        observed = datetime.now(timezone.utc)
+        _scoreboards[(tour, day)] = (time.monotonic(), board, observed)
+        if len(_scoreboards) > 64:
+            oldest = min(_scoreboards, key=lambda key: _scoreboards[key][0])
+            del _scoreboards[oldest]
+        return board, observed
 
 
 def decimal_odds(american: float | None) -> float | None:
@@ -154,10 +181,11 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
 
 def fetch_fixtures(tour: str, now: datetime | None = None) -> list[Fixture]:
     """Fetch small public schedule responses; do not scrape or bypass restrictions."""
-    if tour not in ("atp", "wta"):
-        raise ValueError("Expected ATP or WTA")
     now = now or datetime.now(timezone.utc)
-    url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard"
-    response = requests.get(url, params={"dates": now.strftime("%Y%m%d")}, timeout=15)
-    response.raise_for_status()
-    return parse_fixtures(Scoreboard.model_validate_json(response.content), tour, now)
+    board, observed = fetch_scoreboard(tour, now.strftime("%Y%m%d"))
+    fixtures = parse_fixtures(board, tour, now)
+    for fixture in fixtures:
+        fixture.fetched_at = observed
+        if fixture.odds_observed_at:
+            fixture.odds_observed_at = observed
+    return fixtures

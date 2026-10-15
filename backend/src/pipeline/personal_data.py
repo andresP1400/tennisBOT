@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import deque
 
 import numpy as np
 import pandas as pd
@@ -95,36 +96,48 @@ def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
 
 
 def build_dataset(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[int, Player]]:
-    """Freeze all matches on each tournament date before applying any results."""
+    """Embargo results 21 days because tournament starts are not completion dates."""
     players: dict[int, Player] = {}
     records: list[dict[str, object]] = []
+    pending: deque[tuple[pd.Timestamp, pd.DataFrame]] = deque()
     for day, batch in frame.groupby("date", sort=True):
+        while pending and pending[0][0] <= day:
+            _, completed = pending.popleft()
+            for _, row in completed.iterrows():
+                observe_match(row, players)
         for _, row in batch.iterrows():
-            winner, loser = int(row["winner_id"]), int(row["loser_id"])
-            for player_id, prefix in [(winner, "winner"), (loser, "loser")]:
-                if player_id not in players:
-                    players[player_id] = Player(name=str(row[f"{prefix}_name"]))
-            first, second = sorted([winner, loser])
-            vector = match_vector(
-                players[first],
-                players[second],
-                str(row["surface"]),
-                int(row["best_of"]),
-            )
-            records.append(
-                {
-                    "date": day,
-                    "year": day.year,
-                    "surface": row["surface"],
-                    "label": int(first == winner),
-                    "features": vector,
-                    "player1": players[first].name,
-                    "player2": players[second].name,
-                }
-            )
+            records.append(feature_record(row, players, day))
+        pending.append((day + pd.Timedelta(days=21), batch))
+    for available_at, batch in pending:
+        if available_at > pd.Timestamp.today():
+            continue
         for _, row in batch.iterrows():
             observe_match(row, players)
     return pd.DataFrame(records), players
+
+
+def feature_record(
+    row: pd.Series, players: dict[int, Player], day: pd.Timestamp
+) -> dict[str, object]:
+    """Read known pre-event state without applying the current match's outcome."""
+    winner, loser = int(row["winner_id"]), int(row["loser_id"])
+    for player_id, prefix in [(winner, "winner"), (loser, "loser")]:
+        if player_id not in players:
+            players[player_id] = Player(name=str(row[f"{prefix}_name"]))
+    first, second = sorted([winner, loser])
+    vector = match_vector(
+        players[first], players[second], str(row["surface"]), int(row["best_of"])
+    )
+    return {
+        "date": day,
+        "available_at": day + pd.Timedelta(days=21),
+        "year": day.year,
+        "surface": row["surface"],
+        "label": int(first == winner),
+        "features": vector,
+        "player1": players[first].name,
+        "player2": players[second].name,
+    }
 
 
 def player_index(players: dict[int, Player]) -> dict[str, int]:

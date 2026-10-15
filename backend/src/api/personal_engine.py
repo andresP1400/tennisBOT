@@ -18,6 +18,7 @@ from features.personal_schedule import Fixture, fetch_fixtures
 from pipeline.personal_model import PersonalBundle, calibrate, elo_raw, raw_probability
 from pipeline.personal_state import match_vector, normalize_name
 from pipeline.personal_tracking import Prediction, record_prediction
+from pipeline.personal_settlement import live_summary
 
 
 class Unavailable(BaseModel):
@@ -33,6 +34,8 @@ class PredictionCard(BaseModel):
     unavailable: list[Unavailable] = Field(default_factory=list)
     message: str | None = None
     backtest: dict[str, object] = Field(default_factory=dict)
+    live_performance: dict[str, object] = Field(default_factory=dict)
+    overall_live_performance: dict[str, object] = Field(default_factory=dict)
 
 
 _cache: dict[str, tuple[float, PredictionCard]] = {}
@@ -119,9 +122,19 @@ def generate_card(tour: str) -> PredictionCard:
             card.predictions.append(predict_fixture(bundle, fixture))
         except ValueError as error:
             card.unavailable.append(Unavailable(fixture=fixture, reason=str(error)))
+    attach_live_performance(card)
     if not card.predictions:
         card.message = "No covered upcoming matches with confirmed surfaces are currently available."
     return card
+
+
+def attach_live_performance(card: PredictionCard) -> None:
+    """Current-version results never erase the recorded performance of earlier versions."""
+    card.live_performance = live_summary(card.tour, model_version=card.model_version)
+    overall = live_summary(card.tour)["first_forecast_per_match"]
+    if not isinstance(overall, dict):
+        raise RuntimeError("Invalid live performance summary")
+    card.overall_live_performance = {str(key): value for key, value in overall.items()}
 
 
 def get_card(tour: str, refresh: bool = False) -> PredictionCard:
@@ -134,6 +147,7 @@ def get_card(tour: str, refresh: bool = False) -> PredictionCard:
             card.predictions = [
                 item for item in card.predictions if item.fixture.commence_time > now
             ]
+            attach_live_performance(card)
             return card
         card = generate_card(tour)
         _cache[tour] = (time.monotonic(), card)

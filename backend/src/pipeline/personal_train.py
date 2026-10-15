@@ -146,16 +146,32 @@ def test_report(
     }
 
 
+def chronological_partitions(
+    frame: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Labels must have become available before the next chronological stage."""
+    training = frame[
+        (frame.year >= 2008)
+        & (frame.year <= 2021)
+        & (frame.available_at < pd.Timestamp("2022-01-01"))
+    ]
+    validation = frame[
+        (frame.year == 2022) & (frame.available_at < pd.Timestamp("2023-01-01"))
+    ]
+    calibration = frame[
+        (frame.year == 2023) & (frame.available_at < pd.Timestamp("2024-01-01"))
+    ]
+    testing = frame[(frame.year >= 2024) & (frame.year <= 2025)]
+    if any(part.empty for part in [training, validation, calibration, testing]):
+        raise ValueError("All chronological partitions must contain real matches")
+    return training, validation, calibration, testing
+
+
 def train(tour: str) -> dict[str, object]:
     """Build real-data artifacts and save every version without replacing earlier ones."""
     history, audit = load_history(tour)
     frame, players = build_dataset(history)
-    training = frame[(frame.year >= 2008) & (frame.year <= 2021)]
-    validation = frame[frame.year == 2022]
-    calibration = frame[frame.year == 2023]
-    testing = frame[frame.year >= 2024]
-    if any(part.empty for part in [training, validation, calibration, testing]):
-        raise ValueError("All chronological partitions must contain real matches")
+    training, validation, calibration, testing = chronological_partitions(frame)
     estimator, family, selection = fit_candidates(training, validation)
     features, labels = arrays(calibration)
     calibrator = fit_calibrator(raw_probability(estimator, features), labels)
@@ -166,6 +182,21 @@ def train(tour: str) -> dict[str, object]:
         "audit": audit,
         "selection_2022": selection,
         "test_2024_2025": test_report(testing, estimator, calibrator, elo_calibrator),
+    }
+    report.update(
+        partition_metadata(history, (training, validation, calibration, testing))
+    )
+    return save_artifacts(
+        tour, family, estimator, calibrator, elo_calibrator, players, report
+    )
+
+
+def partition_metadata(
+    history: pd.DataFrame,
+    parts: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame],
+) -> dict[str, object]:
+    """Keep the timing protocol and eligible sample counts with every artifact."""
+    return {
         "splits": {
             "warmup": "2005–2007",
             "train": "2008–2021",
@@ -174,17 +205,13 @@ def train(tour: str) -> dict[str, object]:
             "test": "2024–2025",
         },
         "split_counts": {
-            "train": len(training),
-            "selection": len(validation),
-            "calibration": len(calibration),
-            "test": len(testing),
+            name: len(part)
+            for name, part in zip(("train", "selection", "calibration", "test"), parts)
         },
         "data_through": str(history.date.max().date()),
-        "method": "Tournament-date batches; frozen model weights; ratings/history update after each date batch only",
+        "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
+        "result_delay_days": 21,
     }
-    return save_artifacts(
-        tour, family, estimator, calibrator, elo_calibrator, players, report
-    )
 
 
 def save_artifacts(

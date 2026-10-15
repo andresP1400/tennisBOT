@@ -87,7 +87,11 @@ def test_same_date_results_cannot_leak_into_features():
     )
     dataset, _ = build_dataset(frame)
     assert dataset.iloc[0].features[0] == dataset.iloc[1].features[0] == 0
-    assert dataset.iloc[2].features[0] > 0
+    assert dataset.iloc[2].features[0] == 0
+    later = frame.iloc[[-1]].copy()
+    later["date"] = pd.Timestamp("2020-01-29")
+    mature, _ = build_dataset(pd.concat([frame, later], ignore_index=True))
+    assert mature.iloc[-1].features[0] > 0
     changed = frame.copy()
     changed.loc[2, ["winner_id", "loser_id"]] = [2, 1]
     alternate, _ = build_dataset(changed)

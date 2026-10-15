@@ -38,4 +38,14 @@ export interface PersonalCard {
   unavailable: { fixture: PersonalFixture; reason: string }[]
   message: string | null
   backtest: { test_2024_2025?: { ml_calibrated: MeasuredMetrics } }
+  live_performance?: {
+    completed: number
+    pending: number
+    void: number
+    accuracy: number | null
+  }
+  overall_live_performance?: {
+    completed: number
+    accuracy: number | null
+  }
 }

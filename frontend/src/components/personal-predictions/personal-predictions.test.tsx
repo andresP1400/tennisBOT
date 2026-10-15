@@ -20,6 +20,8 @@ describe("PersonalPredictions", () => {
     vi.mocked(usePersonalPredictions).mockReturnValue({ card: {
       tour: "atp", model_version: "test-version", fetched_at: "2026-10-14", unavailable: [], message: null,
       backtest: { test_2024_2025: { ml_calibrated: { accuracy: 0.65, matches: 1000, brier: 0.21, log_loss: 0.61 } } },
+      live_performance: { completed: 0, pending: 2, void: 0, accuracy: null },
+      overall_live_performance: { completed: 3, accuracy: 1 / 3 },
       predictions: [{ fixture: { id: "unit-test", tour: "atp", player1: "One", player2: "Two",
         tournament: "Test", commence_time: "2026-10-15T15:00:00Z", surface: "Hard", odds1: null, odds2: null },
         model_version: "test-version", model_family: "test", prob1: 0.7, prob2: 0.3, winner: "One",
@@ -32,5 +34,7 @@ describe("PersonalPredictions", () => {
     expect(screen.getByText(/65\.00% accuracy/)).toBeInTheDocument()
     expect(screen.getByText("Not available")).toBeInTheDocument()
     expect(screen.getByText(/Record: record-123/)).toBeInTheDocument()
+    expect(screen.getByText(/Live results for this model: accuracy not yet measured/)).toBeInTheDocument()
+    expect(screen.getByText(/All recorded model versions, first forecast per match: 33.33% accuracy/)).toBeInTheDocument()
   })
 })
