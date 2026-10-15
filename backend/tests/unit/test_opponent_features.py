@@ -112,3 +112,27 @@ def test_versioned_artifacts_reload_identical_probabilities_without_erasing_prev
         calibrate(restored.calibrator, raw_probability(restored.estimator, features)),
         calibrate(calibrator, probability),
     )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("w_1stWon", np.nan),
+        ("w_2ndWon", np.nan),
+        ("w_svpt", np.nan),
+        ("w_1stWon", -1),
+        ("w_2ndWon", 200),
+    ],
+)
+def test_incomplete_or_impossible_point_statistics_never_become_observed_zero_wins(
+    field, value
+):
+    players = {1: Player("One"), 2: Player("Two")}
+    row = match().iloc[0].copy()
+    row[field] = value
+    observe_match(row, players)
+    assert not players[1].serve
+    assert not players[1].adjusted_serve
+    assert not players[2].returns
+    assert not players[2].adjusted_return
+    assert players[1].count == players[2].count == 1

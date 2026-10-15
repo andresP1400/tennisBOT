@@ -83,6 +83,8 @@ def record_prediction(prediction: Prediction, path: Path | None = None) -> Predi
         "odds2": prediction.fixture.odds2,
         "odds_source": prediction.fixture.odds_source,
         "surface": prediction.fixture.surface,
+        "surface_source": prediction.fixture.surface_source,
+        "tournament_level": prediction.fixture.tournament_level,
     }
     identifier = hashlib.sha256(
         json.dumps(identity, sort_keys=True).encode()

@@ -56,9 +56,9 @@
     "opponent_adjusted_return"
   ],
   "feature_schema": 2,
-  "implementation_sha256": "93392841aca3a4f6e8c652a2f0deae4ecad0bc49d42ed4861afb3d8116f41d39",
+  "implementation_sha256": "d458a3d7876925a8edb6d7c56ff707fae98d85c460aaf9de587c1a7b19bd873d",
   "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
-  "model_version": "wta-20261015T185715560801Z-cd30304c4dd6",
+  "model_version": "wta-20261015T191417438254Z-b4e54a4acd5f",
   "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
   "result_delay_days": 21,
   "runtime_versions": {

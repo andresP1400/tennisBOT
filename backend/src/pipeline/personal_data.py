@@ -70,6 +70,21 @@ def finite_number(row: pd.Series, key: str, default: float) -> float:
     return float(value) if pd.notna(value) and np.isfinite(float(value)) else default
 
 
+def serve_counts(row: pd.Series, side: str) -> tuple[float, float]:
+    """Partial point statistics must never be treated as zero points won."""
+    first = finite_number(row, f"{side}_1stWon", float("nan"))
+    second = finite_number(row, f"{side}_2ndWon", float("nan"))
+    total = finite_number(row, f"{side}_svpt", float("nan"))
+    if not (
+        0 <= first <= total
+        and 0 <= second <= total
+        and first + second <= total
+        and total > 0
+    ):
+        return float("nan"), 0.0
+    return first + second, total
+
+
 def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
     """Update ratings and summaries once this date's features have been collected."""
     winner, loser = players[int(row["winner_id"])], players[int(row["loser_id"])]
@@ -83,14 +98,8 @@ def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
         player.height = finite_number(row, f"{prefix}_ht", player.height)
         player.last_date = row["date"].date()
         side = "w" if prefix == "winner" else "l"
-        won = finite_number(row, f"{side}_1stWon", 0) + finite_number(
-            row, f"{side}_2ndWon", 0
-        )
-        total = finite_number(row, f"{side}_svpt", 0)
-        other_won = finite_number(row, f"{opposite}_1stWon", 0) + finite_number(
-            row, f"{opposite}_2ndWon", 0
-        )
-        other_total = finite_number(row, f"{opposite}_svpt", 0)
+        won, total = serve_counts(row, side)
+        other_won, other_total = serve_counts(row, opposite)
         if 0 <= won <= total and total > 0:
             player.serve.append((won, total))
             baseline = finite_number(row, f"{prefix}_expected_serve", 0.6)

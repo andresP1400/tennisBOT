@@ -211,3 +211,22 @@ def test_model_loader_rejects_path_traversal():
 )
 def test_real_market_price_conversion(american, expected):
     assert decimal_odds(american) == expected
+
+
+def test_changed_surface_provenance_is_saved_without_overwriting_prior_snapshot(
+    tmp_path,
+):
+    path = tmp_path / "events.sqlite3"
+    original = prediction()
+    first = record_prediction(original, path)
+    reviewed = original.model_copy(deep=True)
+    reviewed.fixture.surface_source = "https://example.com/reviewed-surface"
+    reviewed.fixture.tournament_level = "WTA 125"
+    second = record_prediction(reviewed, path)
+    assert first.tracking_id != second.tracking_id
+    records = read_predictions(path=path)
+    assert len(records) == 2
+    assert {item.fixture.surface_source for item in records} == {
+        None,
+        "https://example.com/reviewed-surface",
+    }

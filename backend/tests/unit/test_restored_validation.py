@@ -163,3 +163,27 @@ def test_live_stacking_uses_identical_calibration_order_as_batch(monkeypatch):
     expected = symmetric_calibration(np.asarray([(0.9 + 1 - 0.4) / 2]), calibrator)[0]
     assert result["prob1"] == pytest.approx(expected)
     assert result["prob1"] + result["prob2"] == 1
+
+
+def test_raw_cleaning_never_imputes_demographics_from_future_matches():
+    from features.cleaning_transforms import impute_missing
+
+    earlier = pd.DataFrame(
+        {
+            "winner_rank": [np.nan, 10.0],
+            "loser_rank": [20.0, 30.0],
+            "winner_ht": [np.nan, 180.0],
+            "loser_ht": [170.0, np.nan],
+            "winner_age": [np.nan, 25.0],
+            "loser_age": [22.0, np.nan],
+        }
+    )
+    future = earlier.iloc[[1]].copy()
+    future[["winner_ht", "loser_ht", "winner_age", "loser_age"]] = 9999.0
+    before = impute_missing(earlier)
+    after = impute_missing(pd.concat([earlier, future], ignore_index=True))
+    pd.testing.assert_frame_equal(before, after.iloc[: len(earlier)])
+    assert np.isnan(before.iloc[0].winner_ht)
+    assert np.isnan(before.iloc[0].winner_age)
+    assert before.iloc[0].winner_rank == 2000
+    assert np.isnan(earlier.iloc[0].winner_rank)

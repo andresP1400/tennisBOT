@@ -105,14 +105,24 @@ def predict_fixture(bundle: PersonalBundle, fixture: Fixture) -> Prediction:
         predicted_at=datetime.now(timezone.utc),
         data_through=bundle.data_through,
         history_age_days=age,
-        warning=(
-            f"Historical results are {age} days old; recent form/rankings are missing"
-            if age > 30
-            else None
-        ),
+        warning=forecast_warning(fixture, age),
         betting_analysis=analyze_fixture(prob1, fixture, age),
     )
     return record_prediction(prediction)
+
+
+def forecast_warning(fixture: Fixture, age: int) -> str | None:
+    """Separate current input freshness from unvalidated lower-tier coverage."""
+    warnings = []
+    if age > 30:
+        warnings.append(
+            f"Historical results are {age} days old; recent form/rankings are missing"
+        )
+    if fixture.tournament_level == "WTA 125":
+        warnings.append(
+            "WTA 125 event: historical main-tour accuracy does not establish performance at this level"
+        )
+    return "; ".join(warnings) or None
 
 
 def analyze_fixture(prob1: float, fixture: Fixture, age: int) -> dict[str, object]:
@@ -138,7 +148,7 @@ def analyze_fixture(prob1: float, fixture: Fixture, age: int) -> dict[str, objec
                 probability,
                 price,
                 market,
-                calibrated=True,
+                calibrated=fixture.tournament_level != "WTA 125",
                 model_age_days=age,
                 quote_age_seconds=quote_age,
                 independent_books=books,

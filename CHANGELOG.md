@@ -8,6 +8,9 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Reproducible raw/eligible history suitability reports for serving-count completeness, missing demographics, and player identities; existing audit files are never overwritten.
+- Reviewed 2026 WTA surface coverage for Mallorca, Rovereto, and Lisbon with explicit cross-provider IDs, name/season checks, and WTA 125 accuracy/EV safeguards.
+- Forecast snapshots retain changed surface provenance and tournament level without overwriting earlier records.
 - Opponent-adjusted result/serve/return residuals using frozen pre-event baselines, optional recent-form ablation, and auditable feature-schema/runtime metadata in versioned ATP/WTA models.
 - Regression tests for fold-local preprocessing, chronological mirrors, consistent live calibration, paired bookmaker consensus, bounded EV admission, and artifact reload/preservation.
 - Dashboard details for informational EV, missing quotes, zero-stake guard failures, and their reasons.
@@ -34,6 +37,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Serving/returning summaries skip partial, nonfinite, negative, or contradictory point counts instead of treating missing points won as zero.
+- Legacy raw cleaning no longer fills missing ages/heights with full-dataset means; demographic imputation is deferred to training folds.
 - Legacy stacking now tunes and stops inside each outer training fold, refits transforms per fold, and shares symmetrization/calibration order across evaluation, history, and inference.
 - Adaptive temporal splits keep full dates and match mirrors together; fully missing training columns are retained.
 - Bookmaker consensus now de-vigs paired quotes per book, deduplicates relays, and preserves player orientation; TheOddsAPI no longer creates fictitious cross-book price pairs.

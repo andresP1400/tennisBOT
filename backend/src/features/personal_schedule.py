@@ -10,6 +10,8 @@ import time
 import requests
 from pydantic import BaseModel, Field
 
+from features.personal_surfaces import verified_surface
+
 
 class Athlete(BaseModel):
     displayName: str = ""
@@ -83,14 +85,12 @@ class Fixture(BaseModel):
     fetched_at: datetime
     surface: str | None = None
     surface_source: str | None = None
+    tournament_level: str | None = None
     odds1: float | None = None
     odds2: float | None = None
     odds_source: str | None = None
     odds_observed_at: datetime | None = None
 
-
-# Only confirmed tournament identities are used; unknown surfaces remain unavailable.
-TOURNAMENT_SURFACES = {("atp", "315"): "Hard", ("wta", "381"): "Hard"}
 
 _scoreboards: dict[tuple[str, str], tuple[float, Scoreboard, datetime]] = {}
 _scoreboard_lock = threading.Lock()
@@ -161,8 +161,7 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
                     )
                 ):
                     continue
-                key = (tour, event.id.split("-")[0])
-                surface = TOURNAMENT_SURFACES.get(key)
+                review = verified_surface(tour, event.id, event.name, match.date)
                 fixtures[match.id] = Fixture(
                     id=f"espn:{tour}:{match.id}",
                     tour=tour,
@@ -172,8 +171,9 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
                     commence_time=match.date,
                     source="ESPN public scoreboard",
                     fetched_at=now,
-                    surface=surface,
-                    surface_source="Confirmed tournament identity" if surface else None,
+                    surface=review.surface if review else None,
+                    surface_source=review.source if review else None,
+                    tournament_level=review.level if review else None,
                 )
                 attach_available_odds(fixtures[match.id], match)
     return sorted(fixtures.values(), key=lambda fixture: fixture.commence_time)
