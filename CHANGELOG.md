@@ -8,6 +8,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Research-only surface serve/return, recent-result and observed-inactivity ablation with delayed chronology, fold-local missing-value preprocessing, immutable experimental artifacts and paired evaluation; deployed models remain untouched.
+- Private preservation guide distinguishing GitHub source, published environment state and independently recoverable model/ledger copies, with checksum and non-overwriting recovery instructions.
 - Separate high-confidence/value dashboard categories with versioned filters, conservative net EV, quote expiry and explicit missing-evidence reasons.
 - Opt-in, persistently request-budgeted multi-book moneyline adapter with exact fixture binding, source timestamps, paired no-vig consensus and immutable price/split/selection archives.
 - Category-specific paper performance, real-price benchmarks, explicit-closing-only CLV, date-block return intervals and planned 100/250/500/1000-pick checks retaining losing picks.

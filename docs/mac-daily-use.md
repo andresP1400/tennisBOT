@@ -111,6 +111,8 @@ PY
 
 Include this backup directory and the versioned model directory in a private off-machine backup such as your own Time Machine disk. Local copies alone do not survive loss of the Mac/cloud machine. Do not publish database files, raw history, model bytes, `.env` files or private archives to the repository.
 
+For a complete cloud-to-Mac recovery package, follow [the private preservation instructions](private-preservation.md). The downloadable/copyable package also includes all model versions, research artifacts, raw-data attribution and Git history. Workspace file links do not establish a completed transfer; verify the checksum after copying it outside Codex.
+
 ## After source changes
 
 Stop the application before rebuilding its shared `.next` directory. Preserve local changes before fetching/checking out updates; do not reset your checkout to follow this guide. Re-run dependency installation only when requirements/lockfiles change, and run `npm ci` plus the production build when frontend code changes. Restart the launcher afterward. Retraining creates a new version and retains old results; do not retrain just to hide a bad live record.

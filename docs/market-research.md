@@ -2,6 +2,8 @@
 
 Checked October 16, 2026, approximately 12:48 p.m. America/Toronto (16:48 UTC). The personal research application works for supported fixtures. No profitable strategy or 80% win rate at the requested prices has been established. Earlier model versions, forecasts, losing results, source manifests and reports remain preserved.
 
+Continuation: [surface-context ablation results](context-research-results.md) and [private backup/recovery instructions](private-preservation.md). These add measured research and preservation guidance without deploying a candidate or weakening category guards.
+
 ## Operational features and blockers
 
 | Capability | Implemented and verified | Remaining limit |
