@@ -182,7 +182,10 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
 def fetch_fixtures(tour: str, now: datetime | None = None) -> list[Fixture]:
     """Fetch small public schedule responses; do not scrape or bypass restrictions."""
     now = now or datetime.now(timezone.utc)
-    board, observed = fetch_scoreboard(tour, now.strftime("%Y%m%d"))
+    now = now.astimezone(timezone.utc)
+    last_day = now + timedelta(days=7)
+    date_range = f"{now:%Y%m%d}-{last_day:%Y%m%d}"
+    board, observed = fetch_scoreboard(tour, date_range)
     fixtures = parse_fixtures(board, tour, now)
     for fixture in fixtures:
         fixture.fetched_at = observed

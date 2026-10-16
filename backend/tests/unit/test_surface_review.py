@@ -16,6 +16,9 @@ from features.personal_surfaces import verified_surface
         ("1025-2026", "RoveretOpen Città della Pace", "Hard"),
         ("1079-2026", "Lisboa Belem Open", "Clay"),
         ("381-2026", "Dongfeng Voyah Wuhan Open", "Hard"),
+        ("345-2026", "Kinoshita Group Japan Open", "Hard"),
+        ("963-2026", "Ningbo Open", "Hard"),
+        ("1037-2026", "Río Ladies Open by MundoTênis Tours", "Clay"),
     ],
 )
 def test_reviewed_official_calendar_and_provider_id_agree(identifier, name, surface):

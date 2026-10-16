@@ -8,6 +8,7 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Reviewed 2026 WTA surfaces for Osaka, Ningbo, and Rio with official calendar/provider identity evidence and existing WTA 125 validation safeguards.
 - Reviewed partial-2026 ATP/WTA data extension with 2,464 additional licensed records, original manifest snapshots, and hash-named local acquisition reviews.
 - Annual train/selection/calibration/test protocols, five-year chronological walk-forward reports, paired date-block uncertainty intervals, and historical minimum-player-coverage metrics.
 - Explicit 2026 evaluation labels for deployed models and visible per-row WTA 125 validation warnings.
@@ -40,6 +41,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Upcoming schedules query a rolling seven-day range instead of only today's tournaments, retaining the exact time horizon and original quote observation times.
+- Production startup instructions use the configured Next.js standalone server with its public/static assets.
 - Historical restoration follows only reviewed manifest years instead of stopping unconditionally at 2025; unsupported years still fail without overwriting source files.
 - Single-class evaluation now reports undefined AUC and computes valid binary log-loss instead of inventing an AUC score.
 - Serving/returning summaries skip partial, nonfinite, negative, or contradictory point counts instead of treating missing points won as zero.

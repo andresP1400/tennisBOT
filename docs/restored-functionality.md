@@ -20,7 +20,7 @@ Surface-specific Elo and opponent-adjusted form/serve/return statistics feed CPU
 
 The dashboard/API return actual covered ATP/WTA upcoming fixtures with a winner, probability, model version, pre-match timestamp, and durable record ID. Unknown players/surfaces stay unavailable. A background worker records and settles forecasts without an open browser. All-version live results remain visible after model changes; older bad results are retained.
 
-Remaining constraints: reviewed 2026 history stops at May 25 ATP / April 21 WTA tournament starts, so October player state is still incomplete. Current reviewed surfaces cover five 2026 tournaments; provider fixtures/outcomes/odds may be unavailable. Later permitted results and additional reviewed surface identities remain needed. The core engine needs no credentials. Optional sportsbook keys cannot solve missing tennis history.
+Remaining constraints: reviewed 2026 history stops at May 25 ATP / April 21 WTA tournament starts, so October player state is still incomplete. Current reviewed surfaces cover eight 2026 tournaments; provider fixtures/outcomes/odds may be unavailable. Later permitted results and additional reviewed surface identities remain needed. The core engine needs no credentials. Optional sportsbook keys cannot solve missing tennis history.
 
 ## Verified checks
 
@@ -39,3 +39,13 @@ GitHub PR #1 and the remote preservation branch were verified at `9beaaf0` befor
 The existing pinned licensed mirrors contained 2,464 partial-2026 records despite earlier original-repository 404 checks. The extension verifies README hashes, schemas, file hashes, counts, exclusions, and identities while preserving prior files and manifests. New annual test-year training holds all 2026 labels out of fitting and deploys versioned models whose measured test period is shown accurately on the dashboard. WTA 125 row warnings are visible even when a main-tour row appears first.
 
 The 2026 holdout scores 66.15% ATP (1,406 matches) and 66.25% WTA (957). Five yearly tests pool to 65.79% ATP (12,857) and 65.49% WTA (11,314). Paired date-block intervals on the same 2026 matches do not establish a clear improvement over the original frozen models. Full reports retain baselines, raw/calibrated scores, minimum-history coverage, date ranges, and limitations. Evaluation reports never activate a model.
+
+## Rolling fixture coverage follow-up
+
+On 2026-10-16, GitHub and local HEAD both matched `56c88e9` before further development. Its complete Git bundle and private archive were verified to contain the original/new history, model versions, and a consistent SQLite backup. No existing work was reset or replaced.
+
+Upcoming fixtures now use one rolling seven-day ESPN date-range query per tour instead of only today’s scoreboard. Exact timestamps still exclude started matches and matches beyond seven days. Regression tests cover new tournament inclusion, unknown draw slots, UTC/year boundaries, and preservation of cached quote observation times. Official WTA calendar/provider identities add Osaka and Ningbo hard courts plus Rio clay; Rio retains the WTA 125 warning and EV restriction. Additional ATP tournament pages returned HTTP 403, so their surfaces were not guessed.
+
+A further permitted-history search found `jarekserafin/tennis_atp` revision `259b21a2509d18219c3f290efe0942cdcfb6ce04` with a nested `data/atp_matches_2026.csv`. Its CC BY-NC-SA notice attributes Jeff Sackmann; the CSV SHA-256 `ceb157ae698f79f4148f7bb6253bbcf6a8c8eb9ff94670dd83aa0428802cfd59` exactly matches the existing 1,449-row partial ATP file through May 25. It adds no fresher history and was not substituted or double-counted.
+
+The follow-up passed **157 backend tests and 21 frontend tests**, strict mypy on 116 source files, Black/Ruff, TypeScript, and ESLint. The complete production build, dependency/secret/import checks, standalone server, static assets, dashboard, and API proxy also passed. The production check returned 3 ATP and 7 WTA genuine pre-match forecasts with durable record IDs; this count changes as matches start or draws become available. Model weights, calibration, and reported historical metrics are unchanged. The observed live first-ever forecast record at this check was 2 correct from 8 completed unique fixtures across both tours; all earlier failures remain recorded. This small live sample does not establish stable future accuracy.

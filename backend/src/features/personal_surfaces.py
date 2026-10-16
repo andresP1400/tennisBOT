@@ -47,6 +47,24 @@ REVIEWS = {
         WTA_CALENDAR,
         "WTA 125",
     ),
+    ("wta", "345", "2026"): SurfaceReview(
+        "Hard",
+        ("Kinoshita Group Japan Open",),
+        WTA_CALENDAR,
+        "WTA 250",
+    ),
+    ("wta", "963", "2026"): SurfaceReview(
+        "Hard",
+        ("Ningbo Open",),
+        WTA_CALENDAR,
+        "WTA 500",
+    ),
+    ("wta", "1037", "2026"): SurfaceReview(
+        "Clay",
+        ("Río Ladies Open by MundoTênis Tours",),
+        WTA_CALENDAR,
+        "WTA 125",
+    ),
 }
 
 
