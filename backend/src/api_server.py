@@ -29,6 +29,7 @@ from api.routes.system import router as system_router
 from api.routes.track import router as track_router
 from api.routes.training import router as training_router
 from api.routes.personal import router as personal_router
+from api.routes.market import router as market_router
 from api.personal_worker import personal_lifespan
 
 log = get_logger(__name__)
@@ -102,6 +103,7 @@ for _router in (
     analytics_router,
     card_router,
     personal_router,
+    market_router,
 ):
     app.include_router(_router)
 

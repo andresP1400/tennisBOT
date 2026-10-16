@@ -53,7 +53,7 @@ Open a **second Terminal window** and run:
 open 'http://127.0.0.1:3000/dashboard'
 ```
 
-In the **Upcoming match predictions** panel, select ATP or WTA. It shows supported upcoming matches, predicted winner, win probability, data-age warning, historical metrics and live results. Expand **Recorded forecast** to see the stored timestamp, model version and record ID. Unsupported fixtures have an explanation. Other legacy prediction/training/track pages use separate artifacts and do not represent this personal record.
+In the **All Match Predictions** panel, select ATP or WTA. It shows supported upcoming matches, predicted winner, win probability, data-age warning, historical metrics and live results. Expand **Recorded forecast** to see the stored timestamp, model version and record ID. The separate **80%+ High-Confidence Value** and **Best Value Opportunities** panels explain missing qualification evidence. Read the [market research guide](market-research.md) before enabling optional sportsbook calls. Unsupported fixtures have an explanation. Other legacy prediction/training/track pages use separate artifacts and do not represent this personal record.
 
 ## Start on later days
 
@@ -80,7 +80,7 @@ curl -fsS 'http://127.0.0.1:3000/api/personal/live-performance?tour=atp&scope=al
 curl -fsS 'http://127.0.0.1:3000/api/personal/live-performance?tour=wta&scope=all' | python -m json.tool
 ```
 
-After a completed cycle, expect `running: true`, `polling_healthy: true`, and recent `last_success` times for all four operations. Zero newly settled outcomes is normal when no pending match has finished. Unhealthy/stale status needs investigation even when `/api/health` returns OK. Healthy polling does not make stale player history current.
+After a completed cycle, expect `running: true`, `polling_healthy: true`, and recent `last_success` times for all six operations (predictions, settlement and market evaluation for each tour). Zero newly settled outcomes is normal when no pending match has finished. Unhealthy/stale status needs investigation even when `/api/health` returns OK. Healthy polling does not make stale player history current.
 
 ## Keep private records safe
 

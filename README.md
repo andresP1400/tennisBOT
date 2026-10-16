@@ -27,6 +27,8 @@ The verified personal-use engine now trains from pinned, licensed historical dat
 
 Read the [daily-use readiness report](docs/readiness-report.md) and [exact Mac setup/start instructions](docs/mac-daily-use.md) before running the personal engine. The legacy tools described below use separate artifacts and tracking; their weekly GitHub job does not refresh this personal engine.
 
+The [market research guide](docs/market-research.md) covers separate value categories, optional timestamped sportsbook comparison, permanent paper tracking, the measured five-family model study and current blockers. No profitable edge or 80% win rate at the requested odds has been established. Missing or stale evidence produces “No qualifying opportunities.”
+
 ## 📌 Preview
 
 | Dashboard Preview | Live Value Bet + Player News |

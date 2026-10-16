@@ -1,0 +1,2 @@
+# Optional offline model study only; the daily engine does not require CatBoost.
+catboost==1.2.8

@@ -8,6 +8,11 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Separate high-confidence/value dashboard categories with versioned filters, conservative net EV, quote expiry and explicit missing-evidence reasons.
+- Opt-in, persistently request-budgeted multi-book moneyline adapter with exact fixture binding, source timestamps, paired no-vig consensus and immutable price/split/selection archives.
+- Category-specific paper performance, real-price benchmarks, explicit-closing-only CLV, date-block return intervals and planned 100/250/500/1000-pick checks retaining losing picks.
+- Reproducible five-family chronological ML/ensemble study with paired deployed-model comparisons and guarded version-specific calibration-bin evidence; no candidate deployment or profitability claim.
+- Public ticket/money manual-entry and provider contracts with provenance/timing validation; unsupported public-data effects remain unmeasured.
 - Real-data daily-use readiness audit and step-by-step local Mac setup, startup, monitoring and private-backup instructions.
 - Inspectable ATP/WTA prediction/settlement poller health with attempt, success, error-class and missed-cycle timestamps.
 - Reviewed 2026 WTA surfaces for Osaka, Ningbo, and Rio with official calendar/provider identity evidence and existing WTA 125 validation safeguards.

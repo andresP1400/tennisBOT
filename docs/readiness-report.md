@@ -1,5 +1,7 @@
 # Daily personal-use readiness audit
 
+Latest extension: [market research implementation and live/historical results](market-research.md). This earlier audit remains preserved as a dated checkpoint; the worker now exposes six phases.
+
 Audit date: 2026-10-16 UTC. Scope: the personal ATP/WTA engine on the preservation branch, with the actual licensed files, trained model artifacts, public fixtures, and private prediction database. **This is a functioning personal research workflow, not a production-ready or proven reliable daily forecasting service.** No new model fitting or test-set tuning was performed for this audit.
 
 ## 1. Fully operational within the verified scope

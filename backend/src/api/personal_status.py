@@ -58,7 +58,7 @@ def worker_status() -> dict[str, object]:
         operations = {
             f"{tour}_{phase}": _operations.get((tour, phase), OperationStatus())
             for tour in ("atp", "wta")
-            for phase in ("predictions", "settlement")
+            for phase in ("predictions", "settlement", "markets")
         }
         healthy = _running and all(
             operation.last_success is not None

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { usePersonalPredictions } from "@/hooks/usePersonalPredictions"
 import { PersonalRows } from "./personal-rows"
+import { MarketOpportunities } from "@/components/market-opportunities"
 
 export function PersonalPredictions() {
   const [tour, setTour] = useState<"atp" | "wta">("atp")
@@ -15,10 +16,10 @@ export function PersonalPredictions() {
   const live = card?.live_performance
   const overall = card?.overall_live_performance
   return (
-    <Card>
+    <div className="space-y-4"><MarketOpportunities tour={tour} /><Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>Upcoming match predictions</CardTitle>
+          <CardTitle>All Match Predictions</CardTitle>
           <div className="flex items-center gap-3">
             <select aria-label="Prediction tour" value={tour} className="rounded border px-2 py-1 bg-background"
               onChange={event => setTour(event.target.value as "atp" | "wta")}>
@@ -53,6 +54,6 @@ export function PersonalPredictions() {
           </li>)}</ul>
         </details>}
       </CardContent>
-    </Card>
+    </Card></div>
   )
 }

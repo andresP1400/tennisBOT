@@ -37,13 +37,18 @@ async def test_one_provider_failure_does_not_suppress_settlement_or_other_tour(
 
     monkeypatch.setattr(worker, "get_card", generate)
     monkeypatch.setattr(worker, "settle_pending", settle)
+    monkeypatch.setattr(
+        worker, "refresh_markets", lambda tour: calls.append((tour, "markets")) or 0
+    )
     await worker.refresh_once()
     snapshot = status.worker_status()
     assert calls == [
         ("atp", "predictions"),
         ("atp", "settlement"),
+        ("atp", "markets"),
         ("wta", "predictions"),
         ("wta", "settlement"),
+        ("wta", "markets"),
     ]
     assert not snapshot["polling_healthy"]
     assert snapshot["operations"]["atp_predictions"]["error_type"] == "ConnectionError"
@@ -56,7 +61,7 @@ def test_polling_health_expires_after_missed_cycles(
 ) -> None:
     now = datetime.now(timezone.utc)
     for tour in ("atp", "wta"):
-        for phase in ("predictions", "settlement"):
+        for phase in ("predictions", "settlement", "markets"):
             status.begin_operation(tour, phase)
             status.finish_operation(tour, phase, count=0)
     assert status.worker_status()["polling_healthy"]

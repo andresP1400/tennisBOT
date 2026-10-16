@@ -9,6 +9,11 @@ from collections.abc import AsyncIterator, Callable
 from fastapi import FastAPI
 
 from api.personal_engine import PredictionCard, get_card
+from api.market_engine import (
+    build_market_card,
+    ingest_available_prices,
+    PROVIDER_STATUS,
+)
 from api.personal_status import (
     POLL_SECONDS,
     begin_operation,
@@ -33,6 +38,15 @@ async def refresh_once() -> None:
     for tour in ("atp", "wta"):
         await run_operation(tour, "predictions", lambda: get_card(tour, True))
         await run_operation(tour, "settlement", lambda: settle_pending(tour))
+        await run_operation(tour, "markets", lambda: refresh_markets(tour))
+
+
+def refresh_markets(tour: str) -> int:
+    """Archive qualified strategy decisions independently of browser access."""
+    card = get_card(tour)
+    PROVIDER_STATUS[tour] = ingest_available_prices(card)
+    market = build_market_card(card)
+    return len(market.category_a) + len(market.category_b)
 
 
 async def run_operation(tour: str, phase: str, operation: Callable[[], object]) -> None:

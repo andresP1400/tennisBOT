@@ -4,6 +4,7 @@ import { PersonalPredictions } from "./personal-predictions"
 import { usePersonalPredictions } from "@/hooks/usePersonalPredictions"
 
 vi.mock("@/hooks/usePersonalPredictions", () => ({ usePersonalPredictions: vi.fn() }))
+vi.mock("@/components/market-opportunities", () => ({ MarketOpportunities: () => null }))
 
 describe("PersonalPredictions", () => {
   it("shows unavailable data without inventing a prediction", () => {
