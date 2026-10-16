@@ -1,0 +1,175 @@
+{
+  "checked_at": "2026-10-16T16:51:19.857509+00:00",
+  "scope": "Actual loopback production services; no credentialed sportsbook requests or simulated picks",
+  "worker": {
+    "running": true,
+    "polling_healthy": true,
+    "interval_seconds": 300,
+    "checked_at": "2026-10-16T16:51:19.735694Z",
+    "operations": {
+      "atp_predictions": {
+        "last_attempt": "2026-10-16T16:47:33.708109Z",
+        "last_success": "2026-10-16T16:47:34.426102Z",
+        "last_finished": "2026-10-16T16:47:34.426102Z",
+        "error_type": null,
+        "count": 2
+      },
+      "atp_settlement": {
+        "last_attempt": "2026-10-16T16:47:34.426108Z",
+        "last_success": "2026-10-16T16:47:34.427133Z",
+        "last_finished": "2026-10-16T16:47:34.427133Z",
+        "error_type": null,
+        "count": 0
+      },
+      "atp_markets": {
+        "last_attempt": "2026-10-16T16:47:34.427137Z",
+        "last_success": "2026-10-16T16:47:34.461671Z",
+        "last_finished": "2026-10-16T16:47:34.461671Z",
+        "error_type": null,
+        "count": 0
+      },
+      "wta_predictions": {
+        "last_attempt": "2026-10-16T16:47:34.461678Z",
+        "last_success": "2026-10-16T16:47:35.302053Z",
+        "last_finished": "2026-10-16T16:47:35.302053Z",
+        "error_type": null,
+        "count": 6
+      },
+      "wta_settlement": {
+        "last_attempt": "2026-10-16T16:47:35.302059Z",
+        "last_success": "2026-10-16T16:47:35.302858Z",
+        "last_finished": "2026-10-16T16:47:35.302858Z",
+        "error_type": null,
+        "count": 0
+      },
+      "wta_markets": {
+        "last_attempt": "2026-10-16T16:47:35.302863Z",
+        "last_success": "2026-10-16T16:47:35.316682Z",
+        "last_finished": "2026-10-16T16:47:35.316682Z",
+        "error_type": null,
+        "count": 0
+      }
+    }
+  },
+  "tours": {
+    "atp": {
+      "predictions": 2,
+      "unavailable": 16,
+      "model_version": "atp-20261015T205532980659Z-04c7c14f1679",
+      "blocked_reasons": [
+        "Conservative probability edge is below the declared threshold",
+        "Historical player inputs are stale",
+        "No current executable paired sportsbook price",
+        "Reviewed model-specific out-of-sample uncertainty evidence is unavailable",
+        "Two independent current paired bookmakers are required",
+        "Uncertainty-adjusted net EV is not established positive"
+      ],
+      "live_first_forecast": {
+        "forecast_model_pairs": 5,
+        "completed": 3,
+        "unique_completed_matches": 3,
+        "correct": 1,
+        "accuracy": 0.3333333333333333,
+        "brier": 0.25001961630146485,
+        "void": 0,
+        "pending": 2,
+        "scoring_rule": "First recorded forecast per unique fixture"
+      }
+    },
+    "wta": {
+      "predictions": 6,
+      "unavailable": 26,
+      "model_version": "wta-20261015T205603748796Z-7b184aca866f",
+      "blocked_reasons": [
+        "Conservative probability edge is below the declared threshold",
+        "Historical player inputs are stale",
+        "No current executable paired sportsbook price",
+        "Reviewed model-specific out-of-sample uncertainty evidence is unavailable",
+        "This tournament level has no adequate model validation",
+        "Two independent current paired bookmakers are required",
+        "Uncertainty-adjusted net EV is not established positive"
+      ],
+      "live_first_forecast": {
+        "forecast_model_pairs": 27,
+        "completed": 14,
+        "unique_completed_matches": 14,
+        "correct": 6,
+        "accuracy": 0.42857142857142855,
+        "brier": 0.3102978546953801,
+        "void": 1,
+        "pending": 12,
+        "scoring_rule": "First recorded forecast per unique fixture"
+      }
+    }
+  },
+  "archive_counts": {
+    "prediction_events": 157,
+    "outcome_events": 18,
+    "market_quotes": 0,
+    "value_selections": 0
+  },
+  "earlier_forecasts_unchanged": 157,
+  "model_files_unchanged": 20,
+  "sqlite_integrity": "ok",
+  "category_a_qualifying": 0,
+  "category_b_qualifying": 0,
+  "roi_and_clv": null,
+  "browser": {
+    "checked_at": "2026-10-16T16:50:06.990718+00:00",
+    "browser": "Installed headless Chromium; actual dashboard and real backend responses",
+    "tours": {
+      "atp": {
+        "tour": "atp",
+        "rows": 2,
+        "probabilities": [
+          "72.5%",
+          "57.3%"
+        ],
+        "hasHistoricalPeriod": true,
+        "hasLiveResults": true,
+        "hasStaleWarning": true
+      },
+      "wta": {
+        "tour": "wta",
+        "rows": 6,
+        "probabilities": [
+          "65.3%",
+          "56.0%",
+          "52.3%",
+          "57.0%",
+          "90.1%",
+          "51.7%"
+        ],
+        "hasHistoricalPeriod": true,
+        "hasLiveResults": true,
+        "hasStaleWarning": true
+      },
+      "market_sections": {
+        "all": true,
+        "a": true,
+        "b": true,
+        "empty": 2,
+        "unmeasured": true
+      }
+    }
+  },
+  "checks": {
+    "backend_tests_passed": 203,
+    "frontend_tests_passed": 34,
+    "strict_mypy_sources": 134,
+    "production_build": "passed",
+    "frontend_lint_typecheck": "passed",
+    "python_black_ruff": "passed",
+    "dependency_check": "passed"
+  },
+  "limitations": [
+    "Stale partial-2026 player history",
+    "Incomplete tournament/player coverage",
+    "No configured live sportsbook credentials",
+    "No archived opening/closing provider integration",
+    "No authorized public betting split panel",
+    "No admissible high-confidence uncertainty bin",
+    "No new untouched test period",
+    "No verified betting advantage"
+  ]
+}

@@ -127,7 +127,7 @@ def plot_brier_monthly(
     df_brier["year_month"] = df_brier["date"].dt.to_period("M")
     monthly = (
         df_brier.groupby("year_month")
-        .apply(  # type: ignore[call-overload]
+        .apply(
             lambda g: (
                 brier_score_loss(g["y_true"], g["y_prob"]) if len(g) > 5 else np.nan
             ),

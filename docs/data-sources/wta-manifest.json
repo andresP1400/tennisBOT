@@ -1,0 +1,144 @@
+{
+  "author": "Jeff Sackmann / Tennis Abstract",
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "repository": "VictorSquidWei/tennis_wta",
+  "revision": "85ef6efaa04ca860ed592a935498dcda9460ea91",
+  "retrieved_at": "2026-10-14T22:01:50.912064+00:00",
+  "files": [
+    {
+      "file": "wta_matches_2005.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2005.csv",
+      "rows": 2843,
+      "sha256": "8547420ac6b4b6e2adf4d4a38988bf1b1e7f3afb349d4b0f52832e22675ede1a"
+    },
+    {
+      "file": "wta_matches_2006.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2006.csv",
+      "rows": 2787,
+      "sha256": "12a23f743850ab7d2963702ead3d894e51a9ec47772fac5aaf4b59b8cc74aab6"
+    },
+    {
+      "file": "wta_matches_2007.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2007.csv",
+      "rows": 2778,
+      "sha256": "bb4ad9ad0e674f0acb8ec3ed51bf51ee6400c86f952047b17767245971db0937"
+    },
+    {
+      "file": "wta_matches_2008.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2008.csv",
+      "rows": 2791,
+      "sha256": "23942f4d0bc621a9d7b069a5dbe02a80098d981d6ee13402fa97fd0a9b38a020"
+    },
+    {
+      "file": "wta_matches_2009.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2009.csv",
+      "rows": 2722,
+      "sha256": "ca1c01aa12f674aaaf93a6eb5169aeb295a857362a174f10d4f8bdf0328a36d5"
+    },
+    {
+      "file": "wta_matches_2010.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2010.csv",
+      "rows": 2781,
+      "sha256": "05b980e28398ae13e6e0edae544a060b59571cf977623ad0db727d6de3527627"
+    },
+    {
+      "file": "wta_matches_2011.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2011.csv",
+      "rows": 2804,
+      "sha256": "ea0afb5d5e5a1fd230860f722de4f79578f7bd39949358a8b66480f2cae6e101"
+    },
+    {
+      "file": "wta_matches_2012.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2012.csv",
+      "rows": 2849,
+      "sha256": "a8e7f92534df31293a5574db3406e6a0d1c2d956ba63610c44c7bb6f3f09f52d"
+    },
+    {
+      "file": "wta_matches_2013.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2013.csv",
+      "rows": 2714,
+      "sha256": "0d31dde39e721a683b158c30ffbe612293b06bd2386dfeec47ae28e9bad8d93c"
+    },
+    {
+      "file": "wta_matches_2014.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2014.csv",
+      "rows": 2785,
+      "sha256": "4cb59debfa4cbf079c550ee7dfc0ee098237af33376701cd340e112b917f8176"
+    },
+    {
+      "file": "wta_matches_2015.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2015.csv",
+      "rows": 2651,
+      "sha256": "9332d0d470c378c8d439553ed7d81379eb3596d04babf39bee7021edae316130"
+    },
+    {
+      "file": "wta_matches_2016.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2016.csv",
+      "rows": 2923,
+      "sha256": "17145270279d6bf5d1abec4038d51d6af3aa71a7b40421b9f175205fafa075f7"
+    },
+    {
+      "file": "wta_matches_2017.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2017.csv",
+      "rows": 2862,
+      "sha256": "eae2de68b2e87fcac7e2ff1f6168c78d1baba91fb0ffecda455aa329a81437c8"
+    },
+    {
+      "file": "wta_matches_2018.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2018.csv",
+      "rows": 2756,
+      "sha256": "6ccfc04baabe536e4260083c2e299c8c36668a8e8276dfc309219df23bf9ea38"
+    },
+    {
+      "file": "wta_matches_2019.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2019.csv",
+      "rows": 2743,
+      "sha256": "da251744c6ece2cab4b94df659ee38a81bb4aa50cf532d48f1a6eb0cc66726d4"
+    },
+    {
+      "file": "wta_matches_2020.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2020.csv",
+      "rows": 1276,
+      "sha256": "bcbb285ee8a743ce117952bbb99cfe816bfc685412aa3adc7a9913e7799cd70c"
+    },
+    {
+      "file": "wta_matches_2021.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2021.csv",
+      "rows": 2597,
+      "sha256": "3f4b865fe9f68aedb3d51597740cf658cf805f676bae652f2bc93cbab4f6e99f"
+    },
+    {
+      "file": "wta_matches_2022.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2022.csv",
+      "rows": 2594,
+      "sha256": "f638cf65efefb01a1a10368c1d5217d5f90981fb76193ca3a9c3773c2abc2ba7"
+    },
+    {
+      "file": "wta_matches_2023.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2023.csv",
+      "rows": 2810,
+      "sha256": "b73bf74928155b858cdb7045f6334246336cef604286cb361e695df26911ad18"
+    },
+    {
+      "file": "wta_matches_2024.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2024.csv",
+      "rows": 2689,
+      "sha256": "d9bba2a0b3793f63c737ef62a809b82b56b3ad0ee94e1f95e78cecfac7615ed2"
+    },
+    {
+      "file": "wta_matches_2025.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2025.csv",
+      "rows": 2795,
+      "sha256": "e4eb002bc6d828b0bd21e04ed286e68722ddc8ccbbb27ea980bf62e938377f96"
+    },
+    {
+      "file": "wta_matches_2026.csv",
+      "url": "https://raw.githubusercontent.com/VictorSquidWei/tennis_wta/85ef6efaa04ca860ed592a935498dcda9460ea91/wta_matches_2026.csv",
+      "rows": 1015,
+      "sha256": "48662a94e1ef4151867d88d3532dfabf333a5dfce6c65c155b9830dd9b3263db"
+    }
+  ],
+  "readme_sha256": "f34402380f3c84f7c7d9f6156225603ef917bb2b2d6d18676a234fb5323b13c9",
+  "extended_at": "2026-10-15T20:47:57.528701+00:00",
+  "coverage_note": "2026 files are partial seasons; tournament dates do not establish exact completion times or complete current coverage."
+}

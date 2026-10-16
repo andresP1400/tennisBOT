@@ -21,6 +21,7 @@ from logging_config import get_logger
 logger = get_logger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
+from pipeline.temporal_groups import date_partitions  # noqa: E402
 
 
 def fixed_temporal_split(df: pd.DataFrame) -> dict[str, Any]:
@@ -39,21 +40,7 @@ def fixed_temporal_split(df: pd.DataFrame) -> dict[str, Any]:
     ].copy()
     test = df[df["year"] >= config.TEST_START_YEAR].copy()
     if len(train) == 0 or len(val) == 0 or len(test) == 0:
-        # Adaptive split: distribute rows ordered by time into
-        # 70% train / 15% val / 15% test.
-        sort_cols = ["tourney_date", "year"] if "tourney_date" in df.columns else "year"
-        ordered = df.sort_values(sort_cols).reset_index(drop=True)
-        n = len(ordered)
-        train_n = int(n * 0.70)
-        val_n = int(n * 0.15)
-        test_n = n - train_n - val_n
-        train = ordered.iloc[:train_n].copy()
-        val = ordered.iloc[train_n : train_n + val_n].copy()
-        test = ordered.iloc[train_n + val_n :].copy()
-        logger.info(
-            "  Fixed boundaries not covered by data -> adaptive temporal "
-            f"split ({train_n}/{val_n}/{test_n} rows)."
-        )
+        train, val, test = date_partitions(df, (0.70, 0.15, 0.15))
     logger.info(
         f"  Train: {len(train):,} rows  ({train['year'].min()}-{train['year'].max()})"
     )
@@ -122,28 +109,19 @@ def _adaptive_walk_forward_splits(df: pd.DataFrame) -> list[dict[str, Any]]:
     Each fold i trains on blocks [0..i) and validates on block i, which
     preserves temporal ordering and guarantees non-empty folds.
     """
-    order_cols = "tourney_date" if "tourney_date" in df.columns else "year"
-    ordered = df.sort_values(order_cols).reset_index(drop=True)
-    n = len(ordered)
-    n_folds = max(2, min(8, n // 300))  # ~300 rows per fold, cap 8
-    n_folds = min(n_folds, n)
-    bounds = [(i + 1) * n // n_folds for i in range(n_folds)]
-    fold_infos: list[dict[str, Any]] = []
-    for i, end in enumerate(bounds):
-        if i == 0:
-            continue  # first block has no prior train data
-        train = ordered.iloc[: bounds[i - 1]].copy()
-        val = ordered.iloc[bounds[i - 1] : end].copy()
-        if len(train) == 0 or len(val) == 0:
-            continue
-        y0 = int(ordered["year"].iloc[0]) if "year" in ordered.columns else 0
-        fold_infos.append(
-            {
-                "train": train,
-                "val": val,
-                "train_years": f"{y0}-q{i}",
-                "val_years": f"q{i}",
-                "fold": len(fold_infos),
-            }
-        )
-    return fold_infos
+    column = "tourney_date" if "tourney_date" in df else "year"
+    distinct = df[column].nunique()
+    if distinct < 2:
+        return []
+    count = min(8, max(2, len(df) // 300), distinct)
+    blocks = date_partitions(df, tuple([1 / count] * count))
+    return [
+        {
+            "train": pd.concat(blocks[:index]),
+            "val": blocks[index],
+            "train_years": f"blocks 0-{index - 1}",
+            "val_years": f"block {index}",
+            "fold": index - 1,
+        }
+        for index in range(1, len(blocks))
+    ]

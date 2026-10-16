@@ -1,0 +1,165 @@
+{
+  "audit": {
+    "duplicates": 0,
+    "excluded_total": 2107,
+    "incomplete_matches": 1964,
+    "invalid_dates": 0,
+    "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "missing_surface": 144,
+    "raw_rows": 56550,
+    "rows_by_year": {
+      "2005": 2843,
+      "2006": 2787,
+      "2007": 2840,
+      "2008": 2729,
+      "2009": 2722,
+      "2010": 2781,
+      "2011": 2804,
+      "2012": 2940,
+      "2013": 2714,
+      "2014": 2694,
+      "2015": 2651,
+      "2016": 2923,
+      "2017": 2862,
+      "2018": 2847,
+      "2019": 2652,
+      "2020": 1276,
+      "2021": 2597,
+      "2022": 2594,
+      "2023": 2810,
+      "2024": 2792,
+      "2025": 2692
+    },
+    "source_digest": "d30993ed40de4918b7c15f3bfffbb74bf645e100d80aa035932d68c9b53a7ee2",
+    "source_revision": "85ef6efaa04ca860ed592a935498dcda9460ea91"
+  },
+  "data_through": "2025-11-01",
+  "family": "logistic",
+  "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
+  "model_version": "wta-20261015T182405646990Z-cda5714c91b8",
+  "result_delay_days": 21,
+  "runtime_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1"
+  },
+  "selection_2022": {
+    "hist_gradient_boosting": {
+      "accuracy": 0.648910411622276,
+      "brier": 0.21796179765609655,
+      "ece_10_bins": 0.026038349478304836,
+      "log_loss": 0.6247034271727822,
+      "matches": 2478,
+      "roc_auc": 0.7039633412304802
+    },
+    "logistic": {
+      "accuracy": 0.6493139628732849,
+      "brier": 0.21779292288169855,
+      "ece_10_bins": 0.01994361794124247,
+      "log_loss": 0.6243942282741719,
+      "matches": 2478,
+      "roc_auc": 0.7045629676221323
+    }
+  },
+  "split_counts": {
+    "calibration": 2710,
+    "selection": 2478,
+    "test": 5169,
+    "train": 35909
+  },
+  "splits": {
+    "calibration": "2023",
+    "selection": "2022",
+    "test": "2024\u20132025",
+    "train": "2008\u20132021",
+    "warmup": "2005\u20132007"
+  },
+  "test_2024_2025": {
+    "by_surface": {
+      "Clay": {
+        "accuracy": 0.6566176470588235,
+        "brier": 0.2129796059197026,
+        "ece_10_bins": 0.022295200820952626,
+        "log_loss": 0.6129211864698653,
+        "matches": 1360,
+        "roc_auc": 0.7198476865310078
+      },
+      "Grass": {
+        "accuracy": 0.6500857632933105,
+        "brier": 0.21835165134967627,
+        "ece_10_bins": 0.06376300003353155,
+        "log_loss": 0.6282017949914336,
+        "matches": 583,
+        "roc_auc": 0.7094475099037918
+      },
+      "Hard": {
+        "accuracy": 0.6584004959702418,
+        "brier": 0.21626806275810395,
+        "ece_10_bins": 0.0249065960861194,
+        "log_loss": 0.6220110510853205,
+        "matches": 3226,
+        "roc_auc": 0.7120829487771112
+      }
+    },
+    "by_year": {
+      "2024": {
+        "accuracy": 0.6561430201597566,
+        "brier": 0.21363114654877532,
+        "ece_10_bins": 0.022950757484398374,
+        "log_loss": 0.614210536482932,
+        "matches": 2629,
+        "roc_auc": 0.7171038148799552
+      },
+      "2025": {
+        "accuracy": 0.6578740157480315,
+        "brier": 0.21771486731046064,
+        "ece_10_bins": 0.03392900512414163,
+        "log_loss": 0.6266388230183616,
+        "matches": 2540,
+        "roc_auc": 0.7099992310764187
+      }
+    },
+    "constant_50_percent": {
+      "accuracy": 0.4888759914877152,
+      "brier": 0.25,
+      "ece_10_bins": 0.011124008512284789,
+      "log_loss": 0.6931471805599453,
+      "matches": 5169,
+      "roc_auc": 0.5
+    },
+    "elo_calibrated": {
+      "accuracy": 0.6337782936738248,
+      "brier": 0.2203162477061501,
+      "ece_10_bins": 0.0270826374322221,
+      "log_loss": 0.6303279990939785,
+      "matches": 5169,
+      "roc_auc": 0.6987728594764733
+    },
+    "elo_uncalibrated": {
+      "accuracy": 0.6337782936738248,
+      "brier": 0.21996268542757075,
+      "ece_10_bins": 0.025803620008291034,
+      "log_loss": 0.6292387825448534,
+      "matches": 5169,
+      "roc_auc": 0.6987728594764733
+    },
+    "ml_calibrated": {
+      "accuracy": 0.656993615786419,
+      "brier": 0.2156378501151674,
+      "ece_10_bins": 0.019649394850611946,
+      "log_loss": 0.6203176844419166,
+      "matches": 5169,
+      "roc_auc": 0.713612889948286
+    },
+    "ml_uncalibrated": {
+      "accuracy": 0.656993615786419,
+      "brier": 0.21555965264309873,
+      "ece_10_bins": 0.017664230518517635,
+      "log_loss": 0.6200458281483073,
+      "matches": 5169,
+      "roc_auc": 0.713612889948286
+    }
+  },
+  "tour": "wta"
+}

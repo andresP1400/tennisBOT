@@ -1,0 +1,46 @@
+{
+  "checked_at": "2026-10-16T05:44:33.134648+00:00",
+  "source_url": "https://api.wtatennis.com/tennis/tournaments/?page=0&pageSize=100&from=2026-10-01&to=2026-10-31",
+  "response_sha256": "a7011b5f004814c8619483967c02fef10174c47db363b136129541d7da0d5b65",
+  "provider_url": "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard?dates=20261016-20261023",
+  "provider_response_sha256": "8af7fc7b64cfa9add953667c07bddefa1b326264ff41dda666ff45d3186178de",
+  "scope": "Reviewed factual surface and event identity metadata only; provider match data and full calendar are not redistributed. ATP pages denied access; no ATP surface inference added.",
+  "reviews": [
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "345",
+      "espn_name": "Kinoshita Group Japan Open",
+      "wta_id": 405,
+      "wta_name": "Kinoshita Group Japan Open - Osaka, JPN",
+      "surface": "Hard",
+      "level": "WTA 250",
+      "start_date": "2026-10-19",
+      "end_date": "2026-10-25"
+    },
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "963",
+      "espn_name": "Ningbo Open",
+      "wta_id": 2092,
+      "wta_name": "BNB Ningbo Open - Ningbo, CHN",
+      "surface": "Hard",
+      "level": "WTA 500",
+      "start_date": "2026-10-19",
+      "end_date": "2026-10-25"
+    },
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "1037",
+      "espn_name": "Río Ladies Open by MundoTênis Tours",
+      "wta_id": 1150,
+      "wta_name": "Río Ladies Open by MundoTênis Tours  - Rio De Janeiro, BRA",
+      "surface": "Clay",
+      "level": "WTA 125",
+      "start_date": "2026-10-19",
+      "end_date": "2026-10-25"
+    }
+  ]
+}

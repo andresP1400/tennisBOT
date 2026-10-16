@@ -33,6 +33,10 @@ class Settings(BaseSettings):
 
     # API server
     tennisbot_api_port: int = 9090
+    tennisbot_market_odds_enabled: bool = False
+    tennisbot_market_sports: str = ""
+    tennisbot_market_requests_per_day: int = 10
+    tennisbot_value_min_decimal_odds: float = 1.40
 
     # Odds APIs
     odds_api_key: str = ""

@@ -19,6 +19,7 @@ from fastapi import HTTPException
 from config import MODELS_DIR
 from logging_config import get_logger
 from api.schemas import PredictRequest
+from pipeline.symmetric_calibration import symmetric_calibration
 
 log = get_logger(__name__)
 
@@ -56,7 +57,9 @@ def resolve_model_path(model_name: str) -> Path:
     return candidate
 
 
-def predict_proba_from_features(bundle: Any, df_fake: pd.DataFrame) -> float:
+def predict_proba_from_features(
+    bundle: Any, df_fake: pd.DataFrame, calibrated: bool = True
+) -> float:
     X_imp = bundle["imputer"].transform(df_fake.values)
     X_scaled = bundle["scaler"].transform(X_imp)
     p_lgbm = bundle["base_models"]["lgbm"].predict_proba(X_scaled)[:, 1]
@@ -64,8 +67,10 @@ def predict_proba_from_features(bundle: Any, df_fake: pd.DataFrame) -> float:
     p_lr = bundle["base_models"]["lr"].predict_proba(X_scaled)[:, 1]
     X_meta = np.column_stack([p_lgbm, p_xgb, p_lr])
     raw_prob = bundle["meta_model"].predict_proba(X_meta)[:, 1][0]
-    if bundle.get("calibrator") is not None:
-        return float(bundle["calibrator"].predict(np.array(raw_prob).reshape(-1, 1))[0])
+    if calibrated and bundle.get("calibrator") is not None:
+        return float(
+            symmetric_calibration(np.asarray([raw_prob]), bundle["calibrator"])[0]
+        )
     return float(raw_prob)
 
 
@@ -112,9 +117,10 @@ def predict_with_state(bundle: Any, state: Any, req: PredictRequest) -> dict[str
         odds_b=req.odds1,
         now=now,
     )
-    prob_fwd = predict_proba_from_features(bundle, row_fwd)
-    prob_rev = predict_proba_from_features(bundle, row_rev)
-    final_prob = (prob_fwd + (1.0 - prob_rev)) / 2.0
+    prob_fwd = predict_proba_from_features(bundle, row_fwd, calibrated=False)
+    prob_rev = predict_proba_from_features(bundle, row_rev, calibrated=False)
+    raw = np.asarray([(prob_fwd + 1 - prob_rev) / 2], dtype=float)
+    final_prob = float(symmetric_calibration(raw, bundle.get("calibrator"))[0])
 
     h2h = (
         state["h2h"].get_h2h(id1, id2, req.surface)
@@ -131,7 +137,7 @@ def predict_with_state(bundle: Any, state: Any, req: PredictRequest) -> dict[str
         id1 is not None,
         id2 is not None,
     )
-    prob1 = max(0.01, min(0.99, final_prob))
+    prob1 = float(np.clip(final_prob, 0, 1))
     h2h_pct = h2h.get("h2h_win_pct")
     return {
         "match": f"{req.player1} vs {req.player2}",

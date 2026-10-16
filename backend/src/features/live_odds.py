@@ -93,7 +93,7 @@ class LiveOddsScraper(TheOddsApiMixin, TodaysMatchesMixin, MatchOddsMixin):
         try:
             from scrapling import Fetcher, StealthyFetcher
 
-            self._fetcher = StealthyFetcher() if self.use_stealth else Fetcher()  # type: ignore[no-untyped-call, assignment]
+            self._fetcher = StealthyFetcher() if self.use_stealth else Fetcher()  # type: ignore[no-untyped-call]
             return self._fetcher
         except ImportError:
             return None

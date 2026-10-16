@@ -1,0 +1,211 @@
+{
+  "audit": {
+    "duplicates": 0,
+    "excluded_total": 2320,
+    "incomplete_matches": 2269,
+    "invalid_dates": 0,
+    "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "missing_surface": 53,
+    "raw_rows": 62895,
+    "rows_by_year": {
+      "2005": 3264,
+      "2006": 3267,
+      "2007": 3285,
+      "2008": 3030,
+      "2009": 3085,
+      "2010": 3030,
+      "2011": 3015,
+      "2012": 3094,
+      "2013": 2944,
+      "2014": 2816,
+      "2015": 2943,
+      "2016": 2941,
+      "2017": 2911,
+      "2018": 2982,
+      "2019": 2721,
+      "2020": 1462,
+      "2021": 2733,
+      "2022": 2917,
+      "2023": 2986,
+      "2024": 3158,
+      "2025": 2862,
+      "2026": 1449
+    },
+    "source_digest": "967f98619603227f91ccd984145a9af22408f6898e63d8b67186cb5ea0f731ae",
+    "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
+  },
+  "data_through": "2026-05-25",
+  "evaluation": {
+    "coverage_note": "Source coverage is partial and does not establish every match in the period",
+    "metrics": {
+      "accuracy": 0.6614509246088194,
+      "brier": 0.2107458256023366,
+      "ece_10_bins": 0.029602441695869,
+      "log_loss": 0.6087441656423914,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
+    },
+    "period": "2026 (available source matches)",
+    "protocol": "Frozen estimators; chronological stages; 21-day result availability embargo",
+    "test_end": "2026-05-25",
+    "test_start": "2026-01-04"
+  },
+  "family": "hist_gradient_boosting",
+  "feature_names": [
+    "elo",
+    "surface_elo",
+    "rank",
+    "points",
+    "age",
+    "height",
+    "form",
+    "serve",
+    "return",
+    "experience",
+    "surface_Hard",
+    "surface_Clay",
+    "surface_Grass",
+    "surface_Carpet",
+    "best_of_5",
+    "opponent_adjusted_form",
+    "opponent_adjusted_serve",
+    "opponent_adjusted_return"
+  ],
+  "feature_schema": 2,
+  "implementation_sha256": "7cca70f8c513b4a36a1eef7ea8400e5efc13d8bd751b64ea1be6976d26f99c39",
+  "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
+  "model_version": "atp-20261015T205532980659Z-04c7c14f1679",
+  "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
+  "result_delay_days": 21,
+  "runtime_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1"
+  },
+  "selection_2024": {
+    "hist_gradient_boosting": {
+      "accuracy": 0.658668469077391,
+      "brier": 0.21080021104207894,
+      "ece_10_bins": 0.01970620528483891,
+      "log_loss": 0.606798369088654,
+      "matches": 2959,
+      "roc_auc": 0.7250753113187636
+    },
+    "logistic": {
+      "accuracy": 0.654275092936803,
+      "brier": 0.21178691020130794,
+      "ece_10_bins": 0.023725920175326848,
+      "log_loss": 0.6097726406319599,
+      "matches": 2959,
+      "roc_auc": 0.7231586074190215
+    }
+  },
+  "split_counts": {
+    "calibration": 2721,
+    "selection": 2959,
+    "test": 1406,
+    "train": 43893
+  },
+  "splits": {
+    "calibration": "2025",
+    "selection": "2024",
+    "test": "2026",
+    "train": "2008\u20132023",
+    "warmup": "2005\u20132007"
+  },
+  "test_2026": {
+    "by_surface": {
+      "Clay": {
+        "accuracy": 0.6600609756097561,
+        "brier": 0.2152769386295343,
+        "ece_10_bins": 0.04662558668219443,
+        "log_loss": 0.6189348629052144,
+        "matches": 656,
+        "roc_auc": 0.7180637092483877
+      },
+      "Grass": {
+        "accuracy": 0.0,
+        "brier": 0.31374581557435083,
+        "ece_10_bins": 0.5599201346831529,
+        "log_loss": 0.8214012100374443,
+        "matches": 4,
+        "roc_auc": 0.0
+      },
+      "Hard": {
+        "accuracy": 0.6662198391420912,
+        "brier": 0.2062090828332618,
+        "ece_10_bins": 0.04299051804815225,
+        "log_loss": 0.5986426568193456,
+        "matches": 746,
+        "roc_auc": 0.7408681214421253
+      }
+    },
+    "by_year": {
+      "2026": {
+        "accuracy": 0.6614509246088194,
+        "brier": 0.2107458256023366,
+        "ece_10_bins": 0.029602441695869,
+        "log_loss": 0.6087441656423914,
+        "matches": 1406,
+        "roc_auc": 0.7292922113686803
+      }
+    },
+    "constant_50_percent": {
+      "accuracy": 0.4864864864864865,
+      "brier": 0.25,
+      "ece_10_bins": 0.013513513513513487,
+      "log_loss": 0.6931471805599453,
+      "matches": 1406,
+      "roc_auc": 0.5
+    },
+    "elo_calibrated": {
+      "accuracy": 0.6536273115220483,
+      "brier": 0.21857448165299884,
+      "ece_10_bins": 0.06047372564391841,
+      "log_loss": 0.6262405434609599,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
+    },
+    "elo_uncalibrated": {
+      "accuracy": 0.6536273115220483,
+      "brier": 0.2185374301870464,
+      "ece_10_bins": 0.0514282111385254,
+      "log_loss": 0.626580630145768,
+      "matches": 1406,
+      "roc_auc": 0.7077633198879008
+    },
+    "history_coverage": {
+      "eligible_matches": 1177,
+      "metrics": {
+        "accuracy": 0.659303313508921,
+        "brier": 0.21184931540745855,
+        "ece_10_bins": 0.04544992821696976,
+        "log_loss": 0.611166290456317,
+        "matches": 1177,
+        "roc_auc": 0.7263526081447123
+      },
+      "minimum_prior_matches_each": 10,
+      "scope": "Historical player coverage only; current fixture-provider surface/name coverage is separate",
+      "unavailable_matches": 229
+    },
+    "ml_calibrated": {
+      "accuracy": 0.6614509246088194,
+      "brier": 0.2107458256023366,
+      "ece_10_bins": 0.029602441695869,
+      "log_loss": 0.6087441656423914,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
+    },
+    "ml_uncalibrated": {
+      "accuracy": 0.6607396870554765,
+      "brier": 0.21067801325466398,
+      "ece_10_bins": 0.032712056176825766,
+      "log_loss": 0.6085217717314853,
+      "matches": 1406,
+      "roc_auc": 0.7292922113686803
+    }
+  },
+  "tour": "atp",
+  "use_recent_form": true
+}

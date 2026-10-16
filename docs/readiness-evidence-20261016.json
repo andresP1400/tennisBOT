@@ -1,0 +1,150 @@
+{
+  "checked_at": "2026-10-16T06:03:09.891549+00:00",
+  "platform_tested": "Linux cloud; Mac installation instructions not executed on Mac",
+  "poller_scheduled_second_cycle": {
+    "checked_at": "2026-10-16T06:01:16.656316Z",
+    "interval_seconds": 300,
+    "operations": {
+      "atp_predictions": {
+        "count": 3,
+        "error_type": null,
+        "last_attempt": "2026-10-16T06:01:07.463977Z",
+        "last_finished": "2026-10-16T06:01:08.065108Z",
+        "last_success": "2026-10-16T06:01:08.065108Z"
+      },
+      "atp_settlement": {
+        "count": 0,
+        "error_type": null,
+        "last_attempt": "2026-10-16T06:01:08.065119Z",
+        "last_finished": "2026-10-16T06:01:08.412685Z",
+        "last_success": "2026-10-16T06:01:08.412685Z"
+      },
+      "wta_predictions": {
+        "count": 7,
+        "error_type": null,
+        "last_attempt": "2026-10-16T06:01:08.412693Z",
+        "last_finished": "2026-10-16T06:01:08.879324Z",
+        "last_success": "2026-10-16T06:01:08.879324Z"
+      },
+      "wta_settlement": {
+        "count": 0,
+        "error_type": null,
+        "last_attempt": "2026-10-16T06:01:08.879331Z",
+        "last_finished": "2026-10-16T06:01:09.205255Z",
+        "last_success": "2026-10-16T06:01:09.205255Z"
+      }
+    },
+    "polling_healthy": true,
+    "running": true
+  },
+  "provider_result_recheck": {
+    "model_reports_match": true,
+    "preserved_snapshots_verified": 108,
+    "raw_model_code_unchanged": true,
+    "stored_outcomes_rechecked": 8
+  },
+  "source_checkpoint_before_edits": "3d4486373d2f89c42a8ce4b7cf9ae8905af4cfd4",
+  "storage": {
+    "integrity": "ok",
+    "old_snapshots_unchanged": 108,
+    "outcomes": 8,
+    "prediction_snapshots": 108,
+    "private_local_database_not_in_git": true
+  },
+  "supervision": {
+    "all_owned_children_stopped": true,
+    "controlled_frontend_exit_stopped_backend": true,
+    "duplicate_ports_refused": true,
+    "previous_snapshots_unchanged": 108,
+    "sigterm_stopped_children_and_freed_ports": true
+  },
+  "tests": {
+    "backend_passed": 166,
+    "browser_real_api": true,
+    "frontend_passed": 25,
+    "production_build": true,
+    "strict_backend_modules": 117,
+    "strict_launcher": true
+  },
+  "tours": {
+    "atp": {
+      "browser_verified": {
+        "hasHistoricalPeriod": true,
+        "hasLiveResults": true,
+        "hasStaleWarning": true,
+        "rows": 3
+      },
+      "data_through": "2026-05-25",
+      "historical_evaluation": {
+        "coverage_note": "Source coverage is partial and does not establish every match in the period",
+        "metrics": {
+          "accuracy": 0.6614509246088194,
+          "brier": 0.2107458256023366,
+          "ece_10_bins": 0.029602441695869,
+          "log_loss": 0.6087441656423914,
+          "matches": 1406,
+          "roc_auc": 0.7292922113686803
+        },
+        "period": "2026 (available source matches)",
+        "protocol": "Frozen estimators; chronological stages; 21-day result availability embargo",
+        "test_end": "2026-05-25",
+        "test_start": "2026-01-04"
+      },
+      "live_first_forecast_per_match": {
+        "accuracy": 0.0,
+        "brier": 0.2534267928985764,
+        "completed": 1,
+        "correct": 0,
+        "forecast_model_pairs": 4,
+        "pending": 3,
+        "scoring_rule": "First recorded forecast per unique fixture",
+        "unique_completed_matches": 1,
+        "void": 0
+      },
+      "model_version": "atp-20261015T205532980659Z-04c7c14f1679",
+      "paired_odds_available": 0,
+      "supported_upcoming": 3,
+      "unavailable": 0
+    },
+    "wta": {
+      "browser_verified": {
+        "hasHistoricalPeriod": true,
+        "hasLiveResults": true,
+        "hasStaleWarning": true,
+        "rows": 7
+      },
+      "data_through": "2026-04-21",
+      "historical_evaluation": {
+        "coverage_note": "Source coverage is partial and does not establish every match in the period",
+        "metrics": {
+          "accuracy": 0.6624869383490073,
+          "brier": 0.21013217814768176,
+          "ece_10_bins": 0.03239565877789652,
+          "log_loss": 0.6063925916080151,
+          "matches": 957,
+          "roc_auc": 0.7289488179338324
+        },
+        "period": "2026 (available source matches)",
+        "protocol": "Frozen estimators; chronological stages; 21-day result availability embargo",
+        "test_end": "2026-04-21",
+        "test_start": "2026-01-04"
+      },
+      "live_first_forecast_per_match": {
+        "accuracy": 0.2857142857142857,
+        "brier": 0.3562634933097087,
+        "completed": 7,
+        "correct": 2,
+        "forecast_model_pairs": 15,
+        "pending": 8,
+        "scoring_rule": "First recorded forecast per unique fixture",
+        "unique_completed_matches": 7,
+        "void": 0
+      },
+      "model_version": "wta-20261015T205603748796Z-7b184aca866f",
+      "paired_odds_available": 0,
+      "supported_upcoming": 7,
+      "unavailable": 7
+    }
+  },
+  "verdict": "Working supported-fixture personal research workflow; not production-ready"
+}

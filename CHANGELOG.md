@@ -7,6 +7,33 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 
 ## [Unreleased]
 
+### Added
+- Research-only surface serve/return, recent-result and observed-inactivity ablation with delayed chronology, fold-local missing-value preprocessing, immutable experimental artifacts and paired evaluation; deployed models remain untouched.
+- Private preservation guide distinguishing GitHub source, published environment state and independently recoverable model/ledger copies, with checksum and non-overwriting recovery instructions.
+- Separate high-confidence/value dashboard categories with versioned filters, conservative net EV, quote expiry and explicit missing-evidence reasons.
+- Opt-in, persistently request-budgeted multi-book moneyline adapter with exact fixture binding, source timestamps, paired no-vig consensus and immutable price/split/selection archives.
+- Category-specific paper performance, real-price benchmarks, explicit-closing-only CLV, date-block return intervals and planned 100/250/500/1000-pick checks retaining losing picks.
+- Reproducible five-family chronological ML/ensemble study with paired deployed-model comparisons and guarded version-specific calibration-bin evidence; no candidate deployment or profitability claim.
+- Public ticket/money manual-entry and provider contracts with provenance/timing validation; unsupported public-data effects remain unmeasured.
+- Real-data daily-use readiness audit and step-by-step local Mac setup, startup, monitoring and private-backup instructions.
+- Inspectable ATP/WTA prediction/settlement poller health with attempt, success, error-class and missed-cycle timestamps.
+- Reviewed 2026 WTA surfaces for Osaka, Ningbo, and Rio with official calendar/provider identity evidence and existing WTA 125 validation safeguards.
+- Reviewed partial-2026 ATP/WTA data extension with 2,464 additional licensed records, original manifest snapshots, and hash-named local acquisition reviews.
+- Annual train/selection/calibration/test protocols, five-year chronological walk-forward reports, paired date-block uncertainty intervals, and historical minimum-player-coverage metrics.
+- Explicit 2026 evaluation labels for deployed models and visible per-row WTA 125 validation warnings.
+- Reproducible raw/eligible history suitability reports for serving-count completeness, missing demographics, and player identities; existing audit files are never overwritten.
+- Reviewed 2026 WTA surface coverage for Mallorca, Rovereto, and Lisbon with explicit cross-provider IDs, name/season checks, and WTA 125 accuracy/EV safeguards.
+- Forecast snapshots retain changed surface provenance and tournament level without overwriting earlier records.
+- Opponent-adjusted result/serve/return residuals using frozen pre-event baselines, optional recent-form ablation, and auditable feature-schema/runtime metadata in versioned ATP/WTA models.
+- Regression tests for fold-local preprocessing, chronological mirrors, consistent live calibration, paired bookmaker consensus, bounded EV admission, and artifact reload/preservation.
+- Dashboard details for informational EV, missing quotes, zero-stake guard failures, and their reasons.
+- Append-only live outcome settlement, void handling for retirements/defaults, and separate current-model/all-version live performance on the dashboard.
+- Personal ATP/WTA prediction engine with global/surface Elo, lightweight model selection on 2022, probability calibration on 2023, and chronological held-out 2024–2025 evaluation.
+- Genuine upcoming singles forecasts on the dashboard, unavailable-match explanations, measured accuracy, and stale-history warnings.
+- Automatic five-minute private pre-match tracking with immutable SQLite events, model versions, probabilities, and observed odds when available.
+- Reproducible ATP/WTA research-data restoration with pinned revisions, SHA-256 verification, original CC BY-NC-SA attribution, and preservation of existing files.
+- Integrity tests for malformed data, corrupt downloads, and repeat downloads that preserve local files.
+
 ### Security
 - CSRF guard sugli endpoint mutanti: nuovo middleware
   `block_cross_site_writes` in `backend/src/api_server.py` che rifiuta con
@@ -23,6 +50,23 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Personal-use launcher checks HTTP readiness, supports private standalone production startup, supervises both services, and cleans up owned children on errors or shutdown.
+- Failed dashboard refreshes clear old forecast cards; requests have a 25-second deadline and bypass browser caches.
+- Dashboard labels the separate legacy model/metrics/track panels so they cannot be confused with personal forecasts.
+- Upcoming schedules query a rolling seven-day range instead of only today's tournaments, retaining the exact time horizon and original quote observation times.
+- Production startup instructions use the configured Next.js standalone server with its public/static assets.
+- Historical restoration follows only reviewed manifest years instead of stopping unconditionally at 2025; unsupported years still fail without overwriting source files.
+- Single-class evaluation now reports undefined AUC and computes valid binary log-loss instead of inventing an AUC score.
+- Serving/returning summaries skip partial, nonfinite, negative, or contradictory point counts instead of treating missing points won as zero.
+- Legacy raw cleaning no longer fills missing ages/heights with full-dataset means; demographic imputation is deferred to training folds.
+- Legacy stacking now tunes and stops inside each outer training fold, refits transforms per fold, and shares symmetrization/calibration order across evaluation, history, and inference.
+- Adaptive temporal splits keep full dates and match mirrors together; fully missing training columns are retained.
+- Bookmaker consensus now de-vigs paired quotes per book, deduplicates relays, and preserves player orientation; TheOddsAPI no longer creates fictitious cross-book price pairs.
+- Guarded betting analysis requires calibration/freshness provenance, recent quotes, independent paired books, edge/positive net EV, and caps quarter Kelly at 1% with zero stake on failure.
+- Historical features now wait 21 days after tournament start before using outcomes; unavailable year-end labels are excluded from fitting, selection, and calibration.
+- Future forecast timestamps are rejected; repeated odds snapshots cannot inflate live accuracy or erase earlier model performance.
+- Production dashboard builds use system fonts and no longer download Inter from Google Fonts.
+- Strict Python typing accepts the Betfair JSON request body and normalizes LightGBM probability output before slicing.
 - `run_training_pipeline` (`backend/src/api/routes/training.py`): sostituito
   `assert process.stdout is not None` con un controllo esplicito che solleva
   `RuntimeError` (gli `assert` verrebbero rimossi con `python -O`).
