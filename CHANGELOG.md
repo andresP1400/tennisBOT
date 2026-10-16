@@ -8,6 +8,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Real-data daily-use readiness audit and step-by-step local Mac setup, startup, monitoring and private-backup instructions.
+- Inspectable ATP/WTA prediction/settlement poller health with attempt, success, error-class and missed-cycle timestamps.
 - Reviewed 2026 WTA surfaces for Osaka, Ningbo, and Rio with official calendar/provider identity evidence and existing WTA 125 validation safeguards.
 - Reviewed partial-2026 ATP/WTA data extension with 2,464 additional licensed records, original manifest snapshots, and hash-named local acquisition reviews.
 - Annual train/selection/calibration/test protocols, five-year chronological walk-forward reports, paired date-block uncertainty intervals, and historical minimum-player-coverage metrics.
@@ -41,6 +43,9 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Personal-use launcher checks HTTP readiness, supports private standalone production startup, supervises both services, and cleans up owned children on errors or shutdown.
+- Failed dashboard refreshes clear old forecast cards; requests have a 25-second deadline and bypass browser caches.
+- Dashboard labels the separate legacy model/metrics/track panels so they cannot be confused with personal forecasts.
 - Upcoming schedules query a rolling seven-day range instead of only today's tournaments, retaining the exact time horizon and original quote observation times.
 - Production startup instructions use the configured Next.js standalone server with its public/static assets.
 - Historical restoration follows only reviewed manifest years instead of stopping unconditionally at 2025; unsupported years still fail without overwriting source files.

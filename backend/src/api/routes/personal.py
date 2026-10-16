@@ -9,10 +9,17 @@ from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError
 
 from api.personal_engine import PredictionCard, get_card, load_bundle
+from api.personal_status import worker_status
 from pipeline.personal_tracking import Prediction, read_predictions
 from pipeline.personal_settlement import live_summary
 
 router = APIRouter()
+
+
+@router.get("/api/personal/status")
+def status() -> dict[str, object]:
+    """Poller timestamps distinguish API liveness from successful automatic updates."""
+    return worker_status()
 
 
 @router.get("/api/personal/predictions", response_model=PredictionCard)

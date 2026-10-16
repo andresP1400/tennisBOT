@@ -17,10 +17,14 @@ export function usePersonalPredictions(tour: "atp" | "wta") {
     async function load() {
       setLoading(true)
       try {
-        const response = await getPersonalPredictions(tour, controller.signal)
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(25_000)])
+        const response = await getPersonalPredictions(tour, signal)
         if (!controller.signal.aborted) { setCard(response); setError(null) }
       } catch (failure) {
-        if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : "Predictions unavailable")
+        if (!controller.signal.aborted) {
+          setCard(null)
+          setError(failure instanceof Error || failure instanceof DOMException ? failure.message : "Predictions unavailable")
+        }
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }

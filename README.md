@@ -15,13 +15,7 @@
 
 <br/>
 
-<div>
-  <img src="https://img.shields.io/badge/Status_CI-Passing-brightgreen?style=flat-square" alt="CI status" />
-  <img src="https://img.shields.io/badge/Auto_Training-Weekly-blue?style=flat-square" alt="Auto training" />
-  <img src="https://img.shields.io/badge/Accuracy-Test_67.85%25-orange?style=flat-square" alt="Accuracy" />
-  <img src="https://img.shields.io/badge/ROC_AUC-Test_0.744-blue?style=flat-square" alt="AUC" />
-  <img src="https://img.shields.io/badge/CLV_avg-%2B1.5%25-green?style=flat-square" alt="CLV" />
-</div>
+<p>Personal research workflow: working real-data predictions and tracking, with unresolved data-freshness and coverage limits. No verified profitability claim.</p>
 
 <br/>
 <hr />
@@ -30,6 +24,8 @@
 ## Personal prediction engine
 
 The verified personal-use engine now trains from pinned, licensed historical data and displays recorded upcoming forecasts on the dashboard. It requires no sportsbook keys. See [the personal engine guide](docs/personal-engine.md) for reproducible training, measured chronological backtests, data-age limitations, and private tracking storage. Historical figures elsewhere in this README describe the earlier stacking pipeline, not this engine's measured results.
+
+Read the [daily-use readiness report](docs/readiness-report.md) and [exact Mac setup/start instructions](docs/mac-daily-use.md) before running the personal engine. The legacy tools described below use separate artifacts and tracking; their weekly GitHub job does not refresh this personal engine.
 
 ## 📌 Preview
 
@@ -316,10 +312,9 @@ python backend/src/api_server.py
 ### 4. Web dashboard
 ```bash
 cd frontend
-npm install
-npm run dev          # dev mode
-# or
-npm run build && npm run start   # production
+npm ci
+npm run dev -- --hostname 127.0.0.1   # development
+# For production, follow docs/mac-daily-use.md and use python start_all.py --production from the root
 # → http://localhost:3000  (proxies /api/* to :9090)
 ```
 
@@ -400,28 +395,16 @@ No GPU needed — stacking on LightGBM/XGBoost trains on CPU within the 6h runne
 
 ---
 
-## 📊 Sample Results (real run, ATP 2000-2026, walk-forward test 2024-2026)
+## Measured personal-engine results
 
-| Metric | ATP Test (7,192 matches) | WTA Test (6,900 matches) |
-| :--- | :---: | :---: |
-| ROC-AUC | 0.744 | 0.747 |
-| Accuracy | 67.85% | 67.5% |
-| Brier | 0.205 | 0.205 |
-| Log-loss | 0.596 | 0.583 |
-| ECE (10-bin) | 0.032 | 0.028 |
-| **CLV avg (open → close)** | **+1.52% (94.6% beat)** | **+1.36% (92.2% beat)** |
-| **ROI edge-band >10%** | **+15.5%** | **+26.1%** |
+| Available 2026 holdout | Matches | Accuracy | Brier | Log-loss |
+| --- | ---: | ---: | ---: | ---: |
+| ATP | 1,406 | 66.15% | 0.2107 | 0.6087 |
+| WTA | 957 | 66.25% | 0.2101 | 0.6064 |
 
-**Top features** (LightGBM importance): `ranking_diff`, `elo_surface_diff`, `win_on_1st_serve_pct_diff`, `sos_last_10_diff`, `win_on_2nd_serve_pct_diff`, `first_serve_return_pts_won_pct_diff`, `days_rest_diff`, `log_rank_diff`, `ace_pct_diff`, `first_serve_in_pct_diff`.
+These are retrospective chronological tests on partial-year licensed history, with fitting through 2023, selection in 2024 and calibration in 2025. They are separate from live performance and do not establish profitable betting. See [the protocol and reports](docs/personal-engine.md). Player history is stale for current daily use.
 
-> **Honest market benchmark:** with the fixed odds pipeline (legacy tennis-data
-> columns 2001-2014, Pinnacle/Betfair Exchange/Bet365 opening, Avg/Max closing,
-> coverage 55% open / 69% close) the odds-aware **WTA model beats the closing
-> market** on log-loss (0.5825 vs 0.5834) and both tours show **positive CLV**
-> (+1.5% avg, ~93% beat rate) with strong ROI in the >10% edge segment. ATP
-> opening-line benchmark still slightly ahead (0.5929 vs 0.5977); the exchange
-> CLV snapshot pipeline (`backend/src/features/betfair_historical.py`) keeps accumulating
-> the pre-match data needed to close that gap.
+Earlier README accuracy/market-return figures were not reproduced in the readiness audit and are no longer presented as current measured evidence. The [earlier README remains preserved in Git](https://github.com/andresP1400/tennisBOT/blob/3d4486373d2f89c42a8ce4b7cf9ae8905af4cfd4/README.md).
 
 ---
 

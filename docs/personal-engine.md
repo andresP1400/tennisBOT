@@ -67,6 +67,8 @@ Schema 2 includes global/surface Elo with small-sample shrinkage, last-20-match 
 
 ## Run and inspect forecasts
 
+For daily startup, use `python start_all.py --production` after building the dashboard. It supervises both private services, checks HTTP readiness, and copies standalone assets. See [exact Mac instructions](mac-daily-use.md) and the [real-data readiness audit](readiness-report.md). The equivalent two-terminal commands remain below.
+
 ```bash
 python -m uvicorn api_server:app --app-dir backend/src --host 127.0.0.1 --port 9090
 # In another terminal:
@@ -106,6 +108,7 @@ Endpoints:
 - `GET /api/personal/backtest?tour=atp`: measured results for the deployed model.
 - `GET /api/personal/history?limit=100`: exact historical prediction snapshots.
 - `GET /api/personal/live-performance?tour=atp`: current-version observed results; add `scope=all` for per-model and unique-fixture all-version results.
+- `GET /api/personal/status`: last attempts/successes and sanitized error classes for both tours' prediction/settlement operations. A healthy liveness probe alone does not establish successful polling.
 
 Both services bind to loopback for personal use. No web preview, public deployment, credentials, or outbound messages are created by this setup.
 
