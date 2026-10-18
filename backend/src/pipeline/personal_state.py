@@ -50,6 +50,9 @@ class Player:
     age: float = 27.0
     height: float = 180.0
     last_date: date | None = None
+    last_serve_date: date | None = None
+    last_return_date: date | None = None
+    last_rank_date: date | None = None
     results: deque[float] = field(default_factory=lambda: deque(maxlen=20))
     serve: deque[tuple[float, float]] = field(default_factory=lambda: deque(maxlen=20))
     returns: deque[tuple[float, float]] = field(

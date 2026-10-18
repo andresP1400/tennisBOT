@@ -24,6 +24,7 @@ def runtime_metadata() -> dict[str, object]:
     """Keep library versions, feature order, and implementation identity auditable."""
     directory = Path(__file__).parent
     sources = [directory / f"personal_{name}.py" for name in MODEL_SOURCE_FILES]
+    sources += sorted((directory.parent / "data").glob("result_*.py"))
     return {
         "runtime_versions": {
             name: package_version(name)

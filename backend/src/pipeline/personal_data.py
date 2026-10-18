@@ -11,6 +11,7 @@ import pandas as pd
 
 from config import RAW_DIR
 from data.licensed_history import MANIFEST_DIR, SourceManifest, download_history
+from data.result_extension import extension_results
 from pipeline.personal_state import (
     Player,
     SURFACES,
@@ -22,7 +23,9 @@ from pipeline.personal_state import (
 )
 
 
-def load_history(tour: str) -> tuple[pd.DataFrame, dict[str, object]]:
+def load_history(
+    tour: str, *, include_extension: bool = True
+) -> tuple[pd.DataFrame, dict[str, object]]:
     """Verify source bytes, quantify exclusions, and reject impossible metadata."""
     download_history(tour)
     manifest = SourceManifest.model_validate_json(
@@ -56,12 +59,19 @@ def load_history(tour: str) -> tuple[pd.DataFrame, dict[str, object]]:
         ).hexdigest(),
         "rows_by_year": frame.groupby(frame["date"].dt.year).size().to_dict(),
     }
-    return (
+    clean = (
         frame.loc[~excluded]
         .sort_values(["date", "tourney_id", "match_num"])
-        .reset_index(drop=True),
-        audit,
+        .reset_index(drop=True)
     )
+    if include_extension:
+        extra, extension_audit = extension_results(clean, tour)
+        audit["result_extension"] = extension_audit
+        audit["original_data_through"] = str(clean.date.max().date())
+        clean = pd.concat([clean, extra], ignore_index=True).sort_values(
+            ["date", "tourney_id", "match_num"]
+        )
+    return clean.reset_index(drop=True), audit
 
 
 def finite_number(row: pd.Series, key: str, default: float) -> float:
@@ -91,6 +101,8 @@ def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
     update_ratings(winner, loser, str(row["surface"]))
     for prefix, opposite, player in [("winner", "l", winner), ("loser", "w", loser)]:
         player.rank = max(1.0, finite_number(row, f"{prefix}_rank", player.rank))
+        if pd.notna(row.get(f"{prefix}_rank")) and float(row[f"{prefix}_rank"]) > 0:
+            player.last_rank_date = row["date"].date()
         player.points = max(
             0.0, finite_number(row, f"{prefix}_rank_points", player.points)
         )
@@ -101,10 +113,12 @@ def observe_match(row: pd.Series, players: dict[int, Player]) -> None:
         won, total = serve_counts(row, side)
         other_won, other_total = serve_counts(row, opposite)
         if 0 <= won <= total and total > 0:
+            player.last_serve_date = row["date"].date()
             player.serve.append((won, total))
             baseline = finite_number(row, f"{prefix}_expected_serve", 0.6)
             player.adjusted_serve.append(won / total - baseline)
         if 0 <= other_won <= other_total and other_total > 0:
+            player.last_return_date = row["date"].date()
             player.returns.append((other_total - other_won, other_total))
             baseline = finite_number(row, f"{prefix}_expected_return", 0.4)
             player.adjusted_return.append(
@@ -168,6 +182,7 @@ def feature_record(
         "available_at": day + pd.Timedelta(days=21),
         "year": day.year,
         "surface": row["surface"],
+        "best_of": int(row["best_of"]),
         "label": int(first == winner),
         "features": vector,
         "player1": players[first].name,

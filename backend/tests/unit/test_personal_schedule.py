@@ -57,7 +57,7 @@ def test_rolling_schedule_includes_next_tournament_without_fabricating_draws(
 
     monkeypatch.setattr(schedule, "fetch_scoreboard", fetch)
     fixtures = schedule.fetch_fixtures("wta", now)
-    assert requests == [("wta", "20261016-20261023")]
+    assert sorted(requests) == [("wta", f"202610{day}") for day in range(16, 24)]
     assert len(fixtures) == 1
     assert fixtures[0].id == "espn:wta:future"
     assert fixtures[0].surface == "Hard"
@@ -77,7 +77,7 @@ def test_range_uses_utc_dates_across_year_boundary(
 
     monkeypatch.setattr(schedule, "fetch_scoreboard", fetch)
     assert schedule.fetch_fixtures("atp", now) == []
-    assert requests == [("atp", "20270101-20270108")]
+    assert sorted(requests) == [("atp", f"202701{day:02}") for day in range(1, 9)]
 
 
 def test_cached_schedule_preserves_original_quote_observation_time(
@@ -101,3 +101,42 @@ def test_cached_schedule_preserves_original_quote_observation_time(
     assert fixture.odds_observed_at == fixture.fetched_at == observed
     assert fixture.odds1 == pytest.approx(1.5)
     assert fixture.odds2 == pytest.approx(2.7)
+
+
+def test_day_indexes_recover_events_omitted_from_a_range_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 10, 18, 16, tzinfo=timezone.utc)
+    match = scheduled_match("next-week", now + timedelta(days=1))
+    upcoming = schedule.Scoreboard.model_validate(
+        {
+            "events": [
+                scoreboard_event("345-2026", "Kinoshita Group Japan Open", [match])
+            ],
+        }
+    )
+
+    def fetch(tour: str, dates: str) -> tuple[schedule.Scoreboard, datetime]:
+        return (upcoming if dates == "20261019" else schedule.Scoreboard()), now
+
+    monkeypatch.setattr(schedule, "fetch_scoreboard", fetch)
+    fixtures = schedule.fetch_fixtures("wta", now)
+    assert len(fixtures) == 1 and fixtures[0].surface == "Hard"
+
+
+def test_newer_live_status_removes_an_older_scheduled_fixture() -> None:
+    now = datetime(2026, 10, 18, 16, tzinfo=timezone.utc)
+    match = scheduled_match("rescheduled", now + timedelta(days=1))
+    old = schedule.Scoreboard.model_validate(
+        {"events": [scoreboard_event("963-2026", "Ningbo Open", [match])]}
+    )
+    match["status"] = {"type": {"state": "in", "name": "STATUS_IN_PROGRESS"}}
+    new = schedule.Scoreboard.model_validate(
+        {"events": [scoreboard_event("963-2026", "Ningbo Open", [match])]}
+    )
+    assert (
+        schedule.merge_schedule_snapshots(
+            [(new, now), (old, now - timedelta(minutes=1))], "wta", now
+        )
+        == []
+    )

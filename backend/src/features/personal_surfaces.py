@@ -55,7 +55,7 @@ REVIEWS = {
     ),
     ("wta", "963", "2026"): SurfaceReview(
         "Hard",
-        ("Ningbo Open",),
+        ("Ningbo Open", "BNB Ningbo Open"),
         WTA_CALENDAR,
         "WTA 500",
     ),

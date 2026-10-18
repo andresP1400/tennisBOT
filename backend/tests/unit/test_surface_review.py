@@ -18,6 +18,7 @@ from features.personal_surfaces import verified_surface
         ("381-2026", "Dongfeng Voyah Wuhan Open", "Hard"),
         ("345-2026", "Kinoshita Group Japan Open", "Hard"),
         ("963-2026", "Ningbo Open", "Hard"),
+        ("963-2026", "BNB Ningbo Open", "Hard"),
         ("1037-2026", "Río Ladies Open by MundoTênis Tours", "Clay"),
     ],
 )

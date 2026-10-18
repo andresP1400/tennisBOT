@@ -105,10 +105,58 @@ def predict_fixture(bundle: PersonalBundle, fixture: Fixture) -> Prediction:
         predicted_at=datetime.now(timezone.utc),
         data_through=bundle.data_through,
         history_age_days=age,
-        warning=forecast_warning(fixture, age),
-        betting_analysis=analyze_fixture(prob1, fixture, age),
+        warning=model_warning(bundle, fixture, age),
+        betting_analysis=analyze_fixture(
+            prob1, fixture, statistics_age(bundle, age, fixture)
+        ),
     )
     return record_prediction(prediction)
+
+
+def statistics_age(
+    bundle: PersonalBundle, result_age: int, fixture: Fixture | None = None
+) -> int:
+    """Fresh result dates must not disguise old serve/return statistics for EV guards."""
+    through = bundle.report.get("statistics_through")
+    if not isinstance(through, str):
+        return (
+            max(result_age, 31) if "statistics_through" in bundle.report else result_age
+        )
+    today = datetime.now(timezone.utc).date()
+    ages = [result_age, (today - date.fromisoformat(through)).days]
+    if fixture is not None:
+        for name in (fixture.player1, fixture.player2):
+            identifier = bundle.names.get(normalize_name(name))
+            player = bundle.players.get(identifier) if identifier is not None else None
+            for field in (
+                "last_date",
+                "last_serve_date",
+                "last_return_date",
+                "last_rank_date",
+            ):
+                observed = getattr(player, field, None)
+                ages.append(
+                    (today - observed).days if isinstance(observed, date) else 31
+                )
+    return max(ages)
+
+
+def model_warning(bundle: PersonalBundle, fixture: Fixture, age: int) -> str | None:
+    """Keep partial input coverage visible using the existing dashboard warning field."""
+    messages = [forecast_warning(fixture, age), bundle.report.get("input_limitations")]
+    if (
+        "input_limitations" in bundle.report
+        and statistics_age(bundle, age, fixture) > 30
+    ):
+        messages.append(
+            "Player-specific form, serve/return or ranking observations are stale or missing."
+        )
+    return (
+        "; ".join(
+            message for message in messages if isinstance(message, str) and message
+        )
+        or None
+    )
 
 
 def forecast_warning(fixture: Fixture, age: int) -> str | None:

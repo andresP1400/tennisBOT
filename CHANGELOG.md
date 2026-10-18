@@ -8,6 +8,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Reviewed noncommercial 2026 ATP/WTA result snapshots with checksum pinning, conservative identity/overlap checks, detailed-statistics retention, and matched out-of-sample freshness comparisons.
+- Candidate-only model saving and player-specific result/statistic freshness warnings, preserving existing model versions and immutable prediction ledgers.
 - Research-only surface serve/return, recent-result and observed-inactivity ablation with delayed chronology, fold-local missing-value preprocessing, immutable experimental artifacts and paired evaluation; deployed models remain untouched.
 - Private preservation guide distinguishing GitHub source, published environment state and independently recoverable model/ledger copies, with checksum and non-overwriting recovery instructions.
 - Separate high-confidence/value dashboard categories with versioned filters, conservative net EV, quote expiry and explicit missing-evidence reasons.
@@ -50,6 +52,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
   invariato per i nomi validi; il regex già impediva il traversal.
 
 ### Fixed
+- Reject impossible date-like height values in incoming detailed statistics while retaining raw source evidence and prior valid player observations.
+- Fetch bounded daily fixture indexes when ESPN range responses omit next-week events; retain observation timestamps and newer cancellation/live statuses.
 - Personal-use launcher checks HTTP readiness, supports private standalone production startup, supervises both services, and cleans up owned children on errors or shutdown.
 - Failed dashboard refreshes clear old forecast cards; requests have a 25-second deadline and bypass browser caches.
 - Dashboard labels the separate legacy model/metrics/track panels so they cannot be confused with personal forecasts.

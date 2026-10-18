@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -27,6 +28,7 @@ from pipeline.personal_metadata import runtime_metadata
 from pipeline.personal_protocol import annual_partitions, evaluation_metadata
 from pipeline.personal_scores import arrays, metrics, coverage_metrics
 from pipeline.personal_fitting import fit_candidates, fit_calibrator
+from pipeline.result_freshness import freshness_metadata
 
 logger = get_logger(__name__)
 
@@ -91,7 +93,11 @@ def chronological_partitions(
 
 
 def train(
-    tour: str, use_recent_form: bool = True, test_year: int | None = None
+    tour: str,
+    use_recent_form: bool = True,
+    test_year: int | None = None,
+    *,
+    activate: bool = True,
 ) -> dict[str, object]:
     """Build real-data artifacts and save every version without replacing earlier ones."""
     history, audit = load_history(tour)
@@ -125,8 +131,21 @@ def train(
         )
     )
     report.update(runtime_metadata())
+    if "result_extension" in audit:
+        extension = audit["result_extension"]
+        detailed = isinstance(extension, dict) and bool(
+            extension.get("point_statistics_supplied")
+        )
+        report.update(freshness_metadata(history, detailed))
     return save_artifacts(
-        tour, family, estimator, calibrator, elo_calibrator, players, report
+        tour,
+        family,
+        estimator,
+        calibrator,
+        elo_calibrator,
+        players,
+        report,
+        activate=activate,
     )
 
 
@@ -162,6 +181,8 @@ def save_artifacts(
     elo_calibrator: LogisticRegression,
     players: dict[int, Player],
     report: dict[str, object],
+    *,
+    activate: bool = True,
 ) -> dict[str, object]:
     """Publish a local version pointer only after model and audit report are durable."""
     fingerprint = hashlib.sha256(
@@ -191,15 +212,26 @@ def save_artifacts(
     (report_directory / f"{version}.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n"
     )
-    pointer = directory / f"{tour}-latest.json.tmp"
-    pointer.write_text(json.dumps({"version": version}))
-    pointer.replace(directory / f"{tour}-latest.json")
+    if activate:
+        activate_version(tour, version)
     logger.info(
         "Trained %s: %s",
         version,
         report.get("evaluation", report.get("test_2024_2025")),
     )
     return report
+
+
+def activate_version(tour: str, version: str) -> None:
+    """Atomically select an already-written model without deleting any version."""
+    directory = MODELS_DIR / "personal"
+    if tour not in ("atp", "wta") or not version.startswith(tour + "-"):
+        raise ValueError("Model version must belong to the selected tour")
+    if Path(version).name != version or not (directory / f"{version}.joblib").is_file():
+        raise ValueError("Model artifact must exist before activation")
+    pointer = directory / f"{tour}-latest.json.tmp"
+    pointer.write_text(json.dumps({"version": version}))
+    pointer.replace(directory / f"{tour}-latest.json")
 
 
 def main() -> None:

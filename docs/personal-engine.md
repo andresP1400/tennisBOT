@@ -1,5 +1,7 @@
 # Personal ATP/WTA prediction engine
 
+October 18 continuation: [reviewed historical refresh](data-sources/current-results-20261018.md) and [evaluation results](result-refresh-20261018.md) supersede the source-age limits and active versions at earlier checkpoints below; original results remain preserved.
+
 This engine uses real match history and local CPU models. It does not require sportsbook, LLM, or research-provider keys, and never substitutes simulated forecasts when historical coverage is missing.
 
 ## Reproduce training

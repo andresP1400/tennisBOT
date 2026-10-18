@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import math
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from pydantic import BaseModel, Field
@@ -104,11 +105,12 @@ def fetch_scoreboard(tour: str, day: str) -> tuple[Scoreboard, datetime]:
         cached = _scoreboards.get((tour, day))
         if cached and time.monotonic() - cached[0] < 240:
             return cached[1], cached[2]
-        url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard"
-        response = requests.get(url, params={"dates": day}, timeout=15)
-        response.raise_for_status()
-        board = Scoreboard.model_validate_json(response.content)
-        observed = datetime.now(timezone.utc)
+    url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard"
+    response = requests.get(url, params={"dates": day}, timeout=15)
+    response.raise_for_status()
+    board = Scoreboard.model_validate_json(response.content)
+    observed = datetime.now(timezone.utc)
+    with _scoreboard_lock:
         _scoreboards[(tour, day)] = (time.monotonic(), board, observed)
         if len(_scoreboards) > 64:
             oldest = min(_scoreboards, key=lambda key: _scoreboards[key][0])
@@ -180,15 +182,32 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
 
 
 def fetch_fixtures(tour: str, now: datetime | None = None) -> list[Fixture]:
-    """Fetch small public schedule responses; do not scrape or bypass restrictions."""
+    """Range responses omit events; bounded cached day indexes cover the actual horizon."""
     now = now or datetime.now(timezone.utc)
     now = now.astimezone(timezone.utc)
-    last_day = now + timedelta(days=7)
-    date_range = f"{now:%Y%m%d}-{last_day:%Y%m%d}"
-    board, observed = fetch_scoreboard(tour, date_range)
-    fixtures = parse_fixtures(board, tour, now)
-    for fixture in fixtures:
-        fixture.fetched_at = observed
-        if fixture.odds_observed_at:
-            fixture.odds_observed_at = observed
-    return fixtures
+    days = [(now + timedelta(days=index)).strftime("%Y%m%d") for index in range(8)]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        snapshots = list(pool.map(lambda day: fetch_scoreboard(tour, day), days))
+    return merge_schedule_snapshots(snapshots, tour, now)
+
+
+def merge_schedule_snapshots(
+    snapshots: list[tuple[Scoreboard, datetime]],
+    tour: str,
+    now: datetime,
+) -> list[Fixture]:
+    """A newer live/cancelled status removes older pre-match rows for the same ID."""
+    fixtures: dict[str, Fixture] = {}
+    slug = "mens-singles" if tour == "atp" else "womens-singles"
+    for board, observed in sorted(snapshots, key=lambda item: item[1]):
+        for event in board.events:
+            for group in event.groupings:
+                if group.grouping.slug == slug:
+                    for match in group.competitions:
+                        fixtures.pop(f"espn:{tour}:{match.id}", None)
+        for fixture in parse_fixtures(board, tour, now):
+            fixture.fetched_at = observed
+            if fixture.odds_observed_at:
+                fixture.odds_observed_at = observed
+            fixtures[fixture.id] = fixture
+    return sorted(fixtures.values(), key=lambda fixture: fixture.commence_time)

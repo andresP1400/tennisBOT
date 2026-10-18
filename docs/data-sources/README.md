@@ -1,6 +1,8 @@
 # Historical match data
 
-The current personal research dataset contains 120,460 raw singles records: 62,895 ATP and 57,565 WTA rows in 44 annual files covering 2005–partial 2026. The original 117,996 rows in 42 files remain unchanged; their manifests are archived under `snapshots/2005-2025/`. It is real historical data, not generated examples. Raw counts precede exclusion of incomplete matches and other training-quality checks.
+The October 18 result/statistics refresh is documented in [the current-source review](current-results-20261018.md). It appends checked, noncommercial TennisMyLife exports without changing these original files or earlier evaluation periods. See the result-refresh report for current coverage, calibration and comparison limits.
+
+The original licensed base snapshot contains 120,460 raw singles records: 62,895 ATP and 57,565 WTA rows in 44 annual files covering 2005–partial 2026. The original 117,996 rows in 42 files remain unchanged; their manifests are archived under `snapshots/2005-2025/`. It is real historical data, not generated examples. Raw counts precede exclusion of incomplete matches and other training-quality checks.
 
 Original author: **Jeff Sackmann / Tennis Abstract**. Source README snapshots in this directory preserve the original attribution and **[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)** notice. Attribution, noncommercial use, and share-alike conditions apply. The dataset's license is separate from application code. No commercial-use permission is claimed.
 
