@@ -8,6 +8,7 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/)
 ## [Unreleased]
 
 ### Added
+- Verified 2026 Almaty/Brussels ATP surface reviews with official draw provenance, bounded offline caching, strict city/event-date matching, and mismatch tests; unidentified Lyon events remain unavailable.
 - Reviewed noncommercial 2026 ATP/WTA result snapshots with checksum pinning, conservative identity/overlap checks, detailed-statistics retention, and matched out-of-sample freshness comparisons.
 - Candidate-only model saving and player-specific result/statistic freshness warnings, preserving existing model versions and immutable prediction ledgers.
 - Research-only surface serve/return, recent-result and observed-inactivity ablation with delayed chronology, fold-local missing-value preprocessing, immutable experimental artifacts and paired evaluation; deployed models remain untouched.

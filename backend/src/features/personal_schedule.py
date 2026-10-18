@@ -65,9 +65,14 @@ class Grouping(BaseModel):
     competitions: list[Competition] = Field(default_factory=list)
 
 
+class TournamentVenue(BaseModel):
+    displayName: str = ""
+
+
 class Tournament(BaseModel):
     id: str
     name: str
+    venue: TournamentVenue = Field(default_factory=TournamentVenue)
     groupings: list[Grouping] = Field(default_factory=list)
 
 
@@ -163,7 +168,9 @@ def parse_fixtures(scoreboard: Scoreboard, tour: str, now: datetime) -> list[Fix
                     )
                 ):
                     continue
-                review = verified_surface(tour, event.id, event.name, match.date)
+                review = verified_surface(
+                    tour, event.id, event.name, match.date, event.venue.displayName
+                )
                 fixtures[match.id] = Fixture(
                     id=f"espn:{tour}:{match.id}",
                     tour=tour,
