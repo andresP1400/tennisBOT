@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 class ProbabilityCalibrator:
     """Wraps isotonic regression or Platt scaling for probability calibration."""
 
-    def __init__(self, method: str = "platt"):
+    def __init__(self, method: str = "platt") -> None:
         self.method = method
         if method == "isotonic":
             self.model = IsotonicRegression(out_of_bounds="clip")
@@ -27,6 +27,16 @@ class ProbabilityCalibrator:
         self, raw_probs: np.ndarray[Any, Any], y_true: np.ndarray[Any, Any]
     ) -> "ProbabilityCalibrator":
         """Fit calibrator on validation set probabilities."""
+        raw_probs = np.asarray(raw_probs, dtype=float).ravel()
+        y_true = np.asarray(y_true).ravel()
+        if (
+            len(raw_probs) != len(y_true)
+            or not np.isfinite(raw_probs).all()
+            or np.any((raw_probs < 0) | (raw_probs > 1))
+        ):
+            raise ValueError(
+                "Calibration requires aligned finite probabilities in [0,1]"
+            )
         if self.method == "isotonic":
             self.model.fit(raw_probs, y_true)
         elif self.method == "platt":
@@ -58,6 +68,8 @@ def calibrate_probabilities(
     brier_after = brier_score_loss(y_true, calibrated)
     logger.info(f"  Brier score BEFORE calibration: {brier_before:.5f}")
     logger.info(f"  Brier score AFTER  calibration: {brier_after:.5f}")
-    improvement = (brier_before - brier_after) / brier_before * 100
+    improvement = (
+        (brier_before - brier_after) / brier_before * 100 if brier_before else 0.0
+    )
     logger.info(f"  Improvement: {improvement:.2f}%")
     return cal

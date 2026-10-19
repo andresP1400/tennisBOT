@@ -1,0 +1,49 @@
+{
+  "checked_at": "2026-10-18T21:17:38.632917+00:00",
+  "scope": "Manually reviewed, minimal tournament facts from official public draw sheets and organizer calendars. No full draw redistribution, bulk collector, or general data-reuse license inferred. PDFs retained only in private evidence backup.",
+  "organizer_identity_sources": [
+    "https://almatyopen.kz/en",
+    "https://europeanopen.be/about/"
+  ],
+  "cache_policy": "Bounded in-process positive/negative cache backed by checked-in season-specific facts; ATP reviews require name, venue, season and event-date match. No per-fixture remote lookup. Source revision and restart required for new evidence.",
+  "reviews": [
+    {
+      "tour": "atp",
+      "season": 2026,
+      "espn_id": "708",
+      "espn_name": "Almaty Open",
+      "venue": "Almaty, Kazakhstan",
+      "surface": "Hard",
+      "level": "ATP 250",
+      "start_date": "2026-10-17",
+      "end_date": "2026-10-25",
+      "main_draw_start": "2026-10-19",
+      "source_url": "https://www.protennislive.com/posting/2026/9410/mds.pdf",
+      "response_sha256": "ee760b268901c5bacbf20e1a8f4f5181354d530c5ccdce61c65fe7cd09903c78"
+    },
+    {
+      "tour": "atp",
+      "season": 2026,
+      "espn_id": "440",
+      "espn_name": "BNP Paribas Fortis European Open",
+      "venue": "Brussels, Belgium",
+      "surface": "Hard",
+      "level": "ATP 250",
+      "start_date": "2026-10-17",
+      "end_date": "2026-10-25",
+      "main_draw_start": "2026-10-19",
+      "source_url": "https://www.protennislive.com/posting/2026/7485/mds.pdf",
+      "response_sha256": "28f4dbf9f419fbe60f744fab50689e1c251374a62a6e11a26ca1644934ccb2ce"
+    }
+  ],
+  "unresolved": [
+    {
+      "espn_ids": [
+        "110-2026",
+        "452-2026"
+      ],
+      "name": "Grand Prix Auvergne-Rh\u00f4ne-Alpes",
+      "reason": "No accessible authoritative current-season identity and surface established. Old Open Parc May 2024 material is not evidence for this October 2026 event. Official ATP site returned HTTP 403; purported organizer domains unavailable. Remains fail-closed."
+    }
+  ]
+}

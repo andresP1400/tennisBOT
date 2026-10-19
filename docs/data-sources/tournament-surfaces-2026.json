@@ -1,0 +1,56 @@
+{
+  "source_url": "https://api.wtatennis.com/tennis/tournaments/?page=0&pageSize=100&from=2026-10-01&to=2026-10-31",
+  "checked_at": "2026-10-15T19:10:00.495732+00:00",
+  "response_sha256": "3f8a8104cdd68693824e0a7736770eeb6ccf8fe8155a6abf50abf55b0a884d76",
+  "scope": "Reviewed factual surface metadata; not a redistribution license for the full calendar or match data",
+  "reviews": [
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "1079",
+      "espn_name": "Lisboa Belem Open",
+      "wta_id": 1168,
+      "wta_name": "Lisboa Belem Open - Lisbon, POR",
+      "surface": "Clay",
+      "level": "WTA 125",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18"
+    },
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "1025",
+      "espn_name": "RoveretOpen Città della Pace",
+      "wta_id": 1140,
+      "wta_name": "RoveretOpen Città della Pace - Rovereto, ITA",
+      "surface": "Hard",
+      "level": "WTA 125",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18"
+    },
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "1020",
+      "espn_name": "Vanda Pharmaceuticals Mallorca Women's Championships",
+      "wta_id": 1128,
+      "wta_name": "Vanda Pharmaceuticals Mallorca Women's Championships - Mallorca, ESP",
+      "surface": "Clay",
+      "level": "WTA 125",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18"
+    },
+    {
+      "tour": "wta",
+      "season": 2026,
+      "espn_id": "381",
+      "espn_name": "Dongfeng Voyah Wuhan Open",
+      "wta_id": 1075,
+      "wta_name": "Dongfeng · Voyah Wuhan Open - Wuhan, CHN",
+      "surface": "Hard",
+      "level": "WTA 1000",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18"
+    }
+  ]
+}

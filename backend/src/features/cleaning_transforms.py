@@ -55,11 +55,11 @@ def parse_dates(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
-    """Impute missing values following the rules:
-    - rank null -> 2000 (NOT the mean)
-    - height null -> global mean
-    - age null -> global mean
+    """Use fixed rank defaults; leave demographics to training-fold imputation.
+
+    Dataset-wide age/height means would expose future validation/test values.
     """
+    df = df.copy()
     # Rankings
     for col in ["winner_rank", "loser_rank"]:
         if col in df.columns:
@@ -74,24 +74,4 @@ def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].fillna(0)
 
-    # Height -> global mean
-    for col in ["winner_ht", "loser_ht"]:
-        if col in df.columns:
-            mean_ht = df[col].mean()
-            n_missing = df[col].isna().sum()
-            df[col] = df[col].fillna(mean_ht)
-            if n_missing > 0:
-                logger.info(
-                    f"  Imputed {n_missing:,} missing {col} -> {mean_ht:.1f} (mean)"
-                )
-    # Age -> global mean
-    for col in ["winner_age", "loser_age"]:
-        if col in df.columns:
-            mean_age = df[col].mean()
-            n_missing = df[col].isna().sum()
-            df[col] = df[col].fillna(mean_age)
-            if n_missing > 0:
-                logger.info(
-                    f"  Imputed {n_missing:,} missing {col} -> {mean_age:.1f} (mean)"
-                )
     return df

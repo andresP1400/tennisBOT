@@ -69,7 +69,7 @@ def train_lgbm(
                         lgb.log_evaluation(0),
                     ],
                 )
-                preds = model.predict_proba(X_val)[:, 1]
+                preds = np.asarray(model.predict_proba(X_val))[:, 1]
                 from sklearn.metrics import log_loss
 
                 return log_loss(y_val, preds)  # type: ignore[no-any-return]

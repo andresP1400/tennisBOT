@@ -1,0 +1,125 @@
+{
+  "reviewed_at": "2026-10-18T16:12:14.806855+00:00",
+  "sources": [
+    {
+      "tour": "atp",
+      "dataset": "dissfya/atp-tennis-2000-2023daily-pull",
+      "version": 1222,
+      "license": "CC0: Public Domain",
+      "kind": "abbreviated",
+      "url": "https://www.kaggle.com/api/v1/datasets/download/dissfya/atp-tennis-2000-2023daily-pull?datasetVersionNumber=1222",
+      "sha256": "17b673d53935ef49c83ddcd9b2d3af7c6366f817d6bffbd4ffe65b7dca0a48fb",
+      "members": {
+        "atp_tennis.csv": "0ec095686c0da70857cbbe01fbf4c7b6b7a516fa8eb14b576cf0c37685d5515e"
+      },
+      "metadata_sha256": "7fd25bcef18ee6f73be5749c0a5e8388faa4481b9d9fdd7c2f539c881d7c13b0",
+      "active": false
+    },
+    {
+      "tour": "wta",
+      "dataset": "bwandowando/womens-tennis-association-matches-1975-present",
+      "version": 30,
+      "license": "Apache 2.0",
+      "kind": "official_wta",
+      "url": "https://www.kaggle.com/api/v1/datasets/download/bwandowando/womens-tennis-association-matches-1975-present?datasetVersionNumber=30",
+      "sha256": "86b18d45c5412897b55dacfa6518e4a4294171c506aa3c1fa9209f570697e0c1",
+      "members": {
+        "matches.csv": "310177acf84b2906d03642b2e76c597a403fc47e7d982010b77a3398d584528b",
+        "tournaments.csv": "dbff8b721f41c32338c4b7dfe3824e4feb97e6ca9ea111bf14faf57fd3cd2301"
+      },
+      "metadata_sha256": "9b917a3f3d53c49a3ad1519a6dc7689aad6ae3c7b37e7425ef9a5a8fdf16df9f",
+      "external_members": {
+        "players.csv": {
+          "url": "https://www.kaggle.com/api/v1/datasets/download/bwandowando/womens-tennis-association-rankings/players.csv?datasetVersionNumber=8",
+          "sha256": "6da9c284bcd60cce11977262dcfde1c9706b09f97aa812385748a1c5b0f9244f",
+          "license": "Apache 2.0"
+        }
+      },
+      "active": false
+    },
+    {
+      "tour": "atp",
+      "dataset": "TennisMyLife/ATP-2026",
+      "version": 20261018,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "kind": "tml",
+      "url": "https://stats.tennismylife.org/data/2026.csv",
+      "sha256": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6",
+      "members": {
+        "2026.csv": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6"
+      },
+      "metadata_sha256": "7b6dc2908406bf2cccdcd50cc6610fc916733565f0260ac5843a1639f1c75730",
+      "external_members": {
+        "ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/ongoing_tourneys.csv",
+          "sha256": "42150b81ba3a6609bc6c6d18d4e82aed84d758fd8f20264119fd0af13fcce90c",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "active": false
+    },
+    {
+      "tour": "wta",
+      "dataset": "TennisMyLife/WTA-2026",
+      "version": 20261018,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "kind": "tml",
+      "url": "https://stats.tennismylife.org/data/2026_wta.csv",
+      "sha256": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09",
+      "members": {
+        "2026_wta.csv": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09"
+      },
+      "metadata_sha256": "7b6dc2908406bf2cccdcd50cc6610fc916733565f0260ac5843a1639f1c75730",
+      "external_members": {
+        "wta_ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv",
+          "sha256": "4fb3dd706ea859fe8f7740c0dfb72d3d85ec041dcaead824eadc69f09261d58c",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "active": false
+    },
+    {
+      "tour": "atp",
+      "dataset": "TennisMyLife/ATP-2026",
+      "version": 2026101816,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "kind": "tml",
+      "url": "https://stats.tennismylife.org/data/2026.csv",
+      "sha256": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6",
+      "members": {
+        "2026.csv": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6"
+      },
+      "metadata_sha256": "7b6dc2908406bf2cccdcd50cc6610fc916733565f0260ac5843a1639f1c75730",
+      "external_members": {
+        "ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/ongoing_tourneys.csv",
+          "sha256": "a9abe7a0a64993eabd2f0cdf21b90a0513b257669ad14549ec6de43338077462",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "active": true
+    },
+    {
+      "tour": "wta",
+      "dataset": "TennisMyLife/WTA-2026",
+      "version": 2026101816,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "kind": "tml",
+      "url": "https://stats.tennismylife.org/data/2026_wta.csv",
+      "sha256": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09",
+      "members": {
+        "2026_wta.csv": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09"
+      },
+      "metadata_sha256": "7b6dc2908406bf2cccdcd50cc6610fc916733565f0260ac5843a1639f1c75730",
+      "external_members": {
+        "wta_ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv",
+          "sha256": "30354942c372dca96bc3d66c8cefa03d2524549ec921aeb5b4fd2b3cd339b558",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "active": true
+    }
+  ]
+}

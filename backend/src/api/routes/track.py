@@ -5,12 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 import joblib
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter
 
 from config import BASE_DIR
 from api.predict_core import resolve_model_path
+from pipeline.train_helpers import predict_stacking, symmetrize_probs
+from pipeline.symmetric_calibration import symmetric_calibration
 
 router = APIRouter()
 
@@ -83,21 +84,26 @@ def get_match_history(limit: int = 200) -> dict[str, Any]:
         take = max(int(limit), 1)
         df_single = df_single.sort_values(sort_col, ascending=False).head(take)
 
-        feature_cols = bundle["feature_cols"]
-        # Only use columns that exist
-        available = [c for c in feature_cols if c in df_single.columns]
-        X = df_single[available].reindex(columns=feature_cols).values
-        X_imp = bundle["imputer"].transform(X)
-        X_scaled = bundle["scaler"].transform(X_imp)
-        p_lgbm = bundle["base_models"]["lgbm"].predict_proba(X_scaled)[:, 1]
-        p_xgb = bundle["base_models"]["xgb"].predict_proba(X_scaled)[:, 1]
-        p_lr = bundle["base_models"]["lr"].predict_proba(X_scaled)[:, 1]
-        X_meta = np.column_stack([p_lgbm, p_xgb, p_lr])
-        raw_probs = bundle["meta_model"].predict_proba(X_meta)[:, 1]
-        if bundle.get("calibrator") is not None:
-            final_probs = bundle["calibrator"].predict(raw_probs.reshape(-1, 1))
-        else:
-            final_probs = raw_probs
+        selected_bases = set(df_single.match_id.astype(str).str.rsplit("_", n=1).str[0])
+        paired = df[
+            df.match_id.astype(str).str.rsplit("_", n=1).str[0].isin(selected_bases)
+        ]
+        raw = predict_stacking(
+            paired,
+            bundle["feature_cols"],
+            bundle["imputer"],
+            bundle["scaler"],
+            bundle["base_models"],
+            bundle["meta_model"],
+        )
+        calibrated = symmetric_calibration(
+            symmetrize_probs(paired, raw), bundle.get("calibrator")
+        )
+        final_probs = (
+            pd.Series(calibrated, index=paired.match_id)
+            .reindex(df_single.match_id)
+            .to_numpy()
+        )
 
         results = []
         for i, row in enumerate(df_single.itertuples()):

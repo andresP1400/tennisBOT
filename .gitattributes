@@ -1,0 +1,2 @@
+# Preserve the exact bytes of upstream attribution snapshots.
+docs/data-sources/*-SOURCE_README.md -whitespace

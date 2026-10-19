@@ -1,0 +1,121 @@
+{
+  "checked_at": "2026-10-15T19:13:19.077754+00:00",
+  "tours": {
+    "atp": {
+      "eligible": {
+        "both_complete_serve_counts": 54857,
+        "identical_player_ids": 0,
+        "l_complete_serve_counts": 54858,
+        "l_partial_serve_counts": 0,
+        "matches": 59169,
+        "missing_demographics": 2298,
+        "missing_player_ids": 0,
+        "w_complete_serve_counts": 54860,
+        "w_partial_serve_counts": 0
+      },
+      "raw": {
+        "both_complete_serve_counts": 56610,
+        "identical_player_ids": 0,
+        "l_complete_serve_counts": 56614,
+        "l_partial_serve_counts": 0,
+        "matches": 61446,
+        "missing_demographics": 2396,
+        "missing_player_ids": 0,
+        "w_complete_serve_counts": 56613,
+        "w_partial_serve_counts": 0
+      },
+      "source_audit": {
+        "duplicates": 0,
+        "excluded_total": 2277,
+        "incomplete_matches": 2226,
+        "invalid_dates": 0,
+        "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "missing_surface": 53,
+        "raw_rows": 61446,
+        "rows_by_year": {
+          "2005": 3264,
+          "2006": 3267,
+          "2007": 3285,
+          "2008": 3030,
+          "2009": 3085,
+          "2010": 3030,
+          "2011": 3015,
+          "2012": 3094,
+          "2013": 2944,
+          "2014": 2816,
+          "2015": 2943,
+          "2016": 2941,
+          "2017": 2911,
+          "2018": 2982,
+          "2019": 2721,
+          "2020": 1462,
+          "2021": 2733,
+          "2022": 2917,
+          "2023": 2986,
+          "2024": 3158,
+          "2025": 2862
+        },
+        "source_digest": "b128cf03d89e5b583301e43f261a5af73f6cfc2fb9f451ce817227e0a2397b57",
+        "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
+      }
+    },
+    "wta": {
+      "eligible": {
+        "both_complete_serve_counts": 44463,
+        "identical_player_ids": 0,
+        "l_complete_serve_counts": 44463,
+        "l_partial_serve_counts": 1,
+        "matches": 54443,
+        "missing_demographics": 9361,
+        "missing_player_ids": 0,
+        "w_complete_serve_counts": 44465,
+        "w_partial_serve_counts": 0
+      },
+      "raw": {
+        "both_complete_serve_counts": 45857,
+        "identical_player_ids": 0,
+        "l_complete_serve_counts": 45860,
+        "l_partial_serve_counts": 1,
+        "matches": 56550,
+        "missing_demographics": 9703,
+        "missing_player_ids": 0,
+        "w_complete_serve_counts": 45860,
+        "w_partial_serve_counts": 0
+      },
+      "source_audit": {
+        "duplicates": 0,
+        "excluded_total": 2107,
+        "incomplete_matches": 1964,
+        "invalid_dates": 0,
+        "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "missing_surface": 144,
+        "raw_rows": 56550,
+        "rows_by_year": {
+          "2005": 2843,
+          "2006": 2787,
+          "2007": 2840,
+          "2008": 2729,
+          "2009": 2722,
+          "2010": 2781,
+          "2011": 2804,
+          "2012": 2940,
+          "2013": 2714,
+          "2014": 2694,
+          "2015": 2651,
+          "2016": 2923,
+          "2017": 2862,
+          "2018": 2847,
+          "2019": 2652,
+          "2020": 1276,
+          "2021": 2597,
+          "2022": 2594,
+          "2023": 2810,
+          "2024": 2792,
+          "2025": 2692
+        },
+        "source_digest": "d30993ed40de4918b7c15f3bfffbb74bf645e100d80aa035932d68c9b53a7ee2",
+        "source_revision": "85ef6efaa04ca860ed592a935498dcda9460ea91"
+      }
+    }
+  }
+}

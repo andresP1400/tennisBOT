@@ -1,0 +1,262 @@
+{
+  "atp": {
+    "baseline_version": "atp-20261018T045519275908Z-04c7c14f1679",
+    "candidate_version": "atp-20261018T161334638405Z-7d3b04695bed",
+    "original_prefix_metrics": {
+      "matches": 1406,
+      "accuracy": 0.6614509246088194,
+      "brier": 0.2107458256023366,
+      "log_loss": 0.6087441656423914,
+      "roc_auc": 0.7292922113686803,
+      "ece_10_bins": 0.029602441695869
+    },
+    "original_prefix_probabilities_unchanged": true,
+    "expanded_2026_metrics": {
+      "matches": 2249,
+      "accuracy": 0.6571809693196976,
+      "brier": 0.21291995369900676,
+      "log_loss": 0.6134776505969799,
+      "roc_auc": 0.7222419568447318,
+      "ece_10_bins": 0.026028250972295976
+    },
+    "later_same_match_comparison": {
+      "start": "2026-06-16",
+      "end": "2026-09-27",
+      "refreshed_state": {
+        "matches": 792,
+        "accuracy": 0.6553030303030303,
+        "brier": 0.21506119586462064,
+        "log_loss": 0.618182858671297,
+        "roc_auc": 0.7158992346938776,
+        "ece_10_bins": 0.030513415692162097
+      },
+      "preserved_stale_state": {
+        "matches": 792,
+        "accuracy": 0.6578282828282829,
+        "brier": 0.21567887993052762,
+        "log_loss": 0.6195014218577808,
+        "roc_auc": 0.713360969387755,
+        "ece_10_bins": 0.03006314108805985
+      },
+      "paired_uncertainty": {
+        "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+        "date_blocks": 94,
+        "resamples": 1000,
+        "seed": 42,
+        "ml": {
+          "accuracy": {
+            "estimate": 0.6553030303030303,
+            "lower_95": 0.6188553903939902,
+            "upper_95": 0.6885559824520259
+          },
+          "brier": {
+            "estimate": 0.21506119586462055,
+            "lower_95": 0.20429588255320993,
+            "upper_95": 0.226690791039543
+          },
+          "log_loss": {
+            "estimate": 0.6181828586712963,
+            "lower_95": 0.5938610549518,
+            "upper_95": 0.6441305043743217
+          }
+        },
+        "frozen_ml": {
+          "accuracy": {
+            "estimate": 0.6578282828282829,
+            "lower_95": 0.6211322716231796,
+            "upper_95": 0.6938351998540289
+          },
+          "brier": {
+            "estimate": 0.21567887993052762,
+            "lower_95": 0.20424309167772042,
+            "upper_95": 0.22794325900775417
+          },
+          "log_loss": {
+            "estimate": 0.6195014218577808,
+            "lower_95": 0.5936898017340156,
+            "upper_95": 0.6464995308172932
+          }
+        },
+        "ml_minus_frozen_ml": {
+          "accuracy": {
+            "estimate": -0.002525252525252597,
+            "lower_95": -0.0162649393826488,
+            "upper_95": 0.011607113403195484
+          },
+          "brier": {
+            "estimate": -0.0006176840659070648,
+            "lower_95": -0.0029028141513616204,
+            "upper_95": 0.0017426762799963524
+          },
+          "log_loss": {
+            "estimate": -0.0013185631864844893,
+            "lower_95": -0.00611155547970812,
+            "upper_95": 0.003942198352938139
+          }
+        },
+        "limitations": "Start dates are not completion times; player dependence across date blocks remains"
+      }
+    },
+    "protocol": "Fit through 2023; select 2024; calibrate 2025; frozen 2026 test; 21-day result embargo",
+    "limitations": "Partial sources, missing point counts, conservative identity exclusions; retrospective evaluation",
+    "source_audit": {
+      "dataset": "TennisMyLife/ATP-2026",
+      "version": 2026101816,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "archive_sha256": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6",
+      "member_sha256": {
+        "2026.csv": "a2bb4af3dfc06a60a0e527442f09b947f09805b6ae6babecc6962d0a337782d6"
+      },
+      "external_files": {
+        "ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/ongoing_tourneys.csv",
+          "sha256": "a9abe7a0a64993eabd2f0cdf21b90a0513b257669ad14549ec6de43338077462",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "candidate_rows": 2576,
+      "accepted_rows": 985,
+      "exclusions": {
+        "existing_historical_prefix": 1320,
+        "incomplete_result": 28,
+        "unresolved_or_ambiguous_identity": 170,
+        "missing_surface_or_score": 7,
+        "conflicting_outcomes": 0,
+        "possible_legacy_overlap": 66
+      },
+      "latest_accepted_date": "2026-10-18",
+      "point_statistics_supplied": true,
+      "coverage": "Partial main-tour results; unresolved identities and potential overlaps withheld"
+    }
+  },
+  "wta": {
+    "baseline_version": "wta-20261018T045543872984Z-7b184aca866f",
+    "candidate_version": "wta-20261018T161409043263Z-73dc03b25069",
+    "original_prefix_metrics": {
+      "matches": 957,
+      "accuracy": 0.6624869383490073,
+      "brier": 0.21013217814768176,
+      "log_loss": 0.6063925916080151,
+      "roc_auc": 0.7289488179338324,
+      "ece_10_bins": 0.03239565877789652
+    },
+    "original_prefix_probabilities_unchanged": true,
+    "expanded_2026_metrics": {
+      "matches": 2091,
+      "accuracy": 0.6575801052128168,
+      "brier": 0.2089784801288261,
+      "log_loss": 0.6037814730221074,
+      "roc_auc": 0.7310189522296956,
+      "ece_10_bins": 0.02429305292710259
+    },
+    "later_same_match_comparison": {
+      "start": "2026-05-17",
+      "end": "2026-09-27",
+      "refreshed_state": {
+        "matches": 1044,
+        "accuracy": 0.6513409961685823,
+        "brier": 0.2090077067451507,
+        "log_loss": 0.6038417193574487,
+        "roc_auc": 0.7303113754865241,
+        "ece_10_bins": 0.039801737830601175
+      },
+      "preserved_stale_state": {
+        "matches": 1044,
+        "accuracy": 0.6503831417624522,
+        "brier": 0.2089152924800426,
+        "log_loss": 0.6034125478078205,
+        "roc_auc": 0.7300047734449584,
+        "ece_10_bins": 0.030384867373213557
+      },
+      "paired_uncertainty": {
+        "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+        "date_blocks": 24,
+        "resamples": 1000,
+        "seed": 42,
+        "ml": {
+          "accuracy": {
+            "estimate": 0.6513409961685823,
+            "lower_95": 0.597525045885592,
+            "upper_95": 0.6932723004694836
+          },
+          "brier": {
+            "estimate": 0.20900770674515057,
+            "lower_95": 0.19445672172670553,
+            "upper_95": 0.22495903309002332
+          },
+          "log_loss": {
+            "estimate": 0.6038417193574486,
+            "lower_95": 0.5712418314525425,
+            "upper_95": 0.6389533052046587
+          }
+        },
+        "frozen_ml": {
+          "accuracy": {
+            "estimate": 0.6503831417624522,
+            "lower_95": 0.5983302333394971,
+            "upper_95": 0.6939723615850864
+          },
+          "brier": {
+            "estimate": 0.2089152924800427,
+            "lower_95": 0.19359449181097513,
+            "upper_95": 0.22634048329179976
+          },
+          "log_loss": {
+            "estimate": 0.6034125478078196,
+            "lower_95": 0.5691280447058743,
+            "upper_95": 0.6417147226541821
+          }
+        },
+        "ml_minus_frozen_ml": {
+          "accuracy": {
+            "estimate": 0.0009578544061301653,
+            "lower_95": -0.021154711603370315,
+            "upper_95": 0.02218557992079029
+          },
+          "brier": {
+            "estimate": 9.241426510786521e-05,
+            "lower_95": -0.0022115089812609497,
+            "upper_95": 0.0018132858772811594
+          },
+          "log_loss": {
+            "estimate": 0.0004291715496289594,
+            "lower_95": -0.004378436988856885,
+            "upper_95": 0.004102185415996484
+          }
+        },
+        "limitations": "Start dates are not completion times; player dependence across date blocks remains"
+      }
+    },
+    "protocol": "Fit through 2023; select 2024; calibrate 2025; frozen 2026 test; 21-day result embargo",
+    "limitations": "Partial sources, missing point counts, conservative identity exclusions; retrospective evaluation",
+    "source_audit": {
+      "dataset": "TennisMyLife/WTA-2026",
+      "version": 2026101816,
+      "license": "Noncommercial research use; publisher website labels MIT; upstream notice retained",
+      "archive_sha256": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09",
+      "member_sha256": {
+        "2026_wta.csv": "dbd7667ba4dd3f730c8052f8901e4d956fadb26b0737bff3a303b553ab04cf09"
+      },
+      "external_files": {
+        "wta_ongoing_tourneys.csv": {
+          "url": "https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv",
+          "sha256": "30354942c372dca96bc3d66c8cefa03d2524549ec921aeb5b4fd2b3cd339b558",
+          "license": "Noncommercial research use; publisher download permission"
+        }
+      },
+      "candidate_rows": 2375,
+      "accepted_rows": 1275,
+      "exclusions": {
+        "existing_historical_prefix": 990,
+        "unresolved_or_ambiguous_identity": 74,
+        "incomplete_result": 25,
+        "missing_surface_or_score": 9,
+        "conflicting_outcomes": 0,
+        "possible_legacy_overlap": 2
+      },
+      "latest_accepted_date": "2026-10-12",
+      "point_statistics_supplied": true,
+      "coverage": "Partial main-tour results; unresolved identities and potential overlaps withheld"
+    }
+  }
+}

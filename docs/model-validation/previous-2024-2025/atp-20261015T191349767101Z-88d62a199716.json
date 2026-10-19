@@ -1,0 +1,189 @@
+{
+  "audit": {
+    "duplicates": 0,
+    "excluded_total": 2277,
+    "incomplete_matches": 2226,
+    "invalid_dates": 0,
+    "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "missing_surface": 53,
+    "raw_rows": 61446,
+    "rows_by_year": {
+      "2005": 3264,
+      "2006": 3267,
+      "2007": 3285,
+      "2008": 3030,
+      "2009": 3085,
+      "2010": 3030,
+      "2011": 3015,
+      "2012": 3094,
+      "2013": 2944,
+      "2014": 2816,
+      "2015": 2943,
+      "2016": 2941,
+      "2017": 2911,
+      "2018": 2982,
+      "2019": 2721,
+      "2020": 1462,
+      "2021": 2733,
+      "2022": 2917,
+      "2023": 2986,
+      "2024": 3158,
+      "2025": 2862
+    },
+    "source_digest": "b128cf03d89e5b583301e43f261a5af73f6cfc2fb9f451ce817227e0a2397b57",
+    "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
+  },
+  "data_through": "2025-12-17",
+  "family": "hist_gradient_boosting",
+  "feature_names": [
+    "elo",
+    "surface_elo",
+    "rank",
+    "points",
+    "age",
+    "height",
+    "form",
+    "serve",
+    "return",
+    "experience",
+    "surface_Hard",
+    "surface_Clay",
+    "surface_Grass",
+    "surface_Carpet",
+    "best_of_5",
+    "opponent_adjusted_form",
+    "opponent_adjusted_serve",
+    "opponent_adjusted_return"
+  ],
+  "feature_schema": 2,
+  "implementation_sha256": "d458a3d7876925a8edb6d7c56ff707fae98d85c460aaf9de587c1a7b19bd873d",
+  "method": "21-day result embargo; labels available before partition boundaries; frozen test estimators",
+  "model_version": "atp-20261015T191349767101Z-88d62a199716",
+  "opponent_adjustment": "Pre-event Elo expectation residuals and opponent serve/return baselines",
+  "result_delay_days": 21,
+  "runtime_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1"
+  },
+  "selection_2022": {
+    "hist_gradient_boosting": {
+      "accuracy": 0.6704384724186704,
+      "brier": 0.20824455065167258,
+      "ece_10_bins": 0.011529415205541578,
+      "log_loss": 0.6024672503189701,
+      "matches": 2828,
+      "roc_auc": 0.7343679026871489
+    },
+    "logistic": {
+      "accuracy": 0.6714992927864215,
+      "brier": 0.20842508610579485,
+      "ece_10_bins": 0.012851996012339514,
+      "log_loss": 0.604670916117435,
+      "matches": 2828,
+      "roc_auc": 0.7348351372388939
+    }
+  },
+  "split_counts": {
+    "calibration": 2837,
+    "selection": 2828,
+    "test": 5786,
+    "train": 38228
+  },
+  "splits": {
+    "calibration": "2023",
+    "selection": "2022",
+    "test": "2024\u20132025",
+    "train": "2008\u20132021",
+    "warmup": "2005\u20132007"
+  },
+  "test_2024_2025": {
+    "by_surface": {
+      "Clay": {
+        "accuracy": 0.6432681242807825,
+        "brier": 0.21681580394718034,
+        "ece_10_bins": 0.030320875203356922,
+        "log_loss": 0.6212619378609274,
+        "matches": 1738,
+        "roc_auc": 0.706028814959278
+      },
+      "Grass": {
+        "accuracy": 0.6943521594684385,
+        "brier": 0.20476249944036726,
+        "ece_10_bins": 0.04711274894814435,
+        "log_loss": 0.596157679254126,
+        "matches": 602,
+        "roc_auc": 0.7494950386861072
+      },
+      "Hard": {
+        "accuracy": 0.6500290191526408,
+        "brier": 0.21330279051431597,
+        "ece_10_bins": 0.020911840506012476,
+        "log_loss": 0.6135936513591045,
+        "matches": 3446,
+        "roc_auc": 0.7182825439043254
+      }
+    },
+    "by_year": {
+      "2024": {
+        "accuracy": 0.6544262295081967,
+        "brier": 0.2120576155314839,
+        "ece_10_bins": 0.01838268000404392,
+        "log_loss": 0.6104481083338598,
+        "matches": 3050,
+        "roc_auc": 0.721000156517671
+      },
+      "2025": {
+        "accuracy": 0.6505847953216374,
+        "brier": 0.215043340886187,
+        "ece_10_bins": 0.021551990912087347,
+        "log_loss": 0.6181349280257593,
+        "matches": 2736,
+        "roc_auc": 0.7145152459433622
+      }
+    },
+    "constant_50_percent": {
+      "accuracy": 0.49464223988938816,
+      "brier": 0.25,
+      "ece_10_bins": 0.005357760110611842,
+      "log_loss": 0.6931471805599453,
+      "matches": 5786,
+      "roc_auc": 0.5
+    },
+    "elo_calibrated": {
+      "accuracy": 0.6348081576218458,
+      "brier": 0.22019220293052677,
+      "ece_10_bins": 0.027019404884067694,
+      "log_loss": 0.6290105790136655,
+      "matches": 5786,
+      "roc_auc": 0.6957579433704153
+    },
+    "elo_uncalibrated": {
+      "accuracy": 0.6348081576218458,
+      "brier": 0.2205559069920883,
+      "ece_10_bins": 0.029685452513058035,
+      "log_loss": 0.6299374366886035,
+      "matches": 5786,
+      "roc_auc": 0.6957579433704153
+    },
+    "ml_calibrated": {
+      "accuracy": 0.6526097476667819,
+      "brier": 0.21346946215617585,
+      "ece_10_bins": 0.01603399620423981,
+      "log_loss": 0.6140829404591687,
+      "matches": 5786,
+      "roc_auc": 0.7178704803065978
+    },
+    "ml_uncalibrated": {
+      "accuracy": 0.6526097476667819,
+      "brier": 0.21415518148353968,
+      "ece_10_bins": 0.02864562829721875,
+      "log_loss": 0.6156656759398031,
+      "matches": 5786,
+      "roc_auc": 0.7178704803065978
+    }
+  },
+  "tour": "atp",
+  "use_recent_form": true
+}

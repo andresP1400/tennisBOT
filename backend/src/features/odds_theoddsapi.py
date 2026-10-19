@@ -11,7 +11,8 @@ from datetime import datetime, timezone, timedelta
 
 from config import settings
 from features.odds_cache import TtlCache
-from features.odds_common import MatchOdds, _is_live, _player_matches
+from features.odds_theoddsapi_data import parse_event
+from features.odds_common import MatchOdds
 
 logger = logging.getLogger(__name__)
 
@@ -103,41 +104,8 @@ class TheOddsApiAdapter:
                     cache.set(self.NAME, url, [])
                     continue
                 page: list[MatchOdds] = []
-                for ev in events:
-                    home = ev.get("home_team", "")
-                    away = ev.get("away_team", "")
-                    best_p1 = 0.0
-                    best_p2 = 0.0
-                    for bm in ev.get("bookmakers", []):
-                        for mk in bm.get("markets", []):
-                            if mk.get("key") != "h2h":
-                                continue
-                            for o in mk.get("outcomes", []):
-                                price = float(o.get("price", 0))
-                                if price <= 1:
-                                    continue
-                                if _player_matches(home, [o.get("name", "")]):
-                                    best_p1 = max(best_p1, price)
-                                elif _player_matches(away, [o.get("name", "")]):
-                                    best_p2 = max(best_p2, price)
-                    if best_p1 > 0 and best_p2 > 0:
-                        page.append(
-                            MatchOdds(
-                                source=self.NAME,
-                                player1=home,
-                                player2=away,
-                                tournament=sport.replace("tennis_atp_", "")
-                                .replace("tennis_wta_", "")
-                                .replace("_", " ")
-                                .title(),
-                                commence_time=ev.get("commence_time", ""),
-                                is_live=_is_live(ev.get("commence_time", "")),
-                                odds_p1=best_p1,
-                                odds_p2=best_p2,
-                                bookmaker="theoddsapi_best",
-                                tour="atp" if "tennis_atp_" in sport else "wta",
-                            )
-                        )
+                for event in events:
+                    page.extend(parse_event(event, sport))
                 cache.set(self.NAME, url, page)
                 out.extend(page)
             return out

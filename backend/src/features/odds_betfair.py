@@ -52,12 +52,19 @@ class BetfairAdapter:
                 "X-Authentication": self._session_token,
                 "Content-Type": "application/json",
             }
-            body = {
-                "filter": {"eventTypeIds": ["2"], "marketTypeCodes": ["MATCH_ODDS"]},
-                "marketProjection": ["EVENT", "MARKET_START_TIME", "RUNNER_NAMES"],
-                "maxResults": 200,
-            }
-            resp = requests.post(url, json=body, headers=headers, timeout=15)
+            resp = requests.post(
+                url,
+                json={
+                    "filter": {
+                        "eventTypeIds": ["2"],
+                        "marketTypeCodes": ["MATCH_ODDS"],
+                    },
+                    "marketProjection": ["EVENT", "MARKET_START_TIME", "RUNNER_NAMES"],
+                    "maxResults": 200,
+                },
+                headers=headers,
+                timeout=15,
+            )
             if resp.status_code != 200:
                 logger.warning("Betfair listMarketCatalogue HTTP %s", resp.status_code)
                 cache.set(self.NAME, url, [])

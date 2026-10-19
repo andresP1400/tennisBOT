@@ -93,13 +93,13 @@ def build_features(
 
     # Forward-only features with return_state for live inference
     logger.info("\n[3/10] Computing ELO ratings ...")
-    df, elo_state = compute_elo_features(df, return_state=True)  # type: ignore[assignment]
+    df, elo_state = compute_elo_features(df, return_state=True)
     logger.info("\n[4/10] Computing rolling statistics ...")
-    df, rolling_state = compute_rolling_features(df, return_state=True)  # type: ignore[assignment]
+    df, rolling_state = compute_rolling_features(df, return_state=True)
     logger.info("\n[5/10] Computing fatigue features ...")
-    df, fatigue_state = compute_fatigue_features(df, return_state=True)  # type: ignore[assignment]
+    df, fatigue_state = compute_fatigue_features(df, return_state=True)
     logger.info("\n[6/10] Computing H2H features ...")
-    df, h2h_state = compute_h2h_features(df, return_state=True)  # type: ignore[assignment]
+    df, h2h_state = compute_h2h_features(df, return_state=True)
 
     logger.info("\n[6b/10] Processing odds ...")
     odds_df = load_odds_data(odds_path, tour=tour)

@@ -111,7 +111,7 @@ def compute_h2h_features(
             "h2h_total_matches": h2h["h2h_total_matches"],
         }
         records.append(record)
-        tracker.update(w_id, l_id, surface)  # type: ignore[arg-type]
+        tracker.update(w_id, l_id, surface)
     h2h_df = pd.DataFrame(records, index=df.index)
     result = pd.concat([df, h2h_df], axis=1)
     logger.info(f"  H2H features computed for {len(result):,} matches")

@@ -11,6 +11,9 @@ import math
 from typing import Any
 
 from config import settings
+from features.market_math import bookmaker_consensus
+from features.guarded_ev import guarded_ev
+from dataclasses import asdict
 
 
 def compute_value_bets(
@@ -62,15 +65,32 @@ def compute_value_bets(
                 "(nessun evento live trovato o bookmaker non raggiungibili)."
             ),
         }
-    raw_imp1 = 1.0 / best_p1
-    raw_imp2 = 1.0 / best_p2
-    total = raw_imp1 + raw_imp2
-    market_prob1 = raw_imp1 / total
-    market_prob2 = raw_imp2 / total
+    try:
+        consensus = bookmaker_consensus(odds.get("sources", {}))
+    except ValueError:
+        return {
+            "value_bets": [],
+            "message": "No paired bookmaker consensus; best prices alone are insufficient",
+        }
+    market_prob1, market_prob2 = consensus.prob1, consensus.prob2
     edge1 = model_prob1 - market_prob1
     edge2 = (1.0 - model_prob1) - market_prob2
     value_bets = []
-    if edge1 >= min_edge:
+    analysis1 = guarded_ev(
+        model_prob1,
+        best_p1,
+        market_prob1,
+        independent_books=consensus.books,
+        min_edge=min_edge,
+    )
+    analysis2 = guarded_ev(
+        1 - model_prob1,
+        best_p2,
+        market_prob2,
+        independent_books=consensus.books,
+        min_edge=min_edge,
+    )
+    if analysis1.eligible:
         value_bets.append(
             {
                 "side": player1,
@@ -78,10 +98,11 @@ def compute_value_bets(
                 "market_prob": market_prob1,
                 "edge": edge1,
                 "best_odds": best_p1,
+                "expected_value": model_prob1 * best_p1 - 1,
                 "bookmaker_count": len(odds.get("sources", {})),
             }
         )
-    if edge2 >= min_edge:
+    if analysis2.eligible:
         value_bets.append(
             {
                 "side": player2,
@@ -89,6 +110,7 @@ def compute_value_bets(
                 "market_prob": market_prob2,
                 "edge": edge2,
                 "best_odds": best_p2,
+                "expected_value": (1 - model_prob1) * best_p2 - 1,
                 "bookmaker_count": len(odds.get("sources", {})),
             }
         )
@@ -103,6 +125,10 @@ def compute_value_bets(
         "edge2": edge2,
         "best_odds": odds.get("best_odds", {}),
         "value_bets": value_bets,
+        "betting_analysis": {
+            "player1": asdict(analysis1),
+            "player2": asdict(analysis2),
+        },
         "min_edge": min_edge,
         "sources": odds.get("sources", {}),
     }

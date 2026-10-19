@@ -1,0 +1,560 @@
+{
+  "created_at": "2026-10-16T18:10:04.253963+00:00",
+  "implementation_sha256": "d20250317b39bf0ad51ac2507003b5b6fbae90e67d0116f7aa857fc93869279e",
+  "new_features": [
+    "surface_serve",
+    "surface_return",
+    "surface_recent_results",
+    "log_surface_matches",
+    "log_days_since_known_tournament"
+  ],
+  "protocol": "docs/context-research-protocol.md",
+  "tours": {
+    "atp": {
+      "artifact_sha256": {
+        "atp-baseline.joblib": "797aaf0e0dfb0cc1a7bdfb3a529624a9c0dfdba5ca8733a024ab95973d32d436",
+        "atp-surface_context.joblib": "0efc5d7f03a5c753ff0738d5caf50f6dcaf5125d1f6e7576513a3f9fb63020f4"
+      },
+      "automatically_deployed": false,
+      "candidates": {
+        "baseline": {
+          "feature_count": 20,
+          "high_confidence_probability_only": {
+            "approximate_date_block_intervals": {
+              "date_blocks": 19,
+              "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+              "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+              "metrics": {
+                "accuracy": {
+                  "estimate": 0.8905109489051095,
+                  "lower_95": 0.84251968503937,
+                  "upper_95": 0.9371167452830189
+                },
+                "brier": {
+                  "estimate": 0.09769547450613252,
+                  "lower_95": 0.06630598688748235,
+                  "upper_95": 0.13070869981603797
+                },
+                "log_loss": {
+                  "estimate": 0.34442600970269344,
+                  "lower_95": 0.2649715071878106,
+                  "upper_95": 0.4253312361223449
+                }
+              }
+            },
+            "betting_roi": null,
+            "category_a_performance": null,
+            "closing_line_value": null,
+            "coverage": 0.09743954480796586,
+            "matches": 137,
+            "mean_estimated_probability": 0.8594805156680417,
+            "metrics": {
+              "accuracy": 0.8905109489051095,
+              "brier": 0.0976954745061325,
+              "ece_10_bins": 0.048419328997710315,
+              "log_loss": 0.34442600970269327,
+              "matches": 137,
+              "roc_auc": 0.9008951406649617
+            },
+            "scope": "Probability-only historical subset; contemporaneous prices/qualification unavailable",
+            "threshold": 0.8
+          },
+          "selection_2024": {
+            "accuracy": 0.6546130449476174,
+            "brier": 0.2116675589911517,
+            "ece_10_bins": 0.023195709528905442,
+            "log_loss": 0.6094561841067778,
+            "matches": 2959,
+            "roc_auc": 0.7234274622027179
+          },
+          "test_2026": {
+            "accuracy": 0.6578947368421053,
+            "brier": 0.21199732152818512,
+            "ece_10_bins": 0.03043296981011873,
+            "log_loss": 0.6109970450915881,
+            "matches": 1406,
+            "roc_auc": 0.724790826327129
+          },
+          "training_imputation_means": [
+            9.51200580139285e-17,
+            8.444605267385569e-17,
+            -2.463621137732446e-16,
+            -1.1011931196336731e-16,
+            -2.474274907991305e-15,
+            2.914104633245945e-17,
+            1.801491339652455e-17,
+            1.61134481087521e-17,
+            6.72184104057903e-19,
+            3.478192933461822e-15,
+            0.5777458820313034,
+            0.3131934477023671,
+            0.10543822477388194,
+            0.003622445492447543,
+            0.22447770715148202,
+            -5.564125647999717e-17,
+            1.227336718879196e-17,
+            1.5661241469604022e-18,
+            1.3550105961414828e-16,
+            0.27436504725969896
+          ]
+        },
+        "surface_context": {
+          "feature_count": 25,
+          "high_confidence_probability_only": {
+            "approximate_date_block_intervals": {
+              "date_blocks": 19,
+              "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+              "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+              "metrics": {
+                "accuracy": {
+                  "estimate": 0.8417721518987342,
+                  "lower_95": 0.77776008492569,
+                  "upper_95": 0.8954272753877671
+                },
+                "brier": {
+                  "estimate": 0.12939532699835096,
+                  "lower_95": 0.09406210823421608,
+                  "upper_95": 0.16973420086881255
+                },
+                "log_loss": {
+                  "estimate": 0.4199815038169569,
+                  "lower_95": 0.3352322496093305,
+                  "upper_95": 0.5182095529681604
+                }
+              }
+            },
+            "betting_roi": null,
+            "category_a_performance": null,
+            "closing_line_value": null,
+            "coverage": 0.112375533428165,
+            "matches": 158,
+            "mean_estimated_probability": 0.8589532722555432,
+            "metrics": {
+              "accuracy": 0.8417721518987342,
+              "brier": 0.12939532699835102,
+              "ece_10_bins": 0.03884456884432965,
+              "log_loss": 0.4199815038169569,
+              "matches": 158,
+              "roc_auc": 0.8794520547945206
+            },
+            "scope": "Probability-only historical subset; contemporaneous prices/qualification unavailable",
+            "threshold": 0.8
+          },
+          "selection_2024": {
+            "accuracy": 0.6579925650557621,
+            "brier": 0.2099742189997239,
+            "ece_10_bins": 0.02538762635940819,
+            "log_loss": 0.6055839082391876,
+            "matches": 2959,
+            "roc_auc": 0.7290169919878077
+          },
+          "test_2026": {
+            "accuracy": 0.6593172119487909,
+            "brier": 0.21072958338086492,
+            "ece_10_bins": 0.029014566455852445,
+            "log_loss": 0.6085077983558549,
+            "matches": 1406,
+            "roc_auc": 0.7287819329024315
+          },
+          "training_imputation_means": [
+            9.51200580139285e-17,
+            8.444605267385569e-17,
+            -2.463621137732446e-16,
+            -1.1011931196336731e-16,
+            -2.474274907991305e-15,
+            2.914104633245945e-17,
+            1.801491339652455e-17,
+            1.61134481087521e-17,
+            6.72184104057903e-19,
+            3.478192933461822e-15,
+            0.5777458820313034,
+            0.3131934477023671,
+            0.10543822477388194,
+            0.003622445492447543,
+            0.22447770715148202,
+            -5.564125647999717e-17,
+            1.227336718879196e-17,
+            1.5661241469604022e-18,
+            1.3550105961414828e-16,
+            0.27436504725969896,
+            3.0612196587838097e-18,
+            -3.7321622482061197e-19,
+            6.49322845149134e-17,
+            -6.531530101766925e-16,
+            -1.235219190122377e-16
+          ]
+        }
+      },
+      "newly_untouched_test": false,
+      "paired_context_minus_baseline": {
+        "date_blocks": 20,
+        "frozen_ml": {
+          "accuracy": {
+            "estimate": 0.6578947368421053,
+            "lower_95": 0.6270780002271575,
+            "upper_95": 0.6855361156117702
+          },
+          "brier": {
+            "estimate": 0.21199732152818535,
+            "lower_95": 0.2020669468654578,
+            "upper_95": 0.22245610788451792
+          },
+          "log_loss": {
+            "estimate": 0.6109970450915877,
+            "lower_95": 0.5894619136448721,
+            "upper_95": 0.6336435339525364
+          }
+        },
+        "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+        "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+        "ml": {
+          "accuracy": {
+            "estimate": 0.6593172119487909,
+            "lower_95": 0.6287616970739399,
+            "upper_95": 0.6885234938592385
+          },
+          "brier": {
+            "estimate": 0.21072958338086503,
+            "lower_95": 0.20161662567530186,
+            "upper_95": 0.22036566886489156
+          },
+          "log_loss": {
+            "estimate": 0.6085077983558554,
+            "lower_95": 0.5880237108497762,
+            "upper_95": 0.6294328305136094
+          }
+        },
+        "ml_minus_frozen_ml": {
+          "accuracy": {
+            "estimate": 0.0014224751066855834,
+            "lower_95": -0.009975493625659184,
+            "upper_95": 0.012598921980178346
+          },
+          "brier": {
+            "estimate": -0.001267738147320313,
+            "lower_95": -0.0038685186041379125,
+            "upper_95": 0.0010675895616549904
+          },
+          "log_loss": {
+            "estimate": -0.0024892467357322534,
+            "lower_95": -0.00852149929626334,
+            "upper_95": 0.002936800090032686
+          }
+        },
+        "resamples": 1000,
+        "seed": 42
+      },
+      "paired_reference": "Fixed 20-feature research logistic",
+      "selected_on_2024_only": "surface_context",
+      "source_audit": {
+        "duplicates": 0,
+        "excluded_total": 2320,
+        "incomplete_matches": 2269,
+        "invalid_dates": 0,
+        "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "missing_surface": 53,
+        "raw_rows": 62895,
+        "rows_by_year": {
+          "2005": 3264,
+          "2006": 3267,
+          "2007": 3285,
+          "2008": 3030,
+          "2009": 3085,
+          "2010": 3030,
+          "2011": 3015,
+          "2012": 3094,
+          "2013": 2944,
+          "2014": 2816,
+          "2015": 2943,
+          "2016": 2941,
+          "2017": 2911,
+          "2018": 2982,
+          "2019": 2721,
+          "2020": 1462,
+          "2021": 2733,
+          "2022": 2917,
+          "2023": 2986,
+          "2024": 3158,
+          "2025": 2862,
+          "2026": 1449
+        },
+        "source_digest": "967f98619603227f91ccd984145a9af22408f6898e63d8b67186cb5ea0f731ae",
+        "source_revision": "712be0c5ade693cdab9e69c23a71a0edf5a23c44"
+      },
+      "sportsbook_roi": null
+    },
+    "wta": {
+      "artifact_sha256": {
+        "wta-baseline.joblib": "13bcc7a34783a3151c7905839157b34f6b32c679dd463c86fccd0c907b131cfc",
+        "wta-surface_context.joblib": "733cfb27d5444453c400c57c49e3a1f2417d397c901db7d7ac8a2bcfab9e1b0b"
+      },
+      "automatically_deployed": false,
+      "candidates": {
+        "baseline": {
+          "feature_count": 20,
+          "high_confidence_probability_only": {
+            "approximate_date_block_intervals": {
+              "date_blocks": 13,
+              "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+              "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+              "metrics": {
+                "accuracy": {
+                  "estimate": 0.875,
+                  "lower_95": 0.8253869047619047,
+                  "upper_95": 0.9230769230769231
+                },
+                "brier": {
+                  "estimate": 0.10578996287973065,
+                  "lower_95": 0.07419096296694819,
+                  "upper_95": 0.138673909964739
+                },
+                "log_loss": {
+                  "estimate": 0.3601021589173508,
+                  "lower_95": 0.2827209176925052,
+                  "upper_95": 0.4392677693723798
+                }
+              }
+            },
+            "betting_roi": null,
+            "category_a_performance": null,
+            "closing_line_value": null,
+            "coverage": 0.11703239289446186,
+            "matches": 112,
+            "mean_estimated_probability": 0.8520789472036192,
+            "metrics": {
+              "accuracy": 0.875,
+              "brier": 0.10578996287973064,
+              "ece_10_bins": 0.030549740062201864,
+              "log_loss": 0.3601021589173509,
+              "matches": 112,
+              "roc_auc": 0.9135566188197767
+            },
+            "scope": "Probability-only historical subset; contemporaneous prices/qualification unavailable",
+            "threshold": 0.8
+          },
+          "selection_2024": {
+            "accuracy": 0.6561264822134387,
+            "brier": 0.21337103185500536,
+            "ece_10_bins": 0.030361913363794988,
+            "log_loss": 0.61376977447352,
+            "matches": 2530,
+            "roc_auc": 0.7178758478900293
+          },
+          "test_2026": {
+            "accuracy": 0.6656217345872518,
+            "brier": 0.2100891675592063,
+            "ece_10_bins": 0.03242095295994354,
+            "log_loss": 0.6062668381379284,
+            "matches": 957,
+            "roc_auc": 0.728883244736658
+          },
+          "training_imputation_means": [
+            7.995972264805256e-16,
+            -2.6213441606802796e-16,
+            -7.153978172012184e-16,
+            5.367463806338505e-15,
+            1.0661296353073673e-15,
+            3.286337955219366e-17,
+            4.2679845269233014e-17,
+            4.558730209151402e-19,
+            1.2969756286895336e-17,
+            -9.583139774423408e-16,
+            0.6158113730929264,
+            0.2787308076015281,
+            0.09910699077791567,
+            0.006350828527629754,
+            0.0,
+            -1.0524672897124002e-17,
+            -6.521474616515578e-18,
+            1.1625099717055272e-17,
+            -6.21703754789266e-16,
+            0.30799648606011953
+          ]
+        },
+        "surface_context": {
+          "feature_count": 25,
+          "high_confidence_probability_only": {
+            "approximate_date_block_intervals": {
+              "date_blocks": 14,
+              "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+              "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+              "metrics": {
+                "accuracy": {
+                  "estimate": 0.8878504672897196,
+                  "lower_95": 0.8333333333333334,
+                  "upper_95": 0.9291356003065988
+                },
+                "brier": {
+                  "estimate": 0.09539544089419211,
+                  "lower_95": 0.06842141764758979,
+                  "upper_95": 0.13117626504097915
+                },
+                "log_loss": {
+                  "estimate": 0.3329619181848497,
+                  "lower_95": 0.26830249836514614,
+                  "upper_95": 0.4192918082411933
+                }
+              }
+            },
+            "betting_roi": null,
+            "category_a_performance": null,
+            "closing_line_value": null,
+            "coverage": 0.11180773249738767,
+            "matches": 107,
+            "mean_estimated_probability": 0.8517726449343802,
+            "metrics": {
+              "accuracy": 0.8878504672897196,
+              "brier": 0.09539544089419214,
+              "ece_10_bins": 0.04542888912818859,
+              "log_loss": 0.3329619181848499,
+              "matches": 107,
+              "roc_auc": 0.9479385045422781
+            },
+            "scope": "Probability-only historical subset; contemporaneous prices/qualification unavailable",
+            "threshold": 0.8
+          },
+          "selection_2024": {
+            "accuracy": 0.6577075098814229,
+            "brier": 0.21239568484008556,
+            "ece_10_bins": 0.017586058912497527,
+            "log_loss": 0.610909358239539,
+            "matches": 2530,
+            "roc_auc": 0.7203988834864037
+          },
+          "test_2026": {
+            "accuracy": 0.6666666666666666,
+            "brier": 0.20956336590204502,
+            "ece_10_bins": 0.034420880262323025,
+            "log_loss": 0.6047896599045356,
+            "matches": 957,
+            "roc_auc": 0.7301182066167727
+          },
+          "training_imputation_means": [
+            7.995972264805256e-16,
+            -2.6213441606802796e-16,
+            -7.153978172012184e-16,
+            5.367463806338505e-15,
+            1.0661296353073673e-15,
+            3.286337955219366e-17,
+            4.2679845269233014e-17,
+            4.558730209151402e-19,
+            1.2969756286895336e-17,
+            -9.583139774423408e-16,
+            0.6158113730929264,
+            0.2787308076015281,
+            0.09910699077791567,
+            0.006350828527629754,
+            0.0,
+            -1.0524672897124002e-17,
+            -6.521474616515578e-18,
+            1.1625099717055272e-17,
+            -6.21703754789266e-16,
+            0.30799648606011953,
+            2.0125004254426893e-17,
+            7.593107989847535e-18,
+            2.1423879561395988e-19,
+            5.113839019994227e-15,
+            4.1201406736295205e-16
+          ]
+        }
+      },
+      "newly_untouched_test": false,
+      "paired_context_minus_baseline": {
+        "date_blocks": 14,
+        "frozen_ml": {
+          "accuracy": {
+            "estimate": 0.6656217345872518,
+            "lower_95": 0.6462065142089267,
+            "upper_95": 0.6853380643245077
+          },
+          "brier": {
+            "estimate": 0.21008916755920617,
+            "lower_95": 0.19910796940056344,
+            "upper_95": 0.22129993838045198
+          },
+          "log_loss": {
+            "estimate": 0.6062668381379283,
+            "lower_95": 0.5813663822202689,
+            "upper_95": 0.6322016806976916
+          }
+        },
+        "limitations": "Start dates are not completion times; player dependence across date blocks remains",
+        "method": "Paired tournament-start-date block bootstrap; approximate intervals",
+        "ml": {
+          "accuracy": {
+            "estimate": 0.6666666666666666,
+            "lower_95": 0.6467484276729559,
+            "upper_95": 0.6886943558576455
+          },
+          "brier": {
+            "estimate": 0.2095633659020451,
+            "lower_95": 0.1988898364900804,
+            "upper_95": 0.22067181185218718
+          },
+          "log_loss": {
+            "estimate": 0.6047896599045355,
+            "lower_95": 0.5801555944322435,
+            "upper_95": 0.6300291291457153
+          }
+        },
+        "ml_minus_frozen_ml": {
+          "accuracy": {
+            "estimate": 0.0010449320794148065,
+            "lower_95": -0.01245040908440532,
+            "upper_95": 0.015538434554582481
+          },
+          "brier": {
+            "estimate": -0.000525801657161068,
+            "lower_95": -0.0015418733461143135,
+            "upper_95": 0.0004966247415299814
+          },
+          "log_loss": {
+            "estimate": -0.001477178233392773,
+            "lower_95": -0.003944150162450574,
+            "upper_95": 0.0009346749303725891
+          }
+        },
+        "resamples": 1000,
+        "seed": 42
+      },
+      "paired_reference": "Fixed 20-feature research logistic",
+      "selected_on_2024_only": "surface_context",
+      "source_audit": {
+        "duplicates": 0,
+        "excluded_total": 2165,
+        "incomplete_matches": 2002,
+        "invalid_dates": 0,
+        "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "missing_surface": 166,
+        "raw_rows": 57565,
+        "rows_by_year": {
+          "2005": 2843,
+          "2006": 2787,
+          "2007": 2840,
+          "2008": 2729,
+          "2009": 2722,
+          "2010": 2781,
+          "2011": 2804,
+          "2012": 2940,
+          "2013": 2714,
+          "2014": 2694,
+          "2015": 2651,
+          "2016": 2923,
+          "2017": 2862,
+          "2018": 2847,
+          "2019": 2652,
+          "2020": 1276,
+          "2021": 2597,
+          "2022": 2594,
+          "2023": 2810,
+          "2024": 2792,
+          "2025": 2692,
+          "2026": 1015
+        },
+        "source_digest": "1f29b3937a4b5dd43d9c9f9b475633a06d1bde0f5deb9023a479e4da3ee1c14c",
+        "source_revision": "85ef6efaa04ca860ed592a935498dcda9460ea91"
+      },
+      "sportsbook_roi": null
+    }
+  }
+}

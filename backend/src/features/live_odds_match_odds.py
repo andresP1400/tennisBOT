@@ -7,7 +7,8 @@ shared module-level cache (features.live_odds_util).
 
 from __future__ import annotations
 
-import math
+from features.market_math import bookmaker_consensus, valid_price
+
 import time
 from typing import Any
 
@@ -124,39 +125,21 @@ class MatchOddsMixin:
             "needs_api_key": not has_valid_key,
             "timestamp": _now_iso(),
         }
-        if all_odds:
-            p1_odds = [
-                v["player1"]
-                for v in all_odds.values()
-                if not (
-                    isinstance(v.get("player1"), float) and math.isnan(v.get("player1"))
-                )
-            ]
-            p2_odds = [
-                v["player2"]
-                for v in all_odds.values()
-                if not (
-                    isinstance(v.get("player2"), float) and math.isnan(v.get("player2"))
-                )
-            ]
-            if p1_odds:
-                result["best_odds"]["player1"] = max(p1_odds)
-            if p2_odds:
-                result["best_odds"]["player2"] = max(p2_odds)
-            best_p1 = result["best_odds"]["player1"]
-            best_p2 = result["best_odds"]["player2"]
-            if (
-                not (isinstance(best_p1, float) and math.isnan(best_p1))
-                and not (isinstance(best_p2, float) and math.isnan(best_p2))
-                and best_p1 > 1
-                and best_p2 > 1
-            ):
-                raw_imp1 = 1.0 / best_p1
-                raw_imp2 = 1.0 / best_p2
-                total = raw_imp1 + raw_imp2
-                result["implied_prob1"] = raw_imp1 / total
-                result["implied_prob2"] = raw_imp2 / total
-                result["margin"] = total - 1.0
+        paired = {
+            name: prices
+            for name, prices in all_odds.items()
+            if valid_price(prices.get("player1")) and valid_price(prices.get("player2"))
+        }
+        result["sources"] = paired
+        if paired:
+            result["best_odds"] = {
+                side: max(prices[side] for prices in paired.values())
+                for side in ("player1", "player2")
+            }
+            consensus = bookmaker_consensus(paired)
+            result["implied_prob1"] = consensus.prob1
+            result["implied_prob2"] = consensus.prob2
+            result["margin"] = consensus.mean_margin
 
         _odds_cache[cache_key] = result
         _odds_cache_timestamp[cache_key] = time.time()
